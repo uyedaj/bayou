@@ -67,7 +67,7 @@ simmap.W <- function(tree,pars){
   return(W)
 }
 
-#' Calculate the weight matrix of a set of regimes on a phylogeny
+#' Calculate the weight matrix of a set of regimes on a phylogeny using an edge map.
 #' 
 #' @rdname edgemap.W
 edgemap.W <- function(tree, pars,emap,alpha=NULL){
