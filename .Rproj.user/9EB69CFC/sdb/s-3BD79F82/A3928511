@@ -1,0 +1,15 @@
+{
+    "contents" : "require(devtools)\nrequire(roxygen2)\nrequire(testthat)\nload_all()\ndocument()\ntest_dir(\"inst/tests/\")\n\ninstall(\"~/bayOU_1.0\")\n\nphytools.funs <- c(\"nodeHeights\",\"plotSimmap\",\"phenogram\")\ncat(paste0(\"importFrom(phytools, \", paste(phytools.funs, collapse=\", \"), \")\"),\n    paste0(\"export(\", paste(phytools.funs, collapse=\", \"), \")\"),\n    file = \"NAMESPACE\",\n    sep = \"\\n\")\n\n",
+    "created" : 1380044858576.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2316962267",
+    "id" : "A3928511",
+    "lastKnownWriteTime" : 1380159061,
+    "path" : "~/repos/bayou/bayou_1.0/BuildingBayOU.R",
+    "properties" : {
+    },
+    "source_on_save" : false,
+    "type" : "r_source"
+}
