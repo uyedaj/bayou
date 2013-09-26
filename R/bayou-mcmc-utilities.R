@@ -1,0 +1,318 @@
+oumcmc.loader <- function(dir=NULL,outname="bayou",model="OU"){
+  #mapsr2 <- read.table(file="mapsr2.dta",header=FALSE)
+  #mapsb <- read.table(file="mapsb.dta",header=FALSE)
+  #mapst2 <- read.table(file="mapst2.dta",header=FALSE)
+  mapsr2 <- scan(file=paste(dir,outname,".mapsr2",sep=""),what="",sep="\n",quiet=TRUE,blank.lines.skip=FALSE)
+  mapsb <- scan(file=paste(dir,outname,".mapsb",sep=""),what="",sep="\n",quiet=TRUE,blank.lines.skip=FALSE)
+  mapst2 <- scan(file=paste(dir,outname,".mapst2",sep=""),what="",sep="\n",quiet=TRUE,blank.lines.skip=FALSE)
+  pars.out <- scan(file=paste(dir,outname,".pars",sep=""),what="",sep="\n",quiet=TRUE,blank.lines.skip=FALSE)
+  pars.out <- lapply(strsplit(pars.out,"[[:space:]]+"),as.numeric)
+  mapsr2 <- lapply(strsplit(mapsr2,"[[:space:]]+"),as.numeric)
+  mapsb <- lapply(strsplit(mapsb,"[[:space:]]+"),as.numeric)
+  mapst2 <- lapply(strsplit(mapst2,"[[:space:]]+"),as.numeric)
+  chain <- list()
+  if(model=="OU"){
+    chain$gen <- sapply(pars.out,function(x) x[1])
+    chain$lnL <- sapply(pars.out,function(x) x[2])
+    chain$prior <- sapply(pars.out,function(x) x[3])
+    chain$alpha <- sapply(pars.out,function(x) x[4])
+    chain$sig2 <- sapply(pars.out,function(x) x[5])
+    chain$nb <- sapply(pars.out,function(x) x[6])
+    chain$ntheta <- sapply(pars.out,function(x) x[7])
+    chain$optima <- lapply(pars.out,function(x) x[-(1:7)])
+    chain$branch.shift <- mapsb
+    chain$location <- mapsr2
+    chain$t2 <- mapst2
+  }
+  if(model=="QG"){
+    chain$gen <- sapply(pars.out,function(x) x[1])
+    chain$lnL <- sapply(pars.out,function(x) x[2])
+    chain$prior <- sapply(pars.out,function(x) x[3])
+    chain$h2 <- sapply(pars.out,function(x) x[4])
+    chain$P <- sapply(pars.out,function(x) x[5])
+    chain$w2 <- sapply(pars.out,function(x) x[6])
+    chain$Ne <- sapply(pars.out,function(x) x[7])
+    chain$nb <- sapply(pars.out,function(x) x[8])
+    chain$ntheta <- sapply(pars.out,function(x) x[9])
+    chain$optima <- lapply(pars.out,function(x) x[-(1:9)])
+    chain$branch.shift <- mapsb
+    chain$location <- mapsr2
+    chain$t2 <- mapst2
+  }
+  if(model=="OUrepar"){
+    chain$gen <- sapply(pars.out,function(x) x[1])
+    chain$lnL <- sapply(pars.out,function(x) x[2])
+    chain$prior <- sapply(pars.out,function(x) x[3])
+    chain$halflife <- sapply(pars.out,function(x) x[4])
+    chain$Vy <- sapply(pars.out,function(x) x[5])
+    chain$nb <- sapply(pars.out,function(x) x[6])
+    chain$ntheta <- sapply(pars.out,function(x) x[7])
+    chain$optima <- lapply(pars.out,function(x) x[-(1:7)])
+    chain$branch.shift <- mapsb
+    chain$location <- mapsr2
+    chain$t2 <- mapst2
+  }
+  return(chain)
+}
+
+
+gelman.R <- function(parameter,chain1,chain2,freq=20,start=1,plot=TRUE){
+  R <- NULL
+  R.UCI <- NULL
+  int <- seq(start,length(chain1[[parameter]]),freq)
+  for(i in 1:length(int)){
+    chain.list <- mcmc.list(mcmc(chain1[[parameter]][1:int[i]]),mcmc(chain2[[parameter]][1:int[i]]))
+    GD <- gelman.diag(chain.list)
+    R[i] <- GD$psrf[1]
+    R.UCI[i] <- GD$psrf[2]
+  }
+  if(plot==TRUE){
+    plot(chain1$gen[int],R,ylim=c(0.9,1.8),main=paste("Gelman's R:",parameter),xlab="Generation",ylab="R",lwd=2)
+    lines(chain1$gen[int],R,lwd=2)
+    lines(chain1$gen[int],R.UCI,lty=2)
+  }
+  return(data.frame("R"=R,"UCI.95"=R.UCI))
+}
+posterior.Q <- function(parameter,chain1,chain2,pars=simpar$pars,burnin=0.3){
+  postburn <- round(burnin*length(chain1$gen),0):length(chain1$gen)
+  chain <- mcmc.list(mcmc(chain1[[parameter]][postburn]),mcmc(chain2[[parameter]][postburn]))
+  posterior.q <- summary(chain,quantiles=seq(0,1,0.005))$quantiles
+  q <- which(names(sort(c(pars[[parameter]],posterior.q)))=="")
+  Q <- ((q-1)/2-0.25)/100#((q-1)+(simpar$pars$alpha-posterior.q[q-1])/(posterior.q[q+1]-posterior.q[q-1]))/100
+  Q
+}
+
+Lposterior <- function(chain.list,phy,simpar=NULL,burnin=0.3,mag=TRUE){
+  ntips <- length(phy$tip.label)
+  shifts=list()
+  branch.shifts=list()
+  optima <- list()
+  postburn <- round(burnin*length(chain.list[[1]]$gen),0):length(chain.list[[1]]$gen)
+  for(i in 1:length(chain.list)){
+    shifts[[i]] <- t(sapply(chain.list[[i]]$branch.shift[postburn],function(x) as.numeric(1:nrow(phy$edge) %in% x)))
+    optima[[i]] <- sapply(1:length(chain.list[[i]]$optima),function(x) chain.list[[i]]$optima[[x]][chain.list[[i]]$t2[[x]]])
+    branch.shifts[[i]] <- chain.list[[i]]$branch.shift
+  }
+  optima.shifts <- tapply(unlist(optima),unlist(branch.shifts),mean)
+  N.optima.shifts <- tapply(unlist(branch.shifts),unlist(branch.shifts),length)
+  root.optima <- sapply(chain.list,function(x) sapply(x$optima,function(y) y[1]))
+  OS <- rep(mean(root.optima),length(phy$edge[,1]))
+  OS[as.numeric(names(optima.shifts))] <- optima.shifts
+  shifts.tot <- sapply(shifts,function(x) apply(x,2,sum))
+  shifts.prop <- shifts.tot/length(postburn)
+  if (!is.null(simpar)){
+    bshift <- subset(simpar$edge.map,simpar$edge.map$sh==1)
+    shift.mag <- simpar$pars$optima[bshift$t2]-simpar$pars$optima[bshift$t1]
+    all.branches <- rep(0,nrow(simpar$edge.map))
+    all.branches[as.numeric(rownames(bshift))] <- shift.mag
+    shift.age <- (nodeHeights(simpar$tree)[,1]+simpar$edge.map$r1)
+    prior.prob <- sum(sapply(1:(ntips/2),function(x) kFUN(x,log=FALSE)*sum(1/(length(all.branches):(length(all.branches)-(x-1))))))
+    Lpost <- data.frame(shifts.prop,"prior"=prior.prob,"pp2prior"=apply(shifts.prop,1,mean)/prior.prob,"sh"=simpar$edge.map$sh,"shift.mag"=all.branches,"shift.age"=shift.age)
+  } else {
+    all.branches <- rep(0,nrow(phy$edge))
+    prior.prob <- sum(sapply(1:(ntips/2),function(x) kFUN(x,log=FALSE)*sum(1/(length(all.branches):(length(all.branches)-(x-1))))))
+    Lpost <- data.frame(shifts.prop,"prior"=prior.prob,"pp2prior"=apply(shifts.prop,1,mean)/prior.prob,mag=OS)
+  }
+  return(Lpost)
+}
+
+
+discard.burnin <- function(chain,burnin.prop=0.3){
+  lapply(chain,function(x) x[(burnin.prop*length(x)):length(x)])
+}
+
+build.control <- function(pars,emap,default.weights="OU",move.weights=list("alpha"=4,"sig2"=2,"optima"=4,"pos"=1,"slide"=2,"nb"=10)){
+  if(!is.null(default.weights)){
+    if(default.weights=="OU"){
+      move.weights=list("alpha"=4,"sig2"=2,"optima"=4,"pos"=1,"slide"=2,"nb"=10)
+    }
+    if(default.weights=="QG"){
+      move.weights=list("h2"=5,"P"=2,"w2"=5,"Ne"=5,"optima"=5,"pos"=1,"slide"=3,"nb"=20)
+    }
+    if(default.weights=="OUrepar"){
+      move.weights=list("halflife"=5,"Vy"=3,"optima"=5,"pos"=1,"slide"=3,"nb"=20)
+    }
+  }
+  ct <- as.list(rep(NA,length(pars)+1))
+  names(ct) <- c(names(pars),'pos')
+  names(ct)[names(ct)=="ntheta"] <- "slide"
+  total.weight <- sum(unlist(move.weights))
+  move.weights <- unlist(move.weights[names(ct)])
+  ct$nb <- unname(move.weights['nb']/total.weight)
+  R <-1-ct$nb
+  if (sum(emap$sh)== 0){
+    ct$pos <- 0
+    ct$slide <- 0
+    n.na <- sapply(ct,is.na)
+    ct[n.na] <- move.weights[n.na]/sum(move.weights[n.na])*R
+  } else {
+    if (sum(1-emap$sh)==0){
+      ct$slide <- 0
+      n.na <- sapply(ct,is.na)
+      ct[n.na] <- move.weights[n.na]/sum(move.weights[n.na])*R
+    } else {
+      n.na <- sapply(ct,is.na)
+      ct[n.na] <- move.weights[n.na]/sum(move.weights[n.na])*R
+    }
+  }
+  return(ct)
+}
+
+tune.D <- function(D,accept,accept.type){
+  tuning.samp <- (length(accept)/2):length(accept)
+  acc <- tapply(accept[tuning.samp],accept.type[tuning.samp],mean)
+  acc.length <- tapply(accept[tuning.samp],accept.type[tuning.samp],length)
+  acc.tune <- acc/0.25
+  acc.tune[acc.tune<0.5] <- 0.5
+  acc.tune[acc.tune>2] <- 2
+  D$ak <- acc.tune['alpha']*D$ak
+  D$sk <- acc.tune['sig2']*D$sk
+  D$tk <- acc.tune['theta']*D$tk
+  D$bk <- D$tk*2
+  D <- lapply(D,function(x){ names(x) <- NULL; x})
+  return(list("D"=D,"acc.tune"=acc.tune))
+}
+
+
+store.QG <- function(i,pars,maps,cache,dat,ll,pr,samp,chunk,parorder){
+  if(i%%samp==0){
+    j <- (i/samp)%%chunk
+    if(j!=0 & i>0){
+      chunk.branch[[j]] <<- (1:length(maps$sh))[maps$sh==1]
+      chunk.t2[[j]] <<- maps$t2[maps$sh==1]
+      chunk.r2[[j]] <<- maps$r2[maps$sh==1]
+      parline <- unlist(pars[parorder])
+      out[[j]] <<- c(i,ll,pr,parline)
+    } else {
+      #chunk.mapst1[chunk,] <<- maps$t1
+      #chunk.mapst2[chunk,] <<- maps$t2
+      #chunk.mapsr2[chunk,] <<- maps$r2
+      chunk.branch[[chunk]] <<- (1:length(maps$sh))[maps$sh==1]
+      chunk.t2[[chunk]] <<- maps$t2[maps$sh==1]
+      chunk.r2[[chunk]] <<- maps$r2[maps$sh==1]
+      parline <- unlist(pars[parorder])
+      out[[chunk]] <<- c(i,ll,pr,parline)
+      #write.table(chunk.mapst1,file=mapst1,append=TRUE,col.names=FALSE,row.names=FALSE)
+      #write.table(chunk.mapst2,file=mapst2,append=TRUE,col.names=FALSE,row.names=FALSE)
+      #write.table(chunk.mapsr2,file=mapsr2,append=TRUE,col.names=FALSE,row.names=FALSE)
+      lapply(out,function(x) cat(c(x,"\n"),file=pars.output,append=TRUE))
+      lapply(chunk.branch,function(x) cat(c(x,"\n"),file=mapsb,append=TRUE))
+      lapply(chunk.t2,function(x) cat(c(x,"\n"),file=mapst2,append=TRUE))
+      lapply(chunk.r2,function(x) cat(c(x,"\n"),file=mapsr2,append=TRUE))
+      #chunk.mapst1 <<- matrix(0,ncol=dim(oldmap)[1],nrow=chunk)
+      #chunk.mapst2 <<- matrix(0,ncol=dim(oldmap)[1],nrow=chunk)
+      #chunk.mapsr2 <<- matrix(0,ncol=dim(oldmap)[1],nrow=chunk)
+      #out <<- list()
+      chunk.branch <<- list()
+      chunk.r2 <<- list()
+      chunk.t2 <<- list()
+      out <<- list()
+    }
+  }
+}
+
+
+pull.pars <- function(i,chain,model="OU"){
+  parorder <- switch(model,"QG"=c("h2","P","w2","Ne","nb","ntheta","optima"), "OU"=c("alpha","sig2","nb","ntheta","optima"),"OUrepar"=c("halflife","Vy","nb","ntheta","optima"))
+  pars <- lapply(parorder,function(x) chain[[x]][[i]])
+  names(pars) <- parorder
+  return(pars)
+}
+
+combine.chains <- function(chain1,chain2,burnin.prop=0){
+  nn <- names(chain1)
+  postburn <- (burnin.prop*(length(chain1$gen))+1):(length(chain1$gen))
+  chains <- lapply(nn,function(x) c(chain1[[x]][postburn],chain2[[x]][postburn]))
+  names(chains) <- nn
+  return(chains)
+}
+
+
+.updateControl <- function(ct,pars){
+  if(pars$k==0){
+    ctM <- ct
+    R <- sum(unlist(ctM[names(ctM) %in% c("slide","pos")],F,F))
+    ctM[names(ctM) %in% c("slide","pos")] <- 0
+    nR <- !(names(ctM) %in% c("bk","dk","slide","pos"))
+    ctM[nR] <-lapply(ct[nR],function(x) x+R/length(nR))
+    ct <- ctM
+  }
+  return(ct)
+}
+
+.buildControl <- function(pars, prior, default.weights="OU", move.weights=list("alpha"=4,"sig2"=2,"optima"=4,"pos"=1,"slide"=2,"k"=10),maxK=500){
+  if(!is.null(default.weights)){
+    move.weights <- switch(default.weights,"OU"=list("alpha"=4,"sig2"=2,"optima"=4,"pos"=1,"slide"=2,"k"=10),"QG"=list("h2"=5,"P"=2,"w2"=5,"Ne"=5,"optima"=5,"pos"=1,"slide"=3,"k"=20),"OUrepar"=list("halflife"=5,"Vy"=3,"optima"=5,"pos"=1,"slide"=3,"k"=20))
+    #"OUcpp"=list("alpha"=3,"sig2"=3,"sig2jump"=3,"theta"=3,"slide"=5,"k"=10),"QGcpp"=list("h2"=1,"P"=1,"w2"=2,"Ne"=2,"sig2jump"=3,"theta"=3,"slide"=5,"k"=10),"OUreparcpp"=list("halflife"=3,"Vy"=3,"sig2jump"=3,"theta"=3,"slide"=5,"k"=10)
+  } else {move.weights <- move.weights}
+  ct <- unlist(move.weights)
+  total.weight <- sum(ct)
+  ct <- ct/sum(ct)
+  ct <- as.list(ct)
+  bmax <- attributes(prior)$parameters$dsb$bmax
+  nbranch <- 2*attributes(prior)$parameters$dsb$ntips-2
+  prob <- attributes(prior)$parameters$dsb$prob
+  if(length(prob)==1){
+    prob <- rep(prob, nbranch)
+    prob[bmax==0] <- 0
+  }
+  type <- max(bmax)
+  if(type == Inf){
+    bdFx <- attributes(prior)$functions$dk
+    bdk <- sqrt(cumsum(c(0,bdFx(0:maxK,log=FALSE))))*0.9
+  }
+  if(type==1){
+    maxK <- nbranch-sum(bmax==0)
+    bdk <- (maxK - 0:maxK)/maxK
+  }
+  ct$dk <- bdk
+  ct$bk <- (1-bdk)
+  
+  ct$sb <- list(bmax=bmax, prob=prob)
+  return(ct)
+}
+
+bdFx <- function(ct,max=100,pars,...){
+  dk <- cumsum(c(0,dpois(0:max,pars$lambda*T)))
+  bk <- 0.9-dk+0.1
+  return(list(bk=bk,dk=dk))
+}
+
+
+store.bayOU <- function(i,pars,ll,pr,samp,chunk,parorder){
+  if(i%%samp==0){
+    j <- (i/samp)%%chunk
+    if(j!=0 & i>0){
+      chunk.sb[[j]] <<- pars$sb
+      chunk.t2[[j]] <<- pars$t2
+      chunk.loc[[j]] <<- pars$loc
+      parline <- unlist(pars[parorder])
+      out[[j]] <<- c(i,ll,pr,parline)
+    } else {
+      #chunk.mapst1[chunk,] <<- maps$t1
+      #chunk.mapst2[chunk,] <<- maps$t2
+      #chunk.mapsr2[chunk,] <<- maps$r2
+      chunk.sb[[chunk]] <<- pars$sb
+      chunk.t2[[chunk]] <<- pars$t2
+      chunk.loc[[chunk]] <<- pars$loc
+      parline <- unlist(pars[parorder])
+      out[[chunk]] <<- c(i,ll,pr,parline)
+      #write.table(chunk.mapst1,file=mapst1,append=TRUE,col.names=FALSE,row.names=FALSE)
+      #write.table(chunk.mapst2,file=mapst2,append=TRUE,col.names=FALSE,row.names=FALSE)
+      #write.table(chunk.mapsr2,file=mapsr2,append=TRUE,col.names=FALSE,row.names=FALSE)
+      lapply(out,function(x) cat(c(x,"\n"),file=pars.output,append=TRUE))
+      lapply(chunk.sb,function(x) cat(c(x,"\n"),file=mapsb,append=TRUE))
+      lapply(chunk.t2,function(x) cat(c(x,"\n"),file=mapst2,append=TRUE))
+      lapply(chunk.loc,function(x) cat(c(x,"\n"),file=mapsloc,append=TRUE))
+      #chunk.mapst1 <<- matrix(0,ncol=dim(oldmap)[1],nrow=chunk)
+      #chunk.mapst2 <<- matrix(0,ncol=dim(oldmap)[1],nrow=chunk)
+      #chunk.mapsr2 <<- matrix(0,ncol=dim(oldmap)[1],nrow=chunk)
+      #out <<- list()
+      chunk.sb <<- list()
+      chunk.t2 <<- list()
+      chunk.loc <<- list()
+      out <<- list()
+    }
+  }
+}
+
