@@ -23,8 +23,20 @@ test_that("can calculate likelihoods", {
               equals(emOU.lik(pars,emap,cache,dat,SE=0.1,model="OU",method="invert")$loglik))
   expect_that(smOU.lik(QGpars,tree,dat,SE=0.1,model="QG")$loglik[1],
               equals(emOU.lik(pars,emap,cache,dat,SE=0.1,model="OU",method="invert")$loglik))
-  expect_that(.smOU.lik(pars,cache,dat,TotExp,SE=0.1,model="OU")$loglik[1],
+  expect_that(.smOU.lik(pars,cache,dat,SE=0.1,model="OU")$loglik[1],
               equals(emOU.lik(pars,emap,cache,dat,SE=0.1,model="OU",method="invert")$loglik))
-  expect_that(.smOU.lik(QGpars,cache,dat,TotExp,SE=0.1,model="QG")$loglik[1],
+  expect_that(.smOU.lik(QGpars,cache,dat,SE=0.1,model="QG")$loglik[1],
+              equals(emOU.lik(pars,emap,cache,dat,SE=0.1,model="OU",method="invert")$loglik))
+  pars$sb <- which(emap$sh==1)
+  pars$loc <- emap$r1[emap$sh==1]
+  pars$t2 <- emap$t2[emap$sh==1]
+  QGpars$sb <- which(emap$sh==1)
+  QGpars$loc <- emap$r1[emap$sh==1]
+  QGpars$t2 <- emap$t2[emap$sh==1]
+  expect_that(.OU.lik(pars,cache,dat,SE=0.1,model="OU")$loglik[1],
+              equals(emOU.lik(pars,emap,cache,dat,SE=0.1,model="OU",method="invert")$loglik))
+  expect_that(OU.lik(pars,cache,dat,SE=0.1,model="OU")$loglik[1],
+              equals(emOU.lik(pars,emap,cache,dat,SE=0.1,model="OU",method="invert")$loglik))
+  expect_that(.OU.lik(QGpars,cache,dat,SE=0.1,model="QG")$loglik[1],
               equals(emOU.lik(pars,emap,cache,dat,SE=0.1,model="OU",method="invert")$loglik))
   })

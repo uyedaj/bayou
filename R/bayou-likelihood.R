@@ -267,8 +267,7 @@ smOU.lik <- function(pars,tree,X,SE=0,model="OU"){
     pars$alpha <- repar$alpha
     pars$sig2 <- repar$sig2
   }
-  TotExp <- exp(-cache$height*pars$alpha)
-  W <- .simmap.W(cache,pars,TotExp)
+  W <- .simmap.W(cache,pars)
   if(pars$ntheta>1){
     E.th <- W%*%pars$theta
   } else {E.th <- W*pars$theta}
@@ -281,7 +280,7 @@ smOU.lik <- function(pars,tree,X,SE=0,model="OU"){
 
 #' 
 #' 
-.smOU.lik <- function(pars,cache,X,TotExp,SE=0,model="OU"){
+.smOU.lik <- function(pars,cache,X,SE=0,model="OU"){
   if(model=="QG"){
     pars$alpha <- QG.alpha(pars)
     pars$sig2 <- QG.sig2(pars)
@@ -291,7 +290,60 @@ smOU.lik <- function(pars,tree,X,SE=0,model="OU"){
     pars$alpha <- repar$alpha
     pars$sig2 <- repar$sig2
   }
-  W <- .simmap.W(cache,pars,TotExp)
+  W <- .simmap.W(cache,pars)
+  if(pars$ntheta>1){
+    E.th=W%*%pars$theta
+  } else {E.th=W*pars$theta}
+  X.c<-X-as.vector(E.th)
+  lnL.fx<-.fastbm.lik(cache$phy,X.c,cache$ht,SE=TRUE,model="OU")
+  loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,SE,0),root=ROOT.GIVEN)
+  list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th)
+}
+
+#' Calculate the likelihood of a multi-optima OU model from parameter list that includes shifts branches (sb),
+#' shift locations (loc) and shift optima (t2)
+#' 
+#' Calculates the likelihood of an OU model with regimes specified by a parameter list
+#' 
+#' @rdname sdOU.lik
+#' 
+OU.lik <- function(pars,tree,X,SE=0,model="OU"){
+  if(class(tree)=="phylo"){
+    cache <- .prepare.ou.univariate(tree,X)
+  } else {cache <- tree}
+  if(model=="QG"){
+    pars$alpha <- QG.alpha(pars)
+    pars$sig2 <- QG.sig2(pars)
+  }
+  if(model=="OUrepar"){
+    repar <- OU.repar(pars)
+    pars$alpha <- repar$alpha
+    pars$sig2 <- repar$sig2
+  }
+  W <- .parmap.W(cache,pars)
+  if(pars$ntheta>1){
+    E.th <- W%*%pars$theta
+  } else {E.th <- W*pars$theta}
+  X.c<-X-as.vector(E.th)
+  lnL.fx<-.fastbm.lik(cache$phy,X.c,cache$ht,SE=TRUE,model="OU")
+  #lnL.fx<-bm.lik(cache$phy,X.c,SE=NA,model="OU")
+  loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,SE,0),root=ROOT.GIVEN)
+  list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th)
+}
+
+#' 
+#' 
+.OU.lik <- function(pars,cache,X,SE=0,model="OU"){
+  if(model=="QG"){
+    pars$alpha <- QG.alpha(pars)
+    pars$sig2 <- QG.sig2(pars)
+  }
+  if(model=="OUrepar"){
+    repar <- OU.repar(pars)
+    pars$alpha <- repar$alpha
+    pars$sig2 <- repar$sig2
+  }
+  W <- .parmap.W(cache,pars)
   if(pars$ntheta>1){
     E.th=W%*%pars$theta
   } else {E.th=W*pars$theta}

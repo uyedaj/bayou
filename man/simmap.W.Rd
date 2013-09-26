@@ -22,13 +22,12 @@
   influence of the root state.}
 }
 \description{
-  These functions calculate weight matrices from different
-  types of objects specifying the regimes present on a
-  phylogeny. \code{simmap.W} calculates the weight matrix
-  for a set of regimes from a phylogeny with a stored
-  regime history. \code{.simmap.W} calculates the same
-  matrix, but without checks and is generally run
-  internally.
+  These functions calculate weight matrices from regimes
+  specified in phytools' simmap format. \code{simmap.W}
+  calculates the weight matrix for a set of regimes from a
+  phylogeny with a stored regime history. \code{.simmap.W}
+  calculates the same matrix, but without checks and is
+  generally run internally.
 }
 \details{
   \code{.simmap.W} is more computationally efficient within
