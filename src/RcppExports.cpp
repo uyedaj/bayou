@@ -9,8 +9,13 @@ using namespace Rcpp;
 List rcpp_hello_world();
 RcppExport SEXP bayOU_rcpp_hello_world() {
 BEGIN_RCPP
-    Rcpp::RNGScope __rngScope;
-    List __result = rcpp_hello_world();
-    return Rcpp::wrap(__result);
+    SEXP __sexp_result;
+    {
+        Rcpp::RNGScope __rngScope;
+        List __result = rcpp_hello_world();
+        PROTECT(__sexp_result = Rcpp::wrap(__result));
+    }
+    UNPROTECT(1);
+    return __sexp_result;
 END_RCPP
 }

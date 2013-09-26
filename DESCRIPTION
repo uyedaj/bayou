@@ -12,7 +12,8 @@ License: GPL (>= 2)
 Depends:
     Rcpp (>= 0.10.3),
     ape (>= 3.0-6),
-    geiger, phytools
+    geiger,
+    phytools
 LinkingTo: Rcpp
 Collate:
     'RcppExports.R'
@@ -20,3 +21,11 @@ Collate:
     'probability.R'
     'bayou-weight_matrix.R'
     'bayou-moves.R'
+    'bayou-likelihood.R'
+    'bayou-prior.R'
+    'conversion-utilities.R'
+    'bayou-mcmc-utilities.R'
+    'bayou-mcmc.R'
+    'bayou-plotting.R'
+    'bayou-simulation.r'
+    'bayou-steppingstone.R'
