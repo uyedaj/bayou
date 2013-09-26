@@ -70,6 +70,8 @@
   lookup <- lapply(tB,plook)
   edge.names <- mapply(paste,cache$edge[,1],cache$edge[,2],sep=",")
   cache$branchtrace <- t(sapply(lookup,function(x) as.numeric(edge.names %in% x)))
+  cache$bdesc <- lapply(edge.names,function(branch) which(edge.names %in% unique(unlist(sapply(lookup,function(look) if(branch %in% look) look[1:which(branch==look)])))))
+  cache$bdesc <- lapply(cache$bdesc,function(x) x[-length(x)])
   cache$lookup <- lookup
   rownames(cache$edge)=NULL
   return(cache)
@@ -124,5 +126,42 @@
   res
 }
 
+print.priorFn <- function(x, ...){
+  cat("prior function for bayOU\n")
+  cat(paste("expecting ", attributes(x)$model, " model\n", sep=""))
+  cat("'pars' should be a list with named parameter values: list(", paste(gsub('^[a-zA-Z]',"",names(attributes(x)$param)),collapse=", "),")\n",sep="")
+  cat("prior distribution functions for used:\n")
+  print(unlist(attributes(prior)$dist))
+  cat("\n")
+  cat("definition:\n")
+  attributes(prior) <- NULL
+  print(prior)
+}
 
 
+.filldown.emap <- function(emap){
+  shifts <- emap$sh
+  K <- sum(shifts)
+  nopt <- rep(1,length(shifts)+1)
+  opt <- 1
+  for(i in length(shifts):1){
+    if(shifts[i]==1){
+      opt <- opt+1
+      nopt[emap$e2[i]] <- opt
+    } else {
+      nopt[emap$e2[i]] <- nopt[emap$e1[i]]
+    }
+  }
+  edge.map <- data.frame(tree$edge,nopt[tree$edge[,1]],nopt[tree$edge[,2]],shifts,tree$tip.label[tree$edge[,2]],emap$r1,emap$r2,tree$edge.length)
+  names(edge.map) <- c("e1","e2","t1","t2","sh","tip","r1","r2","r")
+  return(edge.map)
+}
+
+ouMatrix <- function(vcvMatrix, alpha)
+{  vcvDiag<-diag(vcvMatrix)
+   diagi<-matrix(vcvDiag, nrow=length(vcvDiag), ncol=length(vcvDiag))
+   diagj<-matrix(vcvDiag, nrow=length(vcvDiag), ncol=length(vcvDiag), byrow=T)
+   Tij = diagi + diagj - (2 * vcvMatrix)
+   vcvRescaled = (1 / (2 * alpha)) * exp(-alpha * Tij) * (1 - exp(-2 * alpha * vcvMatrix))
+   return(vcvRescaled)
+}
