@@ -28,7 +28,9 @@ priorSim <- function(.prior,tree,plot=TRUE,nsim=1,exclude.branches=NULL, ...){
   k <- sapply(simpar,function(x) x$k)
   sb <- lapply(k,function(x) rdists.fx$rsb(x))
   loc <- lapply(1:length(k),function(x) rdists.fx$rloc(k[x])*tree$edge.length[sb[[x]]])
-  t2 <- lapply(k,function(x) 2:(x+1))
+  if(k > 0){
+    t2 <- lapply(k,function(x) 2:(x+1))
+  } else {t2 <- numeric(0)}
   theta <- lapply(k,function(x) rdists.fx$rtheta(x+1))
   simpar <- lapply(1:nsim,function(x) c(simpar[[x]],list(ntheta=k[x]+1, theta=theta[[x]],sb=sb[[x]],loc=loc[[x]],t2=t2[[x]])))
   #}
@@ -37,7 +39,7 @@ priorSim <- function(.prior,tree,plot=TRUE,nsim=1,exclude.branches=NULL, ...){
       par(ask=TRUE)
     }
     for(i in 1:nsim){
-      maps <- pars2simmap(simpar[[i]],tree,sim.theta=FALSE,theta=simpar[[i]]$theta)
+      maps <- pars2simmap(simpar[[i]],tree,theta=simpar[[i]]$theta)
       col <- maps$col
       plotSimmap(maps$tree,colors=col, ...)
     }
@@ -62,7 +64,7 @@ dataSim <- function(pars, model, tree, map.type="pars", emap=NULL, SE=0, phenogr
   }
   if(map.type=="pars"){
     print("Using mapped regimes from parameter list")
-    maps <- pars2simmap(pars, tree, sim.theta=FALSE, theta=pars$theta, root.theta=pars$theta[1])$tree$maps
+    maps <- pars2simmap(pars, tree, theta=pars$theta, root.theta=pars$theta[1])$tree$maps
   }
   if(map.type=="emap"){
     print("Using mapped regimes from edge map")

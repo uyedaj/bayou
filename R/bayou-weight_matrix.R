@@ -174,7 +174,7 @@ edgemap.W <- function(tree, pars,emap,alpha=NULL){
     #For now, starting height is just the height of the node
     csbase <- cache$nH[irow]
     #Calculate the ending height by sorting the edge.length and the location of shifts by their branch identity and location
-    csadd <- c(tree$edge.length, pars$loc)
+    csadd <- c(cache$edge.length, pars$loc)
     tmp.o <- c(1:nbranch, pars$sb)
     names(csadd) <- tmp.o
     add.o <- order(tmp.o,csadd)

@@ -1,0 +1,95 @@
+\name{bayou.mcmc}
+\alias{bayou.mcmc}
+\title{Bayesian sampling of multi-optima OU models}
+\usage{
+  bayou.mcmc(tree, dat, SE = 0, model = "OU", prior,
+    ngen = 10000, samp = 10, chunk = 100, control = NULL,
+    tuning = NULL, new.dir = FALSE, plot.freq = 500,
+    outname = "bayou", ticker.freq = 1000,
+    tuning.int = c(0.1, 0.2, 0.3), startpar = NULL,
+    moves = NULL, control.weights = NULL)
+}
+\arguments{
+  \item{tree}{a phylogenetic tree of class 'phylo'}
+
+  \item{dat}{a named vector of continuous trait values
+  matching the tips in tree}
+
+  \item{SE}{The standard error of the data. Either a single
+  value applied to all the data, or a vector of
+  length(dat).}
+
+  \item{model}{The parameterization of the OU model used.
+  Either "OU" for standard parameterization with \alpha and
+  \sigma^2; "OUrepar" for phylogenetic half-life and \V_y,
+  or "QG" for the Lande model, with parameters \h^2
+  (heritability), \P (phenotypic variance), \omega^2 (width
+  of adaptive landscape), and \Ne (effective population
+  size)}
+
+  \item{prior}{A prior function of class 'priorFn' that
+  gives the prior distribution of all parameters}
+
+  \item{ngen}{The number of gneerations to run the Markov
+  Chain}
+
+  \item{samp}{The frequency at which Markov samples are
+  retained}
+
+  \item{chunk}{The number of samples retained in memory
+  before being written to a file}
+
+  \item{control}{A list providing a control object
+  governing how often and which proposals are used}
+
+  \item{tuning}{A named vector that governs how liberal or
+  conservative proposals are that equals the number of
+  proposal mechanisms.}
+
+  \item{new.dir}{If TRUE, then results are stored in a new
+  temporary directory. If FALSE, results are written to the
+  current working directory.}
+
+  \item{plot.freq}{How often plots should be made during
+  the mcmc. If NULL, then plots are not produced}
+
+  \item{outname}{The prefix given to files created by the
+  mcmc}
+
+  \item{ticker.freq}{How often a summary log should be
+  printed to the screen}
+
+  \item{tuning.int}{How often the tuning parameters should
+  be adjusted as a fraction of the total number of
+  generations (currently ignored)}
+
+  \item{startpar}{A list with the starting parameters for
+  the mcmc. If NULL, starting parameters are simulated from
+  the prior distribution}
+
+  \item{moves}{A named list providing the proposal
+  functions to be used in the mcmc. Names correspond to the
+  parameters to be modified in the parameter list. See
+  'details' for default values.}
+
+  \item{control.weights}{A named vector providing the
+  relative frequency each proposal mechanism is to be used
+  during the mcmc}
+}
+\description{
+  Runs a reversible-jump Markov chain Monte Carlo on
+  continuous phenotypic data on a phylogeny, sampling
+  possible shift locations and shift magnitudes, and shift
+  numbers.
+}
+\details{
+  By default, the alpha, sig2 (and various
+  reparameterizations of these parameters) are adjusted
+  with multiplier proposals, theta are adjusted with
+  sliding window proposals, and the number of shifts is
+  adjusted by splitting and merging, as well as sliding the
+  shifts both within and between branches. Allowed shift
+  locations are specified by the prior function (see
+  \link(make.prior())).
+}
+

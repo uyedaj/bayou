@@ -1,10 +1,15 @@
 .proposalFn <- function(u,ct,D,moves,cache,oldpar){
-  ct <- .updateControl(ct,oldpar)
+  #ct <- .updateControl(ct,oldpar)
+  if(oldpar$k==0){
+    ct <- .updateControl(ct, pars)
+  }
   ctM <-ct[sapply(ct,length)==1]
   move <- names(ct)[u < cumsum(unlist(ctM))][1]
   .moveFn <- get(moves[[move]])
   prop <- .moveFn(move=move,ct=ct,pars=oldpar,cache=cache,d=D[[move]])
-  return(list(prop=prop,move=move,u=u))
+  prop$move <- move
+  prop$u <- u
+  return(prop)
 }
 
 
@@ -91,7 +96,7 @@ addshift2map <- function(x,maps=maps,sb=sb,loc=loc,t2=t2){
   }
   T <- sum(cache$edge.length)
   v <- runif(1)
-  if(v < ct$bk[pars$k]/(ct$bk[pars$k]+ct$dk[pars$k])){
+  if(v < ct$bk[pars$ntheta]/(ct$bk[pars$ntheta]+ct$dk[pars$ntheta])){
     decision <- "birth"
     sb.j <- sample(1:(2*ntips-2),1,prob=cache$edge.length/T)
     loc.j <- runif(1,min=0,max=cache$edge.length[sb.j])
@@ -127,7 +132,7 @@ addshift2map <- function(x,maps=maps,sb=sb,loc=loc,t2=t2){
     pars.new$sb <- c(pars$sb,sb.j)
     pars.new$loc <- c(pars$loc,loc.j)
     pars.new$t2 <- c(pars$t2,t2.j)
-    hr <- log(ct$dk[pars.new$k]*T*d)-log(ct$bk[pars$k]*pars.new$k)
+    hr <- log(ct$dk[pars.new$ntheta]*T*d)-log(ct$bk[pars$ntheta]*pars.new$k)
   } else {
     decision <- "death"
     j <- sample(1:pars$k,1)
@@ -145,7 +150,7 @@ addshift2map <- function(x,maps=maps,sb=sb,loc=loc,t2=t2){
     t1W <- sum(segs[names(segs)==t1])
     r <- t2W/(t1W+t2W)
     pars.new$theta[t1-(t1>t2)] <- pars$theta[t1]*(1-r)+pars$theta[t2]*r
-    hr <- log(ct$bk[pars.new$k]*pars.new$k)-log(ct$dk[pars$k]*T*d)
+    hr <- log(ct$bk[pars.new$ntheta]*pars.new$k)-log(ct$dk[pars$ntheta]*T*d)
     maps.new <- pars2simmap(pars.new,cache$phy,sim.theta=FALSE,theta=pars.new$theta)$tree$maps
   }
   cache$maps <- maps.new
@@ -162,7 +167,7 @@ addshift2map <- function(x,maps=maps,sb=sb,loc=loc,t2=t2){
   pars.new[[move]] <- prop
   #prior1 <- .prior(pars,emap,cache)
   #prior2 <- .prior(pars.new,emap,cache)
-  return(list("pars"=pars.new,"cache"=cache,"par"=ifelse(class(move)=="numeric",names(pars)[move],move),"hr"=lnHastingsRatio))
+  return(list("pars"=pars.new, "hr"=lnHastingsRatio))
 }
 
 ##Adjust a randomly selected theta parameter
@@ -175,7 +180,7 @@ addshift2map <- function(x,maps=maps,sb=sb,loc=loc,t2=t2){
     pars.new <- pars
     pars.new$theta[j] <- prop
     #pr <- .prior(pars.new,emap,cache)-.prior(pars,emap,cache)
-    return(list("optima" = j, "prop" = prop, "hr"=lnHastingsRatio,  "pars" = pars.new,"cache"=cache))
+    return(list("pars" = pars.new, "hr"=lnHastingsRatio, "theta" = j))
   }
   if(type=="multiplier"){
     ##Generate multiplier proposal
@@ -185,102 +190,99 @@ addshift2map <- function(x,maps=maps,sb=sb,loc=loc,t2=t2){
     pars.new <- pars
     pars.new$theta[j] <- prop
     #pr <- .prior(pars.new,emap,cache)-.prior(pars,emap,cache)
-    return(list("theta" = j, "prop" = prop, "hr"=lnHastingsRatio, "pars" = pars.new,"cache"=cache))
+    return(list("pars" = pars.new, "hr"=lnHastingsRatio, "theta" = j))
   }
 }
 
 
-
-###Internal function for calculating the allowable space surrounding a shift for a slide move. Moves can only occur within a branch, or to immediately adjacent neighboring branches. Furthermore, a shift cannot be moved past another preexisting shift, and is also constrained by the tips and the root of the tree. If a shift moves within a branch, the proposal ratio is 1. If it shifts from one branch to a neighboring branch, however, it will change because the allowable space for that move will change.
-.slidespace <- function(j,cache,pars){
-  m <- cache$maps[[pars$sb[j]]]
+#' MCMC move for sliding a shift up or down to neighboring branches, or within a branch
+.slidespace <- function(j, pars, cache, ct, map){
   t2 <- pars$t2[j]
+  map.i <- which(names(map$segs)==(pars$sb[j]))
+  m.sb <- map$segs[map.i]
+  m.t2 <- map$theta[map.i]
+  m.i <- which(m.t2==t2)
+  U0 <- m.sb[m.i]
+  D0 <- m.sb[m.i-1]
   nodes <- cache$edge[pars$sb[j],]
-  U0 <- unname(m[names(m)==t2])
-  D0 <- unname(m[which(names(m)==t2)-1])
-  if(which(names(m)==t2)==length(m) & nodes[2] > cache$ntips){
-    sbU <- which(cache$edge[,1]==nodes[2])
-    mU <- cache$maps[sbU]
-    U1 <- unname(mU[[1]][1])
-    U2 <- unname(mU[[2]][1])
+  R1 = FALSE
+  if(m.i-1 == 1){
+    if(nodes[1]==cache$ntips+1){
+      root.branch <- setdiff(c(2*cache$ntips-3, 2*cache$ntips-2), pars$sb[j])
+      D1 <- map$segs[as.character(root.branch)]
+      R1 = TRUE
+    } else {
+      anc <- which(cache$edge[,2] == nodes[1])
+      anc.m <- map$segs[names(map$segs)==anc]
+      D1 <- anc.m[length(anc.m)]
+    }
   } else {
-    sbU <- c(0,0)
-    U1 <- 0
-    U2 <- 0
+    D1 <- 0
   }
-  if(which(names(m)==t2)<3 & nodes[1]!=cache$ntips+1){
-    sbD <- unname(which(tree$edge[,2]==nodes[1]))
-    mD <- cache$maps[[sbD]]
-    D1 <- unname(mD[length(mD)])
-  } else {D1 <- 0; sbD <- 0}
-  sbj <- c(U0=pars$sb[j],D0=pars$sb[j],U1=sbU[1],U2=sbU[2],D1=sbD)
-  return(list(sb=sbj,pp=c(U0=U0,D0=D0,U1=U1,U2=U2,D1=D1)))
+  if(m.i == length(map.i)){
+    desc <- which(cache$edge[,1] == nodes[2])
+    if(length(desc)>0){
+      desc.m <- map$segs[as.character(desc)]
+      U1 <- desc.m[1]
+      U2 <- desc.m[2]
+    } else {
+      U1 <- U2 <- 0
+      } 
+    } else {
+      U1 <- U2 <- 0
+    }
+  pp = c(U0, D0, U1, U2, D1)
+  sb = as.numeric(names(pp))
+  names(pp) <- c("U0", "D0", "U1", "U2", "D1")
+  if(R1) names(pp)[5] <- "R1"
+  if(any(ct$sb$bmax!=Inf)){
+    tb.sb <- table(pars$sb[-j])
+    nm.sb <- as.numeric(names(tb.sb))
+    full <- nm.sb[ct$sb$bmax[nm.sb] <= tb.sb]
+    if(length(full)>0) pp[sb %in% full] <- 0
+  }
+  return(list(sb=sb,pp=pp))
 }
 
-.slideCPP <- function(cache,pars,d,move=NULL,ct=NULL){
+.slide <- function(pars, cache, d, ct, move=NULL){
+  map <- .pars2map(pars,cache)
   j <- sample(1:pars$k,1)
   t2 <- pars$t2[j]
-  space <- .slidespace(j,cache,pars)
-  mv <- sample(1:5,1,prob=space$pp/sum(space$pp))
-  type <- names(space$sb)[mv]
-  l <- runif(1,0,space$pp[type])
-  maps.new <- cache$maps
+  space <- .slidespace(j, pars, cache, ct, map)
   pars.new <- pars
+  mv <- .sample(1:5,1,prob=space$pp/sum(space$pp))
+  type <- names(space$pp)[mv]
+  l <- runif(1,0,space$pp[type])
   if(type=="U0"){
-    m <- cache$maps[[space$sb[mv]]]
-    m[which(names(m)==t2)-1] <- m[which(names(m)==t2)-1] + (m[names(m)==t2]-l)
-    m[names(m)==t2] <- l
-    maps.new[[space$sb[mv]]] <- m
-    cs.m <- cumsum(m)
-    pars.new$loc[j] <- unname(cs.m[which(names(cs.m)==t2)-1])
+    pars.new$loc[j] <- l + pars$loc[j]
   } else {
     if(type=="D0"){
-      m <- cache$maps[[space$sb[mv]]]
-      m[names(m)==t2] <- (m[which(names(m)==t2)-1]-l)+m[names(m)==t2]
-      m[which(names(m)==t2)-1] <- l
-      maps.new[[space$sb[mv]]] <- m
-      cs.m <- cumsum(m)
-      pars.new$loc[j] <- unname(cs.m[which(names(cs.m)==t2)-1])
+      pars.new$loc[j] <- pars$loc[j] - l
     } else {
       pars.new$sb[j] <- space$sb[mv]
       if(type %in% c("U1","U2")){
-        m0 <- cache$maps[[pars$sb[j]]]
-        t1 <- names(m0)[which(names(m0)==t2)-1]
-        m0[length(m0)-1] <- m0[length(m0)-1]+m0[length(m0)]
-        m0 <- m0[-length(m0)]
-        m <- cache$maps[[space$sb[mv]]]
-        m <- c(l,m[1]-l,m[-1])
-        names(m)[1] <- t1
-        maps.new[[space$sb[mv]]] <- m
-        maps.new[[pars$sb[j]]] <- m0
-        cs.m <- cumsum(m)
-        pars.new$loc[j] <- unname(cs.m[which(names(cs.m)==t2)-1])
+        pars.new$loc[j] <- l
       } else {
-        if(type=="D1"){
-          m0 <- cache$maps[[pars$sb[j]]]
-          t1 <- names(m0)[which(names(m0)==t2)-1]
-          m0[2] <- m0[2]+m0[1]
-          m0 <- m0[-1]
-          m <- cache$maps[[space$sb[mv]]]
-          m <- c(m[-length(m)],m[length(m)]-l,l)
-          names(m)[length(m)] <- t2
-          maps.new[[space$sb[mv]]] <- m
-          maps.new[[pars$sb[j]]] <- m0
-          cs.m <- cumsum(m)
-          pars.new$loc[j] <- unname(cs.m[which(names(cs.m)==t2)-1])
+        if(type == "D1"){
+          pars.new$loc[j] <- cache$edge.length[space$sb[mv]] - l
+        } else {
+          if (type=="R1"){
+            pars.new$loc[j] <- l
+            pars.new$theta[c(1,t2)] <- pars.new$theta[c(t2,1)]
+          }
         }
       }
-      maps.new <- pars2simmap(pars.new,cache$phy,sim.theta=FALSE,theta=pars.new$theta)$tree$maps
     }
   }
-  cache$maps <- maps.new
-  new.space <- .slidespace(j,cache,pars.new)
-  hr <- log(1/sum(new.space$pp))-log(1/(sum(space$pp)))
-  return(list(pars=pars.new,cache=cache,hr=hr))
+  map.new <- .pars2map(pars.new, cache)
+  space.new <- .slidespace(j,pars.new, cache, ct, map.new)
+  hr <- log(1/sum(space.new$pp))-log(1/(sum(space$pp)))
+  return(list(pars=pars.new, hr=hr, decision = type))
 }
 
-#'MCMC move for splitting or collapsing a shift on phylogeny
-.splitmerge <- function(pars, cache, ct,d,move=NULL){
+
+#' MCMC move for splitting or collapsing a shift on phylogeny
+.splitmerge <- function(pars, cache, d, ct, move=NULL){
   nbranch <- length(cache$edge.length)
   TH <- sum(cache$edge.length)
   v <- runif(1)
@@ -290,17 +292,17 @@ addshift2map <- function(x,maps=maps,sb=sb,loc=loc,t2=t2){
   sb.taken[as.numeric(names(sb.table))] <- sb.table
   sb.prob <- ct$sb$prob
   sb.prob[sb.max <= sb.taken] <- 0
-  if(v < ct$bk[pars$k]/(ct$bk[pars$k]+ct$dk[pars$k])){
+  if(v < ct$bk[pars$ntheta]/(ct$bk[pars$ntheta]+ct$dk[pars$ntheta])){
     decision <- "birth"
     sb.j <- sample(1:(2*cache$ntips-2),1,prob=sb.prob)
     loc.j <- runif(1,min=0,max=cache$edge.length[sb.j])
-    t2.j <- max(pars$t2)+1
+    t2.j <- pars$ntheta+1
     pars.new <- pars
     pars.new$sb <- c(pars$sb, sb.j)
     pars.new$loc <- c(pars$loc, loc.j)
     pars.new$t2 <- c(pars$t2, t2.j)
     map.new <- .pars2map(pars.new, cache)
-    t1 <- map.new$theta[max(which(map.new$theta==t2.j))+1]
+    t1 <- map.new$theta[max(which(map.new$theta==t2.j))-1]
     t2W <- sum(map.new$segs[map.new$theta==t2.j])
     t1W <- sum(map.new$segs[map.new$theta==t1])
     r <- t2W/(t1W+t2W)
@@ -312,7 +314,7 @@ addshift2map <- function(x,maps=maps,sb=sb,loc=loc,t2=t2){
     pars.new$sb <- c(pars$sb,sb.j)
     pars.new$loc <- c(pars$loc,loc.j)
     pars.new$t2 <- c(pars$t2,t2.j)
-    hr <- log(ct$dk[pars.new$k]*1/pars.new$k*d)-log(ct$bk[pars$k]*sb.prob[sb.j]/sum(sb.prob))
+    hr <- log(ct$dk[pars.new$ntheta]*1/pars.new$k*d)-log(ct$bk[pars$ntheta]*sb.prob[sb.j]/sum(sb.prob))
   } else {
     decision <- "death"
     j <- sample(1:pars$k,1)
@@ -331,9 +333,10 @@ addshift2map <- function(x,maps=maps,sb=sb,loc=loc,t2=t2){
     t1W <- sum(map$segs[map$theta==t1])
     r <- t2W/(t1W+t2W)
     pars.new$theta[t1-(t1>t2.j)] <- pars$theta[t1]*(1-r)+pars$theta[t2.j]*r
-    hr <- log(ct$bk[pars.new$k]*sb.prob[sb.j]/sum(sb.prob))-log(ct$dk[pars$k]*1/pars$k*d)
+    sb.prob[sb.j] <- ct$sb$prob[sb.j]
+    hr <- log(ct$bk[pars.new$ntheta]*sb.prob[sb.j]/sum(sb.prob))-log(ct$dk[pars$ntheta]*1/pars$k*d)
   }
-  return(list(pars=pars.new, decision=decision,hr=hr))
+  return(list(pars=pars.new, hr=hr, decision=decision, sb.prob=sb.prob))
 }
 #.add2map <- function(map, cache, pars, sb.j, loc.j, t2.j){
 #    j <- which(names(map$segs)==sb.j)

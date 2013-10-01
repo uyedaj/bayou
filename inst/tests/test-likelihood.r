@@ -4,7 +4,7 @@ test_that("can calculate likelihoods", {
   tree <- chelonia.simmap$tree
   dat <- chelonia.simmap$dat
   emap <- chelonia.simmap$emap
-  cache <- .prepare.ou.univariate(tree, dat)
+  cache <- .prepare.ou.univariate(tree, dat, SE=0.1)
   pars <- list(alpha=0.1, sig2=1, k=16, theta=c(3,4,5,6), ntheta=4)
   QGpars <- list(h2=1,P=1,w2=9,Ne=1,k=16,theta=c(3,4,5,6), ntheta=4)
   TotExp <- exp(-cache$height*pars$alpha)
@@ -35,7 +35,7 @@ test_that("can calculate likelihoods", {
   QGpars$t2 <- emap$t2[emap$sh==1]
   expect_that(.OU.lik(pars,cache,dat,SE=0.1,model="OU")$loglik[1],
               equals(emOU.lik(pars,emap,cache,dat,SE=0.1,model="OU",method="invert")$loglik))
-  expect_that(OU.lik(pars,cache,dat,SE=0.1,model="OU")$loglik[1],
+  expect_that(OU.lik(pars,tree,dat,SE=0.1,model="OU")$loglik[1],
               equals(emOU.lik(pars,emap,cache,dat,SE=0.1,model="OU",method="invert")$loglik))
   expect_that(.OU.lik(QGpars,cache,dat,SE=0.1,model="QG")$loglik[1],
               equals(emOU.lik(pars,emap,cache,dat,SE=0.1,model="OU",method="invert")$loglik))

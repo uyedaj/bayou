@@ -1,10 +1,13 @@
-oumcmc.loader <- function(dir=NULL,outname="bayou",model="OU"){
+load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE){#dir=NULL,outname="bayou",model="OU"){
+  outname <- bayouFit$outname
+  model <- bayouFit$model
+  dir <- bayouFit$dir
   #mapsr2 <- read.table(file="mapsr2.dta",header=FALSE)
   #mapsb <- read.table(file="mapsb.dta",header=FALSE)
   #mapst2 <- read.table(file="mapst2.dta",header=FALSE)
-  mapsr2 <- scan(file=paste(dir,outname,".mapsr2",sep=""),what="",sep="\n",quiet=TRUE,blank.lines.skip=FALSE)
-  mapsb <- scan(file=paste(dir,outname,".mapsb",sep=""),what="",sep="\n",quiet=TRUE,blank.lines.skip=FALSE)
-  mapst2 <- scan(file=paste(dir,outname,".mapst2",sep=""),what="",sep="\n",quiet=TRUE,blank.lines.skip=FALSE)
+  mapsr2 <- scan(file=paste(dir,outname,".loc",sep=""),what="",sep="\n",quiet=TRUE,blank.lines.skip=FALSE)
+  mapsb <- scan(file=paste(dir,outname,".sb",sep=""),what="",sep="\n",quiet=TRUE,blank.lines.skip=FALSE)
+  mapst2 <- scan(file=paste(dir,outname,".t2",sep=""),what="",sep="\n",quiet=TRUE,blank.lines.skip=FALSE)
   pars.out <- scan(file=paste(dir,outname,".pars",sep=""),what="",sep="\n",quiet=TRUE,blank.lines.skip=FALSE)
   pars.out <- lapply(strsplit(pars.out,"[[:space:]]+"),as.numeric)
   mapsr2 <- lapply(strsplit(mapsr2,"[[:space:]]+"),as.numeric)
@@ -17,11 +20,11 @@ oumcmc.loader <- function(dir=NULL,outname="bayou",model="OU"){
     chain$prior <- sapply(pars.out,function(x) x[3])
     chain$alpha <- sapply(pars.out,function(x) x[4])
     chain$sig2 <- sapply(pars.out,function(x) x[5])
-    chain$nb <- sapply(pars.out,function(x) x[6])
+    chain$k <- sapply(pars.out,function(x) x[6])
     chain$ntheta <- sapply(pars.out,function(x) x[7])
-    chain$optima <- lapply(pars.out,function(x) x[-(1:7)])
-    chain$branch.shift <- mapsb
-    chain$location <- mapsr2
+    chain$theta <- lapply(pars.out,function(x) x[-(1:7)])
+    chain$sb <- mapsb
+    chain$loc <- mapsr2
     chain$t2 <- mapst2
   }
   if(model=="QG"){
@@ -32,11 +35,11 @@ oumcmc.loader <- function(dir=NULL,outname="bayou",model="OU"){
     chain$P <- sapply(pars.out,function(x) x[5])
     chain$w2 <- sapply(pars.out,function(x) x[6])
     chain$Ne <- sapply(pars.out,function(x) x[7])
-    chain$nb <- sapply(pars.out,function(x) x[8])
+    chain$k <- sapply(pars.out,function(x) x[8])
     chain$ntheta <- sapply(pars.out,function(x) x[9])
-    chain$optima <- lapply(pars.out,function(x) x[-(1:9)])
-    chain$branch.shift <- mapsb
-    chain$location <- mapsr2
+    chain$theta <- lapply(pars.out,function(x) x[-(1:9)])
+    chain$sb <- mapsb
+    chain$loc <- mapsr2
     chain$t2 <- mapst2
   }
   if(model=="OUrepar"){
@@ -45,13 +48,34 @@ oumcmc.loader <- function(dir=NULL,outname="bayou",model="OU"){
     chain$prior <- sapply(pars.out,function(x) x[3])
     chain$halflife <- sapply(pars.out,function(x) x[4])
     chain$Vy <- sapply(pars.out,function(x) x[5])
-    chain$nb <- sapply(pars.out,function(x) x[6])
+    chain$k <- sapply(pars.out,function(x) x[6])
     chain$ntheta <- sapply(pars.out,function(x) x[7])
-    chain$optima <- lapply(pars.out,function(x) x[-(1:7)])
-    chain$branch.shift <- mapsb
-    chain$location <- mapsr2
+    chain$theta <- lapply(pars.out,function(x) x[-(1:7)])
+    chain$sb <- mapsb
+    chain$loc <- mapsr2
     chain$t2 <- mapst2
   }
+  attributes(chain)$model <- bayouFit$model
+  class(chain) <- c("bayouMCMC", "list")
+  if(save.Rdata==FALSE & cleanup==TRUE){
+    ans <- toupper(readline("Warning: You have selected to delete all created MCMC files and not to save them as an .Rda file. 
+                    Your mcmc results will not be saved on your hard drive. If you do not output to a variable, your results will be lost. 
+                    Continue? (Y or N):"))
+    cleanup <- ifelse(ans=="Y", TRUE, FALSE)
+  }
+  if(save.Rdata){
+    if(is.null(file)){
+      save(chain, file=paste(tempdir(),"/", outname, ".chain.Rda",sep=""))
+      cat(paste("file saved to", paste(tempdir(),"/",outname,".chain.Rda\n",sep="")))
+    } else {
+      save(chain, file=file)
+      cat(paste("file saved to", file))
+    }
+  }
+  if(cleanup){
+    unlink(dir,T,T)
+    cat(paste("deleting temporary directory", dir))
+    }
   return(chain)
 }
 
@@ -82,37 +106,26 @@ posterior.Q <- function(parameter,chain1,chain2,pars=simpar$pars,burnin=0.3){
   Q
 }
 
-Lposterior <- function(chain.list,phy,simpar=NULL,burnin=0.3,mag=TRUE){
+Lposterior <- function(chain,phy,simpar=NULL,mag=TRUE){
   ntips <- length(phy$tip.label)
-  shifts=list()
-  branch.shifts=list()
-  optima <- list()
-  postburn <- round(burnin*length(chain.list[[1]]$gen),0):length(chain.list[[1]]$gen)
-  for(i in 1:length(chain.list)){
-    shifts[[i]] <- t(sapply(chain.list[[i]]$branch.shift[postburn],function(x) as.numeric(1:nrow(phy$edge) %in% x)))
-    optima[[i]] <- sapply(1:length(chain.list[[i]]$optima),function(x) chain.list[[i]]$optima[[x]][chain.list[[i]]$t2[[x]]])
-    branch.shifts[[i]] <- chain.list[[i]]$branch.shift
-  }
-  optima.shifts <- tapply(unlist(optima),unlist(branch.shifts),mean)
-  N.optima.shifts <- tapply(unlist(branch.shifts),unlist(branch.shifts),length)
-  root.optima <- sapply(chain.list,function(x) sapply(x$optima,function(y) y[1]))
-  OS <- rep(mean(root.optima),length(phy$edge[,1]))
-  OS[as.numeric(names(optima.shifts))] <- optima.shifts
-  shifts.tot <- sapply(shifts,function(x) apply(x,2,sum))
-  shifts.prop <- shifts.tot/length(postburn)
-  if (!is.null(simpar)){
-    bshift <- subset(simpar$edge.map,simpar$edge.map$sh==1)
-    shift.mag <- simpar$pars$optima[bshift$t2]-simpar$pars$optima[bshift$t1]
-    all.branches <- rep(0,nrow(simpar$edge.map))
-    all.branches[as.numeric(rownames(bshift))] <- shift.mag
-    shift.age <- (nodeHeights(simpar$tree)[,1]+simpar$edge.map$r1)
-    prior.prob <- sum(sapply(1:(ntips/2),function(x) kFUN(x,log=FALSE)*sum(1/(length(all.branches):(length(all.branches)-(x-1))))))
-    Lpost <- data.frame(shifts.prop,"prior"=prior.prob,"pp2prior"=apply(shifts.prop,1,mean)/prior.prob,"sh"=simpar$edge.map$sh,"shift.mag"=all.branches,"shift.age"=shift.age)
-  } else {
-    all.branches <- rep(0,nrow(phy$edge))
-    prior.prob <- sum(sapply(1:(ntips/2),function(x) kFUN(x,log=FALSE)*sum(1/(length(all.branches):(length(all.branches)-(x-1))))))
-    Lpost <- data.frame(shifts.prop,"prior"=prior.prob,"pp2prior"=apply(shifts.prop,1,mean)/prior.prob,mag=OS)
-  }
+  shifts <- t(sapply(chain$sb,function(x) as.numeric(1:nrow(phy$edge) %in% x)))
+  theta <- sapply(1:length(chain$theta),function(x) chain$theta[[x]][chain$t2[[x]]])
+  branch.shifts <- chain$sb
+  theta.shifts <- tapply(unlist(theta),unlist(branch.shifts),mean)
+  theta.locs <- tapply(unlist(chain$loc), unlist(branch.shifts), mean)
+  thetaSE <- tapply(unlist(theta),unlist(branch.shifts),function(x) sd(x)/sqrt(length(x)))
+  N.theta.shifts <- tapply(unlist(branch.shifts),unlist(branch.shifts),length)
+  root.theta <- sapply(chain$theta,function(y) y[1])
+  OS <- rep(NA,length(phy$edge[,1]))
+  OS[as.numeric(names(theta.shifts))] <- theta.shifts
+  SE <- rep(NA,length(phy$edge[,1]))
+  SE[as.numeric(names(thetaSE))] <- thetaSE
+  locs <- rep(NA,length(phy$edge[,1]))
+  locs[as.numeric(names(theta.locs))] <- theta.locs
+  shifts.tot <- apply(shifts,2,sum)
+  shifts.prop <- shifts.tot/length(chain$gen)
+  all.branches <- rep(0,nrow(phy$edge))
+  Lpost <- data.frame("pp"=shifts.prop,"magnitude of theta2"=OS, "naive SE of theta2"=SE,"rel location"=locs/tree$edge.length)
   return(Lpost)
 }
 
@@ -228,21 +241,9 @@ combine.chains <- function(chain1,chain2,burnin.prop=0){
 }
 
 
-.updateControl <- function(ct,pars){
-  if(pars$k==0){
-    ctM <- ct
-    R <- sum(unlist(ctM[names(ctM) %in% c("slide","pos")],F,F))
-    ctM[names(ctM) %in% c("slide","pos")] <- 0
-    nR <- !(names(ctM) %in% c("bk","dk","slide","pos"))
-    ctM[nR] <-lapply(ct[nR],function(x) x+R/length(nR))
-    ct <- ctM
-  }
-  return(ct)
-}
-
-.buildControl <- function(pars, prior, default.weights="OU", move.weights=list("alpha"=4,"sig2"=2,"optima"=4,"pos"=1,"slide"=2,"k"=10),maxK=500){
+.buildControl <- function(pars, prior, default.weights="OU", move.weights=list("alpha"=4,"sig2"=2,"optima"=4,"pos"=1,"slide"=2,"k"=10)){
   if(!is.null(default.weights)){
-    move.weights <- switch(default.weights,"OU"=list("alpha"=4,"sig2"=2,"optima"=4,"pos"=1,"slide"=2,"k"=10),"QG"=list("h2"=5,"P"=2,"w2"=5,"Ne"=5,"optima"=5,"pos"=1,"slide"=3,"k"=20),"OUrepar"=list("halflife"=5,"Vy"=3,"optima"=5,"pos"=1,"slide"=3,"k"=20))
+    move.weights <- switch(default.weights,"OU"=list("alpha"=4,"sig2"=2,"theta"=4,"slide"=2,"k"=10),"QG"=list("h2"=5,"P"=2,"w2"=5,"Ne"=5,"theta"=5,"slide"=3,"k"=20),"OUrepar"=list("halflife"=5,"Vy"=3,"theta"=5,"slide"=3,"k"=20))
     #"OUcpp"=list("alpha"=3,"sig2"=3,"sig2jump"=3,"theta"=3,"slide"=5,"k"=10),"QGcpp"=list("h2"=1,"P"=1,"w2"=2,"Ne"=2,"sig2jump"=3,"theta"=3,"slide"=5,"k"=10),"OUreparcpp"=list("halflife"=3,"Vy"=3,"sig2jump"=3,"theta"=3,"slide"=5,"k"=10)
   } else {move.weights <- move.weights}
   ct <- unlist(move.weights)
@@ -256,8 +257,16 @@ combine.chains <- function(chain1,chain2,burnin.prop=0){
     prob <- rep(prob, nbranch)
     prob[bmax==0] <- 0
   }
+  if(length(bmax)==1){
+    bmax <- rep(bmax, nbranch)
+    bmax[prob==0] <- 0
+  }
   type <- max(bmax)
   if(type == Inf){
+    maxK <- attributes(prior)$parameters$dk$kmax
+    if(!is.finite(maxK)){
+      maxK <- attributes(prior)$parameters$dsb$ntips*2
+    }
     bdFx <- attributes(prior)$functions$dk
     bdk <- sqrt(cumsum(c(0,bdFx(0:maxK,log=FALSE))))*0.9
   }
@@ -272,47 +281,98 @@ combine.chains <- function(chain1,chain2,burnin.prop=0){
   return(ct)
 }
 
-bdFx <- function(ct,max=100,pars,...){
-  dk <- cumsum(c(0,dpois(0:max,pars$lambda*T)))
-  bk <- 0.9-dk+0.1
-  return(list(bk=bk,dk=dk))
+#bdFx <- function(ct,max,pars,...){
+#  dk <- cumsum(c(0,dpois(0:max,pars$lambda*T)))
+#  bk <- 0.9-dk+0.1
+#  return(list(bk=bk,dk=dk))
+#}
+
+.updateControl <- function(ct, pars){
+  if(pars$k==0){
+    ctM <- ct
+    R <- sum(unlist(ctM[names(ctM) %in% c("slide","pos")],F,F))
+    ctM[names(ctM) == "slide"] <- 0
+    nR <- !(names(ctM) %in% c("bk","dk","slide", "sb"))
+    ctM[nR] <-lapply(ct[nR],function(x) x+R/sum(nR))
+    ct <- ctM
+  }
+  return(ct)
 }
 
-
-store.bayOU <- function(i,pars,ll,pr,samp,chunk,parorder){
+store.bayOU <- function(i, pars, ll, pr, store, samp, chunk, parorder){
   if(i%%samp==0){
     j <- (i/samp)%%chunk
     if(j!=0 & i>0){
-      chunk.sb[[j]] <<- pars$sb
-      chunk.t2[[j]] <<- pars$t2
-      chunk.loc[[j]] <<- pars$loc
+      store$sb[[j]] <- pars$sb
+      store$t2[[j]] <- pars$t2
+      store$loc[[j]] <- pars$loc
       parline <- unlist(pars[parorder])
-      out[[j]] <<- c(i,ll,pr,parline)
+      store$out[[j]] <- c(i,ll,pr,parline)
     } else {
       #chunk.mapst1[chunk,] <<- maps$t1
       #chunk.mapst2[chunk,] <<- maps$t2
       #chunk.mapsr2[chunk,] <<- maps$r2
-      chunk.sb[[chunk]] <<- pars$sb
-      chunk.t2[[chunk]] <<- pars$t2
-      chunk.loc[[chunk]] <<- pars$loc
+      store$sb[[chunk]] <- pars$sb
+      store$t2[[chunk]] <- pars$t2
+      store$loc[[chunk]] <- pars$loc
       parline <- unlist(pars[parorder])
-      out[[chunk]] <<- c(i,ll,pr,parline)
+      store$out[[chunk]] <- c(i,ll,pr,parline)
       #write.table(chunk.mapst1,file=mapst1,append=TRUE,col.names=FALSE,row.names=FALSE)
       #write.table(chunk.mapst2,file=mapst2,append=TRUE,col.names=FALSE,row.names=FALSE)
       #write.table(chunk.mapsr2,file=mapsr2,append=TRUE,col.names=FALSE,row.names=FALSE)
-      lapply(out,function(x) cat(c(x,"\n"),file=pars.output,append=TRUE))
-      lapply(chunk.sb,function(x) cat(c(x,"\n"),file=mapsb,append=TRUE))
-      lapply(chunk.t2,function(x) cat(c(x,"\n"),file=mapst2,append=TRUE))
-      lapply(chunk.loc,function(x) cat(c(x,"\n"),file=mapsloc,append=TRUE))
+      lapply(store$out,function(x) cat(c(x,"\n"),file=pars.output,append=TRUE))
+      lapply(store$sb,function(x) cat(c(x,"\n"),file=mapsb,append=TRUE))
+      lapply(store$t2,function(x) cat(c(x,"\n"),file=mapst2,append=TRUE))
+      lapply(store$loc,function(x) cat(c(x,"\n"),file=mapsloc,append=TRUE))
       #chunk.mapst1 <<- matrix(0,ncol=dim(oldmap)[1],nrow=chunk)
       #chunk.mapst2 <<- matrix(0,ncol=dim(oldmap)[1],nrow=chunk)
       #chunk.mapsr2 <<- matrix(0,ncol=dim(oldmap)[1],nrow=chunk)
       #out <<- list()
-      chunk.sb <<- list()
-      chunk.t2 <<- list()
-      chunk.loc <<- list()
-      out <<- list()
+      store$sb <- list()
+      store$t2 <- list()
+      store$loc <- list()
+      store$out <- list()
     }
   }
+  return(store)
 }
 
+print.bayouFit <- function(bayouFit){
+  cat("bayou modelfit\n")
+  cat(paste(bayouFit$model, " parameterization\n\n",sep=""))
+  cat("Results are stored in directory\n")
+  out<-(paste(bayouFit$dir, outname,".*",sep=""))
+  cat(out,"\n")
+  cat(paste("To load results, use 'load.bayou(bayouFit)'\n\n",sep=""))
+  cat(paste(length(bayouFit$accept), " generations were run with the following acceptance probabilities:\n"))
+  accept.prob <- round(tapply(bayouFit$accept,bayouFit$accept.type,mean),2)
+  print(accept.prob)
+}
+
+summary.bayouMCMC <- function(chain, burnin=0.3){
+  cat("bayou MCMC chain:", max(chain$gen), "generations\n")
+  cat(length(chain$gen), "samples, first", eval(round(burnin*length(chain$gen),0)), "samples discarded as burnin\n")
+  model <- attributes(chain)$model
+  postburn <- round(burnin*length(chain$gen),0):length(chain$gen)
+  chain <- lapply(chain,function(x) x[postburn])
+  parorder <- switch(model,"QG"=c("lnL","prior", "h2","P","w2","Ne","k","ntheta"), "OU"=c("lnL","prior","alpha","sig2","k","ntheta"),"OUrepar"=c("lnL","prior","halflife","Vy","k","ntheta"))
+  summat <- matrix(unlist(chain[parorder]),ncol=length(parorder))
+  colnames(summat) <- parorder
+  summat <- cbind(summat, "root"=sapply(chain$theta,function(x) x[1]))
+  sum.1vars <- summary(mcmc(summat))
+  sum.theta <- summary(mcmc(unlist(chain$theta)))
+  statistics <- rbind(cbind(sum.1vars$statistics, "Effective Size" = effectiveSize(summat)),"all theta"=c(sum.theta$statistics[1:2],rep(NA,3)))
+  cat("\n\nSummary statistics for parameters:\n")
+  print(statistics)
+  Lpost <- Lposterior(chain, tree)
+  Lpost.sorted <- Lpost[order(Lpost[,1],decreasing=TRUE),]
+  cat("\n\nBranches with posterior probabilities higher than 0.1:\n")
+  print(Lpost.sorted[Lpost.sorted[,1]>0.1,])
+  out <- list(statistics=statistics, branch.posteriors=Lpost)
+  class(out) <- "summary.bayou"
+  return()
+}
+print.summary.bayou <- function(x){
+  cat("\n")
+}
+  

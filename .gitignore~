@@ -1,7 +1,6 @@
 *.Rproj.user
 *.Rhistory
 *.RData
-Rprof.out
 src/*.o
 src/*.so
 src/*.dll

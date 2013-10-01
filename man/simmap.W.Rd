@@ -5,7 +5,7 @@
 \usage{
   simmap.W(tree, pars)
 
-  .simmap.W(cache, pars, TotExp)
+  .simmap.W(cache, pars)
 }
 \arguments{
   \item{tree}{either a tree of class "phylo" or a cache

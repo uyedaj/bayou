@@ -29,3 +29,4 @@ Collate:
     'bayou-plotting.R'
     'bayou-simulation.r'
     'bayou-steppingstone.R'
+    'deprecated.R'
