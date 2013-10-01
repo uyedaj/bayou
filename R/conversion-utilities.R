@@ -185,3 +185,9 @@ read.emap <- function(sb,sl,t2,phy){
   return(list(phy=phy,emap=edge.map))
 }
 
+.toSimmap <- function(map, cache){
+  maps <- lapply(1:length(cache$edge.length), function(x){ y <- map$segs[names(map$segs)==x]; names(y) <- map$theta[names(map$theta)==x]; y })  
+  tree <- cache$phy
+  tree$maps <- maps
+  return(tree)
+}

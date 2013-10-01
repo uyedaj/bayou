@@ -19,9 +19,7 @@ cdpois <- function(k,lambda,kmax,log=TRUE){
   kmax <- ceiling(kmax)
   i <- 0:kmax
   R <- sum(dpois(i,lambda))
-  if(k<=kmax){
-    num <- dpois(k,lambda)
-  } else {num <- 0}
+  num <- ifelse(k<=kmax, dpois(k,lambda), 0)
   if(log){
     log(num/R)
   } else {num/R }

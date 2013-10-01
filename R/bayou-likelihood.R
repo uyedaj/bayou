@@ -36,12 +36,13 @@
 #' \code{fastbm.lik} is an internal function and not generally called by the user
 #' 
 #' This is an internal function that modifies the internal function \code{bm.lik} in geiger for efficiency.
-.fastbm.lik <- function (phy, dat, ht,SE = NA, model = c("BM", "OU", "EB", "trend", 
+.fastbm.lik <- function (cache, dat,SE = NA, model = c("BM", "OU", "EB", "trend", 
                                        "lambda", "kappa", "delta", "drift", "white"), ...) {
   model = match.arg(model, c("BM", "OU", "EB", "trend", "lambda", 
                              "kappa", "delta", "drift", "white"))
-  cache = .prepare.bm.univariate(phy, dat, SE = SE, ...)
-  cache$ht <- ht
+  cache$dat <- dat
+  cache$y[1,][1:cache$ntips] <- dat
+  #cache = .prepare.bm.univariate(phy, dat, SE = SE, ...)
   cache$ordering = attributes(cache$phy)$order
   cache$N = cache$n.tip
   cache$n = cache$n.node
@@ -173,7 +174,6 @@
   likfx = fx_exporter()
   return(likfx)
 }
-
 #' bayOU internal function. 
 #' 
 #' \code{.emOU.lik} is an internal function and not generally called by the user
@@ -196,12 +196,12 @@
   } else {E.th=W*pars$theta}
   X.c<-X-as.vector(E.th)
   if(fast){
-    lnL.fx<-.fastbm.lik(cache$phy,X.c,cache$ht,SE=TRUE,model="OU")
+    lnL.fx<-.fastbm.lik(cache,X.c,SE=TRUE,model="OU")
     #lnL.fx<-bm.lik(cache$phy,X.c,SE=NA,model="OU")
-    loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,SE,0),root=ROOT.GIVEN)
+    loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=ROOT.GIVEN)
   } else {
-    lnL.fx <- bm.lik(cache$phy,X.c,SE=TRUE,model="OU")
-    loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,SE,0),root=ROOT.GIVEN)
+    lnL.fx <- bm.lik(cache,X.c,SE=TRUE,model="OU")
+    loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=ROOT.GIVEN)
   }
   list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th)
 }
@@ -217,7 +217,8 @@ emOU.lik <- function(pars,emap,tree,X,SE=0, method="pruning",model="OU"){
     pars$sig2 <- repar$sig2
   }
   if(class(tree)=="phylo"){
-    cache <- .prepare.ou.univariate(tree,X)
+    cache = .prepare.ou.univariate(tree, dat, SE = SE)
+    #cache <- .prepare.ou.univariate(tree, X)
   } else {cache <- tree}
   TotExp=exp(-cache$height*pars$alpha)
   W <- .edgemap.W(cache,pars,emap,TotExp,X)
@@ -226,9 +227,9 @@ emOU.lik <- function(pars,emap,tree,X,SE=0, method="pruning",model="OU"){
     ##Convert the data into residuals from the expected values
     X.c<-X-as.vector(E.th)
     ##Make the pruning algorithm function for a single-optimum OU model
-    lnL<-.fastbm.lik(cache$phy,X.c,cache$ht,SE=TRUE,model=c("OU"))
+    lnL<-.fastbm.lik(cache,X.c,SE=TRUE,model=c("OU"))
     ##Call the pruning algorithm function we just made
-    loglik=lnL(pars=c(pars$alpha,pars$sig2,SE,0),root=ROOT.GIVEN)
+    loglik=lnL(pars=c(pars$alpha,pars$sig2, 0),root=ROOT.GIVEN)
   })->time}
   if(method=="invert"){system.time({
     ##Standard calculation of the likelihood by inverting the VCV matrix
@@ -256,7 +257,7 @@ emOU.lik <- function(pars,emap,tree,X,SE=0, method="pruning",model="OU"){
 #' 
 smOU.lik <- function(pars,tree,X,SE=0,model="OU"){
   if(class(tree)=="phylo"){
-    cache <- .prepare.ou.univariate(tree,X)
+    cache <- .prepare.ou.univariate(tree, X, SE=SE)
   } else {cache <- tree}
   if(model=="QG"){
     pars$alpha <- QG.alpha(pars)
@@ -272,9 +273,9 @@ smOU.lik <- function(pars,tree,X,SE=0,model="OU"){
     E.th <- W%*%pars$theta
   } else {E.th <- W*pars$theta}
   X.c<-X-as.vector(E.th)
-  lnL.fx<-.fastbm.lik(cache$phy,X.c,cache$ht,SE=TRUE,model="OU")
+  lnL.fx<-.fastbm.lik(cache,X.c,SE=TRUE,model="OU")
   #lnL.fx<-bm.lik(cache$phy,X.c,SE=NA,model="OU")
-  loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,SE,0),root=ROOT.GIVEN)
+  loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=ROOT.GIVEN)
   list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th)
 }
 
@@ -295,8 +296,8 @@ smOU.lik <- function(pars,tree,X,SE=0,model="OU"){
     E.th=W%*%pars$theta
   } else {E.th=W*pars$theta}
   X.c<-X-as.vector(E.th)
-  lnL.fx<-.fastbm.lik(cache$phy,X.c,cache$ht,SE=TRUE,model="OU")
-  loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,SE,0),root=ROOT.GIVEN)
+  lnL.fx<-.fastbm.lik(cache,X.c,SE=TRUE,model="OU")
+  loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=ROOT.GIVEN)
   list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th)
 }
 
@@ -309,7 +310,7 @@ smOU.lik <- function(pars,tree,X,SE=0,model="OU"){
 #' 
 OU.lik <- function(pars,tree,X,SE=0,model="OU"){
   if(class(tree)=="phylo"){
-    cache <- .prepare.ou.univariate(tree,X)
+    cache <- .prepare.ou.univariate(tree, X, SE=SE)
   } else {cache <- tree}
   if(model=="QG"){
     pars$alpha <- QG.alpha(pars)
@@ -325,9 +326,9 @@ OU.lik <- function(pars,tree,X,SE=0,model="OU"){
     E.th <- W%*%pars$theta
   } else {E.th <- W*pars$theta}
   X.c<-X-as.vector(E.th)
-  lnL.fx<-.fastbm.lik(cache$phy,X.c,cache$ht,SE=TRUE,model="OU")
+  lnL.fx<-.fastbm.lik(cache,X.c,SE=TRUE,model="OU")
   #lnL.fx<-bm.lik(cache$phy,X.c,SE=NA,model="OU")
-  loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,SE,0),root=ROOT.GIVEN)
+  loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=ROOT.GIVEN)
   list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th)
 }
 
@@ -348,7 +349,7 @@ OU.lik <- function(pars,tree,X,SE=0,model="OU"){
     E.th=W%*%pars$theta
   } else {E.th=W*pars$theta}
   X.c<-X-as.vector(E.th)
-  lnL.fx<-.fastbm.lik(cache$phy,X.c,cache$ht,SE=TRUE,model="OU")
-  loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,SE,0),root=ROOT.GIVEN)
+  lnL.fx<-.fastbm.lik(cache,X.c,SE=TRUE,model="OU")
+  loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=ROOT.GIVEN)
   list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th)
 }

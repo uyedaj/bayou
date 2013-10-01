@@ -51,10 +51,10 @@
 #' \code{.prepare.ou.univariate} is an internal function and not generally called by the user
 #' 
 #' This is an internal function modified from geiger's function .prepare.bm.univariate for use with OU models.
-.prepare.ou.univariate <- function(tree,X){
+.prepare.ou.univariate <- function(tree,X, SE=0, ...){
   ntips <- length(tree$tip.label)
   rownames(tree$edge) <- 1:(length(tree$edge[,1]))
-  cache <- .prepare.bm.univariate(tree,X)
+  cache <- .prepare.bm.univariate(tree, X, SE=SE, ...)
   ind <- as.numeric(rownames(cache$edge))
   cache$nH <- nodeHeights(tree)[ind,1]
   cache$maps <- tree$maps[ind]
