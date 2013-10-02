@@ -106,7 +106,9 @@ posterior.Q <- function(parameter,chain1,chain2,pars=simpar$pars,burnin=0.3){
   Q
 }
 
-Lposterior <- function(chain,tree,simpar=NULL,mag=TRUE){
+Lposterior <- function(chain,tree,burnin=0, simpar=NULL,mag=TRUE){
+  postburn <- round(length(chain$gen)*burnin,0):length(chain$gens)
+  chain <- lapply(chain, function(x) x[postburn])
   ntips <- length(tree$tip.label)
   shifts <- t(sapply(chain$sb,function(x) as.numeric(1:nrow(tree$edge) %in% x)))
   theta <- sapply(1:length(chain$theta),function(x) chain$theta[[x]][chain$t2[[x]]])
