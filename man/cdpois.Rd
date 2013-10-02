@@ -31,6 +31,6 @@
 \examples{
 cdpois(10,1,10)
 cdpois(11,1,10)
-rdpois(5,10,10)
+#rdpois(5,10,10)
 }
 

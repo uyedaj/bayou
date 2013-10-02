@@ -8,8 +8,8 @@
 #' @param tree a phylogenetic tree of class 'phylo'
 #' @param dat a named vector of continuous trait values matching the tips in tree
 #' @param SE The standard error of the data. Either a single value applied to all the data, or a vector of length(dat).
-#' @param model The parameterization of the OU model used. Either "OU" for standard parameterization with \alpha and \sigma^2; "OUrepar" for phylogenetic half-life and \V_y, or 
-#' "QG" for the Lande model, with parameters \h^2 (heritability), \P (phenotypic variance), \omega^2 (width of adaptive landscape), and \Ne (effective population size)
+#' @param model The parameterization of the OU model used. Either "OU" for standard parameterization with alpha and sigma^2; "OUrepar" for phylogenetic half-life and stationary variance (Vy), or 
+#' "QG" for the Lande model, with parameters h^2 (heritability), P (phenotypic variance), omega^2 (width of adaptive landscape), and Ne (effective population size)
 #' @param prior A prior function of class 'priorFn' that gives the prior distribution of all parameters
 #' @param ngen The number of gneerations to run the Markov Chain
 #' @param samp The frequency at which Markov samples are retained
@@ -28,7 +28,7 @@
 #' @details 
 #' By default, the alpha, sig2 (and various reparameterizations of these parameters) are adjusted with multiplier proposals, theta are adjusted with sliding window proposals,
 #' and the number of shifts is adjusted by splitting and merging, as well as sliding the shifts both within and between branches. Allowed shift locations are specified by the 
-#' prior function (see \link(make.prior())). 
+#' prior function (see make.prior()). 
 
 bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, chunk=100, control=NULL, tuning=NULL, new.dir=FALSE, plot.freq=500, outname="bayou", ticker.freq=1000, tuning.int=c(0.1,0.2,0.3), startpar=NULL, moves=NULL, control.weights=NULL){
   if(is.null(moves)){

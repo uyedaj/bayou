@@ -13,7 +13,7 @@
 #' @examples
 #' cdpois(10,1,10)
 #' cdpois(11,1,10)
-#' rdpois(5,10,10)
+#' #rdpois(5,10,10)
 cdpois <- function(k,lambda,kmax,log=TRUE){
   if(kmax < lambda) stop("lambda is too high relative to kmax")
   kmax <- ceiling(kmax)
@@ -25,12 +25,13 @@ cdpois <- function(k,lambda,kmax,log=TRUE){
   } else {num/R }
 }
 #' @rdname cdpois
-rdpois <- function(n,lambda,kmax,...){
+#' 
+rdpois <- function(n,lambda,kmax, ...){
   kmax <- ceiling(kmax)
   i=rep(kmax+1,n)
   j=0
   while(any(i>kmax)){
-    i[i>kmax] <- rpois(sum(i>kmax),lambda)
+    i[i>kmax] <- rpois(sum(i>kmax),lambda, ...)
     j <- j+1
     if(j>100){stop ("Lambda too high relative to kmax")}
   }

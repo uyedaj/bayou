@@ -70,7 +70,7 @@ pars2simmap <- function(pars,tree,theta=NULL,root.theta=0){
   shifts <- rep(0,nbranch)
   shifts[as.numeric(attributes(nshifts)$dimnames[[1]])]<- nshifts
   irow <- rep(1:nbranch,shifts+1)
-  segs <- c(tree$edge.length, pars$loc)
+  segs <- c(cache$edge.length, pars$loc)
   tmp.o <- c(1:nbranch, pars$sb)
   names(segs) <- tmp.o
   add.o <- order(tmp.o,segs)

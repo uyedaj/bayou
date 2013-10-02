@@ -20,12 +20,12 @@
   length(dat).}
 
   \item{model}{The parameterization of the OU model used.
-  Either "OU" for standard parameterization with \alpha and
-  \sigma^2; "OUrepar" for phylogenetic half-life and \V_y,
-  or "QG" for the Lande model, with parameters \h^2
-  (heritability), \P (phenotypic variance), \omega^2 (width
-  of adaptive landscape), and \Ne (effective population
-  size)}
+  Either "OU" for standard parameterization with alpha and
+  sigma^2; "OUrepar" for phylogenetic half-life and
+  stationary variance (Vy), or "QG" for the Lande model,
+  with parameters h^2 (heritability), P (phenotypic
+  variance), omega^2 (width of adaptive landscape), and Ne
+  (effective population size)}
 
   \item{prior}{A prior function of class 'priorFn' that
   gives the prior distribution of all parameters}
@@ -90,6 +90,6 @@
   adjusted by splitting and merging, as well as sliding the
   shifts both within and between branches. Allowed shift
   locations are specified by the prior function (see
-  \link(make.prior())).
+  make.prior()).
 }
 

@@ -63,7 +63,7 @@ plotSimmap.mcmc <- function (tree,chain,burnin=NULL,colors = NULL, fsize = 1, ft
                              offset = NULL,alpha=10,sh.cex=1,type="dashes",circle.col=NULL,pch=21) {
   tree <- reorder.phylo(tree,order="postorder")
   if(type=="circles"){
-    L <- Lposterior(list(chain),burnin=burnin,tree)
+    L <- Lposterior(chain,tree)
   }
   if (is.null(tree$maps)){
     tree$maps <- lapply(tree$edge.length,function(x){names(x) <- 1; x})
@@ -239,7 +239,7 @@ regime.plot2 <- function(pars,tree,cols,type='rect',alpha=255){
   }
 }
 
-phenogram.density <- function(tree,data,post.samp,chains,K=NULL,cols=cols,fcols=NULL,fsize=0.5,ftype="reg",xadj=0,...){
+phenogram.density <- function(tree,dat,post.samp,chains,K=NULL,cols=cols,fcols=NULL,fsize=0.5,ftype="reg",xadj=0,...){
   #tree$maps <- NULL
   opt <- lapply(chains,function(x) x$optima[post.samp])
   no.opt <- lapply(opt,function(x) sapply(x,length))
@@ -256,39 +256,40 @@ phenogram.density <- function(tree,data,post.samp,chains,K=NULL,cols=cols,fcols=
 }
 
 ##Not working yet. Attempt to do ancestral state reconstruction under a multi-optimum OU model. 
-acemOU <- function(pars, tree, dat){
-  ntips <- length(tree$tip.label)
-  names(X) <- 1:(2*ntips-1)
-  cache <- .prepare.ou.univariate(tree, dat)
-  W <- .mOU.W(cache, pars)
-  E.X <- (W%*%pars$theta)[,1]
-  ouMatrix <- function(vcvMatrix, alpha)
-  {  vcvDiag<-diag(vcvMatrix)
-     diagi<-matrix(vcvDiag, nrow=length(vcvDiag), ncol=length(vcvDiag))
-     diagj<-matrix(vcvDiag, nrow=length(vcvDiag), ncol=length(vcvDiag), byrow=T)
-     Tij = diagi + diagj - (2 * vcvMatrix)
-     vcvRescaled = (1 / (2 * alpha)) * exp(-alpha * Tij) * (1 - exp(-2 * alpha * vcvMatrix))
-     return(vcvRescaled)
-  }
-  C <- vcvPhylo(cache$phy,anc.nodes=TRUE)
-  Sigma <- ouMatrix(C, pars$alpha)
-  likancFx <- function(px){
-    x <- c(dat, px)
-    res <- -dmnorm(x, mean=E.X, varcov=Sigma, log=TRUE)
-    return(res)
-  }
-  ip <- E.X[(ntips+1):(2*ntips-2)]
-  np <- length(ip)
-  x <- ip
-  x[419-226-1]<- ip[419-226-1]+0.1
-  likancFx(x)
-  res.opt <- nlminb(ip, likancFx, lower=rep(0,np), upper=rep(max(dat)*2,np))
-  res.opt <- nlm(likancFx, ip)
+#acemOU <- function(pars, tree, dat){
+#  ntips <- length(tree$tip.label)
+#  names(X) <- 1:(2*ntips-1)
+#  cache <- .prepare.ou.univariate(tree, dat)
+#  W <- .mOU.W(cache, pars)
+#  E.X <- (W%*%pars$theta)[,1]
+#  ouMatrix <- function(vcvMatrix, alpha)
+##  {  vcvDiag<-diag(vcvMatrix)
+#     diagi<-matrix(vcvDiag, nrow=length(vcvDiag), ncol=length(vcvDiag))
+#     diagj<-matrix(vcvDiag, nrow=length(vcvDiag), ncol=length(vcvDiag), byrow=T)
+#     Tij = diagi + diagj - (2 * vcvMatrix)
+##     vcvRescaled = (1 / (2 * alpha)) * exp(-alpha * Tij) * (1 - exp(-2 * alpha * vcvMatrix))
+##     return(vcvRescaled)
+#  }
+#  C <- vcvPhylo(cache$phy,anc.nodes=TRUE)
+#  Sigma <- ouMatrix(C, pars$alpha)
+#  likancFx <- function(px){
+##    x <- c(dat, px)
+#    res <- -dmnorm(x, mean=E.X, varcov=Sigma, log=TRUE)
+#    return(res)
+#  }
+#  ip <- E.X[(ntips+1):(2*ntips-2)]
+#  np <- length(ip)
+#  x <- ip
+#  x[419-226-1]<- ip[419-226-1]+0.1
+#  likancFx(x)
+#  res.opt <- nlminb(ip, likancFx, lower=rep(0,np), upper=rep(max(dat)*2,np))
+#  res.opt <- nlm(likancFx, ip)
   
-}
+#}
 
 ##Return a weight matrix for all tips and internal nodes.
 .mOU.W <- function(cache, pars){
+    ntips <- cache$ntips
     plook <- function(x){mapply(paste,x[2:length(x)],x[1:(length(x)-1)],sep=",")}
     tB <- cache$desc$anc
     tB <- mapply(c,1:(2*ntips-1),tB)

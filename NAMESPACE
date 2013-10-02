@@ -1,1 +1,1 @@
-export(cdpois)
+export(cdpois, rdpois, make.prior, bayou.mcmc, dsb, rsb, dloc, rloc)

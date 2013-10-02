@@ -1,4 +1,4 @@
-Package: bayOU
+Package: bayou
 Type: Package
 Title: Bayesian fitting of Ornstein-Uhlenbeck models to phylogenies
 Version: 1.0
@@ -28,5 +28,4 @@ Collate:
     'bayou-mcmc.R'
     'bayou-plotting.R'
     'bayou-simulation.r'
-    'bayou-steppingstone.R'
-    'deprecated.R'
+

@@ -91,10 +91,11 @@
 #' 
 #' This is an internal function modified from the base function \code{sample()} \\
 #' that provides consistent results with variable sample size.
-.sample <- function (x, size, replace = FALSE, prob = NULL) {
-  if (missing(size)) 
-    size <- length(x)
-  x[.Internal(sample(length(x), size, replace, prob))]
+.sample <- function (x, size, replace = FALSE, prob = NULL, ...) {
+  x[sample(length(x), size, replace, prob, ...)]
+  #if (missing(size)) 
+  #  size <- length(x)
+  #x[.Internal(sample(length(x), size, replace, prob))]
 }
 
 #' bayOU internal function. 
@@ -139,7 +140,7 @@ print.priorFn <- function(x, ...){
 }
 
 
-.filldown.emap <- function(emap){
+.filldown.emap <- function(emap, tree){
   shifts <- emap$sh
   K <- sum(shifts)
   nopt <- rep(1,length(shifts)+1)

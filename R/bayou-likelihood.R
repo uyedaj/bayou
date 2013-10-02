@@ -36,10 +36,7 @@
 #' \code{fastbm.lik} is an internal function and not generally called by the user
 #' 
 #' This is an internal function that modifies the internal function \code{bm.lik} in geiger for efficiency.
-.fastbm.lik <- function (cache, dat,SE = NA, model = c("BM", "OU", "EB", "trend", 
-                                       "lambda", "kappa", "delta", "drift", "white"), ...) {
-  model = match.arg(model, c("BM", "OU", "EB", "trend", "lambda", 
-                             "kappa", "delta", "drift", "white"))
+.fastbm.lik <- function (cache, dat,SE = NA, model = "OU", ...) {
   cache$dat <- dat
   cache$y[1,][1:cache$ntips] <- dat
   #cache = .prepare.bm.univariate(phy, dat, SE = SE, ...)
@@ -50,10 +47,7 @@
   cache$intorder = as.integer(cache$order[-length(cache$order)])
   cache$tiporder = as.integer(1:cache$N)
   cache$z = length(cache$len)
-  FUN = switch(model, BM = .null.cache(cache), OU = .ou.cache.fast(cache), 
-               EB = .eb.cache(cache), trend = .trend.cache(cache), lambda = .lambda.cache(cache), 
-               kappa = .kappa.cache(cache), delta = .delta.cache(cache), 
-               drift = .null.cache(cache), white = .white.cache(cache))
+  FUN = switch(model, OU = .ou.cache.fast(cache))
   ll.bm.direct = function(cache, sigsq, q = NULL, drift = NULL, 
                           se = NULL) {
     n.cache = cache
@@ -92,7 +86,7 @@
                 descRight = as.integer(n.cache$children[, 1]), descLeft = as.integer(n.cache$children[, 
                                                                                                       2]), drift = as.numeric(dd))
     parsC = as.numeric(rep(sigsq, n.cache$z))
-    out = .Call("bm_direct", dat = datC, pars = parsC, package = "geiger")
+    out = .Call("bm_direct", dat = datC, pars = parsC, PACKAGE = "geiger")
     loglik <- sum(out$lq)
     if (is.na(loglik)) 
       loglik = -Inf
@@ -138,7 +132,7 @@
           s = r.cache$y["s", ]
           g = attr(r.cache$y, "given")
           nn = r.cache$nn
-          r.cache$y = .cache.y.nodes(m, s, g, nn, r.cache$phy, 
+          r.cache$y = geiger:::.cache.y.nodes(m, s, g, nn, r.cache$phy, 
                                      nodes = nodes)
         }
         r.cache
@@ -217,7 +211,7 @@ emOU.lik <- function(pars,emap,tree,X,SE=0, method="pruning",model="OU"){
     pars$sig2 <- repar$sig2
   }
   if(class(tree)=="phylo"){
-    cache = .prepare.ou.univariate(tree, dat, SE = SE)
+    cache = .prepare.ou.univariate(tree, X, SE = SE)
     #cache <- .prepare.ou.univariate(tree, X)
   } else {cache <- tree}
   TotExp=exp(-cache$height*pars$alpha)
