@@ -1,1 +1,7 @@
-export(cdpois, rdpois, make.prior, bayou.mcmc, dsb, rsb, dloc, rloc)
+export(cdpois, rdpois, make.prior, bayou.mcmc, dsb, rsb, dloc, rloc, load.bayou, plotSimmap.mcmc, combine.chains, dataSim, priorSim, gelman.R, Lposterior, OU.lik, phenogram.density, posterior.Q)
+S3method(print, bayouFit)
+S3method(print, priorFn)
+S3method(print, summary.bayou)
+S3method(summary, bayouMCMC)
+S3method(plot, bayouMCMC)
+

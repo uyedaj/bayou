@@ -239,20 +239,43 @@ regime.plot2 <- function(pars,tree,cols,type='rect',alpha=255){
   }
 }
 
-phenogram.density <- function(tree,dat,post.samp,chains,K=NULL,cols=cols,fcols=NULL,fsize=0.5,ftype="reg",xadj=0,...){
-  #tree$maps <- NULL
-  opt <- lapply(chains,function(x) x$optima[post.samp])
-  no.opt <- lapply(opt,function(x) sapply(x,length))
-  min.opt <- min(unlist(opt))
-  max.opt <- max(unlist(opt))
+phenogram.density <- function(tree, dat, burnin=0, chain ,pp.cutoff=NULL, K=NULL, ...){
+  tree <- reorder(tree,"postorder")
+  dat <- dat[tree$tip.label]
+  postburn <- round(length(chain$gen)*burnin,0):length(chain$gen)
+  chain2 <- lapply(chain,function(x) x[postburn])
+  theta <- chain2$theta
+  no.theta <- lapply(theta,length)
+  min.theta <- min(unlist(theta))
+  max.theta <- max(unlist(theta))
   if(is.null(K)){
-    K <- unique(unlist(no.opt))
+    K <- list(unique(unlist(no.theta)))
   }
+  if(!is.null(pp.cutoff)){
+    L <- Lposterior(chain2, tree)
+    pp <- L$pp
+    pars <- list()
+    pars$sb <- which(pp > pp.cutoff)
+    pars$k <- length(pars$sb)
+    pars$ntheta <- length(pars$sb)+1
+    pars$loc <- L$rel.location[pars$sb]
+    pars$t2 <- 2:(length(pars$sb)+1)
+    tr <- pars2simmap(pars, tree)
+    tree <- tr$tree
+    colors <- tr$col
+  }
+  if(!is.null(colors)){
+    if(is.null(colors)){
+      ntheta <- length(unique(names(unlist(tree$maps))))
+      colors <- rainbow(ntheta)
+      names(colors) <- 1:ntheta
+    }
+  } else {colors <- 1; names(colors)=1}
   nH <- max(nodeHeights(tree))
   plot(c(0,nH+0.3*nH),c(min(dat)-0.25,max(dat)+0.25),type='n',xlab="Time",ylab="Phenotype")
-  phenogram(tree,dat,colors=cols,fsize=fsize,ftype=ftype,add=TRUE,fcols=fcols,xadj=xadj)
-  dens.opt <- lapply(1:length(opt),function(x) density(unlist(opt[[x]][no.opt[[x]] %in% K]),...))
-  tmp <- sapply(1:length(dens.opt),function(Q){lines(nH+dens.opt[[Q]]$y*(0.3*nH)/max(dens.opt[[Q]]$y),dens.opt[[Q]]$x,col=Q+1)})
+  phenogram(tree,dat,add=TRUE, colors=colors)#,...)
+  dens.theta <- lapply(1:length(K), function(x) density(unlist(theta[no.theta %in% K[[x]]])))
+  tmp <- sapply(1:length(dens.theta),function(Q){lines(nH+dens.theta[[Q]]$y*(0.3*nH)/max(dens.theta[[Q]]$y),dens.theta[[Q]]$x,col=Q+1)})
 }
 
 ##Not working yet. Attempt to do ancestral state reconstruction under a multi-optimum OU model. 
@@ -373,4 +396,16 @@ phenogram.density <- function(tree,dat,post.samp,chains,K=NULL,cols=cols,fcols=N
     W <- .parmap.W(cache, pars)
     W.all <- rbind(W, W.nn)
     return(W.all)
+}
+
+plot.bayouMCMC <- function(chain, burnin=0, ...){
+  postburn <- round(length(chain$gen)*burnin,0):length(chain$gen)
+  chain2 <- lapply(chain,function(x) x[postburn])
+  chain.length <- length(chain2$gen)
+  univariates <- chain2[sapply(chain2,function(x) length(unlist(x)))==length(chain2$gen)]
+  univariates$root <- sapply(chain2$theta, function(x) x[1])
+  uni.df <- as.data.frame(univariates)
+  rownames(uni.df) <- uni.df[,1]
+  uni.df <- uni.df[,-1]
+  plot(mcmc(uni.df), ...)
 }

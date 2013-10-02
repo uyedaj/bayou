@@ -38,9 +38,9 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
   }
   
   cache <- .prepare.ou.univariate(tree,dat)
-  
+  dat <- cache$dat
   if(is.null(startpar)){
-    startpar <- priorSim(prior,tree,model,nsim=1,plot=FALSE, exclude.branches=NULL)$pars[[1]]
+    startpar <- priorSim(prior,cache$phy,model,nsim=1,plot=FALSE, exclude.branches=NULL)$pars[[1]]
   }
 
   if(is.null(control.weights)){

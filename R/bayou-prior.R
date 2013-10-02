@@ -68,6 +68,7 @@
 #' prior.simmap(pars,tree)
 
 make.prior <- function(tree,dists=list(),param=list(),plot.prior=TRUE,model="OU",type="pars"){
+  tree <- reorder.phylo(tree, "postorder")
   nH <- max(nodeHeights(tree))
   ntips <- length(tree$tip.label)
   TH <- sum(tree$edge.length)

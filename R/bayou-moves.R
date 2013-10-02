@@ -1,6 +1,6 @@
 .proposalFn <- function(u,ct,D,moves,cache, pars){
   #ct <- .updateControl(ct,oldpar)
-  if(oldpar$k==0){
+  if(pars$k==0){
     ct <- .updateControl(ct, pars)
   }
   ctM <-ct[sapply(ct,length)==1]

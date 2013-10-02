@@ -80,7 +80,7 @@ load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE){#dir
 }
 
 
-gelman.R <- function(parameter,chain1,chain2,freq=20,start=1,plot=TRUE){
+gelman.R <- function(parameter,chain1,chain2,freq=20,start=1,plot=TRUE, ...){
   R <- NULL
   R.UCI <- NULL
   int <- seq(start,length(chain1[[parameter]]),freq)
@@ -91,7 +91,7 @@ gelman.R <- function(parameter,chain1,chain2,freq=20,start=1,plot=TRUE){
     R.UCI[i] <- GD$psrf[2]
   }
   if(plot==TRUE){
-    plot(chain1$gen[int],R,ylim=c(0.9,1.8),main=paste("Gelman's R:",parameter),xlab="Generation",ylab="R",lwd=2)
+    plot(chain1$gen[int],R,main=paste("Gelman's R:",parameter),xlab="Generation",ylab="R", ...)
     lines(chain1$gen[int],R,lwd=2)
     lines(chain1$gen[int],R.UCI,lty=2)
   }
