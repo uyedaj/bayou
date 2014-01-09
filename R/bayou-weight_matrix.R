@@ -187,11 +187,11 @@ edgemap.W <- function(tree, pars,emap,alpha=NULL){
     t2b[match(t2index,add.o)+1] <- pars$t2[t2index-nbranch]
     #Now we need to cascade these regime down the tree. We won't need to cascade sandwiches, as they are trapped on the branch they occur. So we find them below:
     loc.o <- order(pars$loc,decreasing=TRUE)
-    sandwiches <- tmp.o[duplicated(pars$sb[loc.o])]
+    sandwiches <- duplicated(pars$sb[loc.o])
     # And remove them:
-    if(length(sandwiches)>0){
-      sb.down <- pars$sb[-sandwiches]
-      t2.down <- pars$t2[-sandwiches]
+    if(sum(sandwiches)>0){
+      sb.down <- pars$sb[!sandwiches]
+      t2.down <- pars$t2[!sandwiches]
     } else {sb.down <- pars$sb; t2.down <- pars$t2}
     #Now we order the sb's and t2's to prepare for a postorder tree traversal
     sb.o <- order(sb.down)
@@ -271,11 +271,11 @@ parmap.W <- function(tree, pars){
     t2b[match(t2index,add.o)+1] <- pars$t2[t2index-nbranch]
     #Now we need to cascade these regime down the tree. We won't need to cascade sandwiches, as they are trapped on the branch they occur. So we find them below:
     loc.o <- order(pars$loc,decreasing=TRUE)
-    sandwiches <- tmp.o[duplicated(pars$sb[loc.o])]
+    sandwiches <- duplicated(pars$sb[loc.o])
     # And remove them:
-    if(length(sandwiches)>0){
-      sb.down <- pars$sb[-sandwiches]
-      t2.down <- pars$t2[-sandwiches]
+    if(sum(sandwiches)>0){
+      sb.down <- pars$sb[!sandwiches]
+      t2.down <- pars$t2[!sandwiches]
     } else {sb.down <- pars$sb; t2.down <- pars$t2}
     #Now we order the sb's and t2's to prepare for a postorder tree traversal
     sb.o <- order(sb.down)

@@ -1,8 +1,5 @@
 .proposalFn <- function(u,ct,D,moves,cache, pars){
   #ct <- .updateControl(ct,oldpar)
-  if(pars$k==0){
-    ct <- .updateControl(ct, pars)
-  }
   ctM <-ct[sapply(ct,length)==1]
   move <- names(ct)[u < cumsum(unlist(ctM))][1]
   .moveFn <- get(moves[[move]])
@@ -103,6 +100,9 @@ addshift2map <- function(x,maps=maps,sb=sb,loc=loc,t2=t2){
     }
   pp = c(U0, D0, U1, U2, D1)
   sb = as.numeric(names(pp))
+  if(any(ct$sb$bmax[sb]==0, na.rm=TRUE)){
+    pp[sb %in% which(ct$sb$bmax==0)] <- 0
+  }
   names(pp) <- c("U0", "D0", "U1", "U2", "D1")
   if(R1) names(pp)[5] <- "R1"
   if(any(ct$sb$bmax!=Inf)){

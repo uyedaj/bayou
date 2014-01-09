@@ -239,7 +239,7 @@ regime.plot2 <- function(pars,tree,cols,type='rect',alpha=255){
   }
 }
 
-phenogram.density <- function(tree, dat, burnin=0, chain ,pp.cutoff=NULL, K=NULL, ...){
+phenogram.density <- function(tree, dat, burnin=0, chain ,colors=NULL, pp.cutoff=NULL, K=NULL, ...){
   tree <- reorder(tree,"postorder")
   dat <- dat[tree$tip.label]
   postburn <- round(length(chain$gen)*burnin,0):length(chain$gen)
@@ -260,17 +260,21 @@ phenogram.density <- function(tree, dat, burnin=0, chain ,pp.cutoff=NULL, K=NULL
     pars$ntheta <- length(pars$sb)+1
     pars$loc <- L$rel.location[pars$sb]
     pars$t2 <- 2:(length(pars$sb)+1)
-    tr <- pars2simmap(pars, tree)
-    tree <- tr$tree
-    colors <- tr$col
+    if(length(pars$sb)>0){
+      tr <- pars2simmap(pars, tree)
+      tree <- tr$tree
+      colors <- tr$col
+      names(colors) <- 1:length(colors)
+    } else {
+      tr <- tree
+      colors <- 1; names(colors) <-1
+    }
   }
-  if(!is.null(colors)){
-    if(is.null(colors)){
+  if(is.null(colors)){
       ntheta <- length(unique(names(unlist(tree$maps))))
       colors <- rainbow(ntheta)
       names(colors) <- 1:ntheta
     }
-  } else {colors <- 1; names(colors)=1}
   nH <- max(nodeHeights(tree))
   plot(c(0,nH+0.3*nH),c(min(dat)-0.25,max(dat)+0.25),type='n',xlab="Time",ylab="Phenotype")
   phenogram(tree,dat,add=TRUE, colors=colors)#,...)
@@ -408,4 +412,14 @@ plot.bayouMCMC <- function(chain, burnin=0, ...){
   rownames(uni.df) <- uni.df[,1]
   uni.df <- uni.df[,-1]
   plot(mcmc(uni.df), ...)
+}
+
+
+plot.bayoupars <- function(pars, tree,...){
+  tree <- reorder(tree, 'postorder')
+  X <- rep(0, length(tree$tip.label))
+  names(X) <- tree$tip.label
+  cache <- .prepare.ou.univariate(tree, X)
+  tr <- .toSimmap(.pars2map(pars, cache),cache)
+  plotSimmap(tr,...)
 }

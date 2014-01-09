@@ -107,7 +107,8 @@ posterior.Q <- function(parameter,chain1,chain2,pars=simpar$pars,burnin=0.3){
 }
 
 Lposterior <- function(chain,tree,burnin=0, simpar=NULL,mag=TRUE){
-  postburn <- round(length(chain$gen)*burnin,0):length(chain$gens)
+  pb.start <- ifelse(burnin>0,round(length(chain$gen)*burnin,0),1)
+  postburn <- pb.start:length(chain$gen)
   chain <- lapply(chain, function(x) x[postburn])
   ntips <- length(tree$tip.label)
   shifts <- t(sapply(chain$sb,function(x) as.numeric(1:nrow(tree$edge) %in% x)))
@@ -166,44 +167,44 @@ combine.chains <- function(chain1,chain2,burnin.prop=0){
   return(chains)
 }
 
-
-.buildControl <- function(pars, prior, default.weights="OU", move.weights=list("alpha"=4,"sig2"=2,"optima"=4,"pos"=1,"slide"=2,"k"=10)){
-  if(!is.null(default.weights)){
-    move.weights <- switch(default.weights,"OU"=list("alpha"=4,"sig2"=2,"theta"=4,"slide"=2,"k"=10),"QG"=list("h2"=5,"P"=2,"w2"=5,"Ne"=5,"theta"=5,"slide"=3,"k"=20),"OUrepar"=list("halflife"=5,"Vy"=3,"theta"=5,"slide"=3,"k"=20))
-    #"OUcpp"=list("alpha"=3,"sig2"=3,"sig2jump"=3,"theta"=3,"slide"=5,"k"=10),"QGcpp"=list("h2"=1,"P"=1,"w2"=2,"Ne"=2,"sig2jump"=3,"theta"=3,"slide"=5,"k"=10),"OUreparcpp"=list("halflife"=3,"Vy"=3,"sig2jump"=3,"theta"=3,"slide"=5,"k"=10)
-  } else {move.weights <- move.weights}
+.buildControl <- function(pars, prior, move.weights=list("alpha"=4,"sig2"=2,"theta"=4, "slide"=2,"k"=10)){
   ct <- unlist(move.weights)
   total.weight <- sum(ct)
   ct <- ct/sum(ct)
   ct <- as.list(ct)
-  bmax <- attributes(prior)$parameters$dsb$bmax
-  nbranch <- 2*attributes(prior)$parameters$dsb$ntips-2
-  prob <- attributes(prior)$parameters$dsb$prob
-  if(length(prob)==1){
-    prob <- rep(prob, nbranch)
-    prob[bmax==0] <- 0
-  }
-  if(length(bmax)==1){
-    bmax <- rep(bmax, nbranch)
-    bmax[prob==0] <- 0
-  }
-  type <- max(bmax)
-  if(type == Inf){
-    maxK <- attributes(prior)$parameters$dk$kmax
-    if(!is.finite(maxK)){
-      maxK <- attributes(prior)$parameters$dsb$ntips*2
+  if(move.weights$k > 0){
+    bmax <- attributes(prior)$parameters$dsb$bmax
+    nbranch <- 2*attributes(prior)$parameters$dsb$ntips-2
+    prob <- attributes(prior)$parameters$dsb$prob
+    if(length(prob)==1){
+      prob <- rep(prob, nbranch)
+      prob[bmax==0] <- 0
     }
-    bdFx <- attributes(prior)$functions$dk
-    bdk <- sqrt(cumsum(c(0,bdFx(0:maxK,log=FALSE))))*0.9
+    if(length(bmax)==1){
+      bmax <- rep(bmax, nbranch)
+      bmax[prob==0] <- 0
+    }
+    type <- max(bmax)
+    if(type == Inf){
+      maxK <- attributes(prior)$parameters$dk$kmax
+      maxK <- ifelse(is.null(maxK), attributes(prior)$parameters$dsb$ntips*2, maxK)
+      maxK <- ifelse(!is.finite(maxK), attributes(prior)$parameters$dsb$ntips*2, maxK)
+      bdFx <- attributes(prior)$functions$dk
+      bdk <- sqrt(cumsum(c(0,bdFx(0:maxK,log=FALSE))))*0.9
+    }
+    if(type==1){
+      maxK <- nbranch-sum(bmax==0)
+      bdk <- (maxK - 0:maxK)/maxK
+    }
+    ct$bk <- bdk
+    ct$dk <- (1-bdk)
+    ct$sb <- list(bmax=bmax, prob=prob)
+  } 
+  if(move.weights$slide > 0 & move.weights$k ==0){
+    bmax <- attributes(prior)$parameters$dsb$bmax
+    prob <- attributes(prior)$parameters$dsb$prob
+    ct$sb <- list(bmax=bmax, prob=prob)
   }
-  if(type==1){
-    maxK <- nbranch-sum(bmax==0)
-    bdk <- (maxK - 0:maxK)/maxK
-  }
-  ct$dk <- bdk
-  ct$bk <- (1-bdk)
-  
-  ct$sb <- list(bmax=bmax, prob=prob)
   return(ct)
 }
 
@@ -213,13 +214,13 @@ combine.chains <- function(chain1,chain2,burnin.prop=0){
 #  return(list(bk=bk,dk=dk))
 #}
 
-.updateControl <- function(ct, pars){
+.updateControl <- function(ct, pars, fixed){
   if(pars$k==0){
     ctM <- ct
     R <- sum(unlist(ctM[names(ctM) %in% c("slide","pos")],F,F))
     ctM[names(ctM) == "slide"] <- 0
-    nR <- !(names(ctM) %in% c("bk","dk","slide", "sb"))
-    ctM[nR] <-lapply(ct[nR],function(x) x+R/sum(nR))
+    nR <- !(names(ctM) %in% c(fixed, "bk","dk","slide", "sb"))
+    ctM[nR] <-lapply(ct[names(ctM)[nR]],function(x) x+R/sum(nR))
     ct <- ctM
   }
   return(ct)
@@ -267,12 +268,15 @@ print.bayouFit <- function(bayouFit){
   cat("bayou modelfit\n")
   cat(paste(bayouFit$model, " parameterization\n\n",sep=""))
   cat("Results are stored in directory\n")
-  out<-(paste(bayouFit$dir, outname,".*",sep=""))
+  out<-(paste(bayouFit$dir, bayouFit$outname,".*",sep=""))
   cat(out,"\n")
   cat(paste("To load results, use 'load.bayou(bayouFit)'\n\n",sep=""))
   cat(paste(length(bayouFit$accept), " generations were run with the following acceptance probabilities:\n"))
   accept.prob <- round(tapply(bayouFit$accept,bayouFit$accept.type,mean),2)
+  prop.N <- tapply(bayouFit$accept.type,bayouFit$accept.type,length)
   print(accept.prob)
+  cat(" Total number of proposals of each type:\n")
+  print(prop.N)
 }
 
 summary.bayouMCMC <- function(chain, burnin=0.3){
@@ -295,10 +299,6 @@ summary.bayouMCMC <- function(chain, burnin=0.3){
   cat("\n\nBranches with posterior probabilities higher than 0.1:\n")
   print(Lpost.sorted[Lpost.sorted[,1]>0.1,])
   out <- list(statistics=statistics, branch.posteriors=Lpost)
-  class(out) <- "summary.bayou"
-  return()
-}
-print.summary.bayou <- function(x){
-  cat("\n")
+  return(out)
 }
   

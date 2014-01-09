@@ -1,4 +1,4 @@
-#SE=0; model="OU"; ngen=10000; samp=10;chunk=100; control=NULL; tuning=NULL; new.dir=TRUE; plot.freq=500; outname="bayou"; ticker.freq=1000; tuning.int=c(0.1,0.2,0.3); startpar=NULL; moves=NULL; control.weights=NULL
+#SE=0; model="OU"; ngen=10000; samp=10; chunk=100; control=NULL; tuning=NULL; new.dir=TRUE; plot.freq=500; outname="bayou"; ticker.freq=1000; tuning.int=c(0.1,0.2,0.3); moves=NULL; control.weights=NULL
 
 #' Bayesian sampling of multi-optima OU models 
 #' 
@@ -11,7 +11,7 @@
 #' @param model The parameterization of the OU model used. Either "OU" for standard parameterization with alpha and sigma^2; "OUrepar" for phylogenetic half-life and stationary variance (Vy), or 
 #' "QG" for the Lande model, with parameters h^2 (heritability), P (phenotypic variance), omega^2 (width of adaptive landscape), and Ne (effective population size)
 #' @param prior A prior function of class 'priorFn' that gives the prior distribution of all parameters
-#' @param ngen The number of gneerations to run the Markov Chain
+#' @param ngen The number of generations to run the Markov Chain
 #' @param samp The frequency at which Markov samples are retained
 #' @param chunk The number of samples retained in memory before being written to a file
 #' @param control A list providing a control object governing how often and which proposals are used
@@ -31,24 +31,40 @@
 #' prior function (see make.prior()). 
 
 bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, chunk=100, control=NULL, tuning=NULL, new.dir=FALSE, plot.freq=500, outname="bayou", ticker.freq=1000, tuning.int=c(0.1,0.2,0.3), startpar=NULL, moves=NULL, control.weights=NULL){
+  fixed <- gsub('^[a-zA-Z]',"",names(attributes(prior)$distributions)[which(attributes(prior)$distributions=="fixed")])
+  if("loc" %in% fixed){
+    fixed <- c(fixed,"slide")
+  }
   if(is.null(moves)){
     moves <- switch(model,"QG"=list(h2=".multiplierProposal",P=".multiplierProposal",w2=".multiplierProposal",Ne=".multiplierProposal",k=".splitmerge",theta=".adjustTheta",slide=".slide"),
                           "OU"=list(alpha=".multiplierProposal",sig2=".multiplierProposal",k=".splitmerge",theta=".adjustTheta",slide=".slide"),
                           "OUrepar"=list(halflife=".multiplierProposal",Vy=".multiplierProposal",k=".splitmerge",theta=".adjustTheta",slide=".slide")) #,"OUcpp"=list(alpha=".multiplierProposal",sig2=".multiplierProposal",sig2jump=".multiplierProposal",k=".splitmergeSimmap",theta=".adjustTheta",slide=".slideCPP"), "QGcpp"=list(h2=".multiplierProposal",P=".multiplierProposal",w2=".multiplierProposal",Ne=".multiplierProposal",sig2jump=".multiplierProposal",k=".splitmergeSimmap",theta=".adjustTheta",slide=".slideCPP"),"OUreparcpp"=list(halflife=".multiplierProposal",Vy=".multiplierProposal",sig2jump=".multiplierProposal",k=".splitmergeSimmap",theta=".adjustTheta",slide=".slideCPP"))
+    moves <- moves[which(!(names(moves) %in% fixed))]
   }
   
   cache <- .prepare.ou.univariate(tree,dat)
   dat <- cache$dat
   if(is.null(startpar)){
+    if(any(fixed %in% c("h2", "P", "w2", "Ne", "halflife", "Vy"))){
+      stop(paste("Parameters '", paste(fixed[fixed %in% c("h2", "P", "w2", "Ne", "halflife", "Vy")], collapse=" "), "' are set to be fixed but no starting values are supplied. 
+                   Please specify starting parameter values",sep=""))
+    }
     startpar <- priorSim(prior,cache$phy,model,nsim=1,plot=FALSE, exclude.branches=NULL)$pars[[1]]
-  }
-
-  if(is.null(control.weights)){
-    ct <- .buildControl(startpar, prior, default.weights=model, move.weights=NULL)
-  } else {
-    ct <- .buildControl(startpar, prior, default.weights=NULL, move.weights=control.weights)
-  }
-  
+    if(length(fixed)>0){
+      assumed <- sapply(fixed, function(x) switch(x, "slide"="", "sb"="sb=numeric(0)", "k"= "k=0", "alpha"="alpha=0", "sig2"="sig2=0", "loc"="0.5*edge.length"))
+      print(paste("Warning: Fixed parameters '", paste(fixed,collapse=", "), "' not specified, assuming values: ", paste(assumed,collapse=", "),sep="" ))
+    }
+  } 
+  if(length(fixed)==0 & is.null(control.weights)){
+      ct <- .buildControl(startpar, prior)
+    } else {
+      if(is.null(control.weights)){
+        control.weights <- switch(model,"OU"=list("alpha"=4,"sig2"=2,"theta"=4,"slide"=2,"k"=10),"QG"=list("h2"=5,"P"=2,"w2"=5,"Ne"=5,"theta"=5,"slide"=3,"k"=20),"OUrepar"=list("halflife"=5,"Vy"=3,"theta"=5,"slide"=3,"k"=20))
+        #"OUcpp"=list("alpha"=3,"sig2"=3,"sig2jump"=3,"theta"=3,"slide"=5,"k"=10),"QGcpp"=list("h2"=1,"P"=1,"w2"=2,"Ne"=2,"sig2jump"=3,"theta"=3,"slide"=5,"k"=10),"OUreparcpp"=list("halflife"=3,"Vy"=3,"sig2jump"=3,"theta"=3,"slide"=5,"k"=10)
+        control.weights[fixed[fixed %in% names(control.weights)]] <- 0
+      } else {control.weights <- control.weights}
+      ct <- .buildControl(startpar, prior, move.weights=control.weights)
+    }
   if(is.null(tuning)){
     D <- switch(model, "OU"=list(alpha=1, sig2= 1, k = 4,theta=2,slide=1), "QG"=list(h2=1, P=1, w2=1, Ne=1, k = 4, theta=2, slide=1), "OUrepar"=list(halflife=1, Vy=1, k=4, theta=2, slide=1))#,"OUcpp"=list(alpha=1, sig2= 1,sig2jump=2, k = 4,theta=2,slide=1),"QGcpp"=list(h2=1,P=1,w2=1,Ne=1,sig2jump=2,k=4,theta=2,slide=1),"OUreparcpp"=list(halflife=1,Vy=1,sig2jump=2,k=4,theta=2,slide=1))
   } else {D <- tuning}
@@ -68,7 +84,7 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
   pars.output <<- file(paste(dir, outname,".pars",sep=""),open="w")
   
   oldpar <- startpar
-  store <- list("out"=NULL, "sb"=NULL, "loc"=NULL, "t2"=NULL)
+  store <- list("out"=list(), "sb"=list(), "loc"=list(), "t2"=list())
 
   
   lik.fn <- .OU.lik
@@ -87,7 +103,7 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
   }
   #tuning.int <- round(tuning.int*ngen,0)
   for (i in 1:ngen){
-    ct <- .updateControl(ct, oldpar)
+    ct <- .updateControl(ct, oldpar, fixed)
     u <- runif(1)
     prop <- .proposalFn(u,ct,D,moves,cache,oldpar)
     new.pars <- prop$pars

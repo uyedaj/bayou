@@ -1,8 +1,11 @@
-priorSim <- function(.prior,tree,plot=TRUE,nsim=1,exclude.branches=NULL, ...){
+priorSim <- function(prior,tree,plot=TRUE,nsim=1,exclude.branches=NULL, ...){
   tree <- reorder(tree,'postorder')
-  model <- attributes(.prior)$model
-  dists <- attributes(.prior)$dist
-  prior.params <- attributes(.prior)$param
+  model <- attributes(prior)$model
+  dists <- attributes(prior)$dist
+  fixed <- which(attributes(prior)$dist=="fixed")
+  notfixed <- which(attributes(prior)$dist!="fixed")
+  dists <- dists[notfixed]
+  prior.params <- attributes(prior)$param
   rdists <- lapply(dists,function(x) gsub('^[a-zA-Z]',"r",x))
   prior.params <- lapply(prior.params,function(x) x[-which(names(x)=="log")])
   rdists.fx <- lapply(rdists,get)
@@ -12,6 +15,12 @@ priorSim <- function(.prior,tree,plot=TRUE,nsim=1,exclude.branches=NULL, ...){
   varN <- which(sapply(N,is.null))
   N <- N[-varN]
   simpar <- lapply(1:nsim,function(i){ y <- lapply(names(N), function(x) rdists.fx[[x]](1)); names(y) <- gsub('^[a-zA-Z]',"",names(N)); y})
+  if("dalpha" %in% names(fixed)){
+    simpar <- lapply(simpar, function(x){x$alpha <- 0; x})
+  }
+  if("dsig2" %in% names(fixed)){
+    simpar <- lapply(simpar, function(x){x$sig2 <- 0; x})
+  }
   #if(model %in% c("OUcpp","QGcpp","OUreparcpp")){
   #  T <- sum(tree$edge.length[!(1:length(tree$edge.length) %in% exclude.branches)])
   #  pp <- tree$edge.length/T
@@ -25,12 +34,22 @@ priorSim <- function(.prior,tree,plot=TRUE,nsim=1,exclude.branches=NULL, ...){
   #  simpar <- lapply(1:nsim, function(x) c(simpar[[x]],list(theta=theta[[x]],ntheta=length(theta[[x]]))))
   #}
   #if(model %in% c("OU","QG","OUrepar")){
-  k <- sapply(simpar,function(x) x$k)
-  sb <- lapply(k,function(x) rdists.fx$rsb(x))
-  loc <- lapply(1:length(k),function(x) rdists.fx$rloc(k[x])*tree$edge.length[sb[[x]]])
+  if("dk" %in% names(fixed)){
+    k <- rep(0,length(simpar))
+    simpar <- lapply(simpar, function(x){x$k <- 0; x})
+    sb <- lapply(k, function(x) numeric(x))
+  } else {
+    k <- sapply(simpar,function(x) x$k)
+    sb <- lapply(k,function(x) rdists.fx$rsb(x))
+  }
+  if("dloc" %in% names(fixed)){
+    loc <- lapply(1:length(k), function(x) 0.5*tree$edge.length[sb[[x]]])
+  } else {
+    loc <- lapply(1:length(k),function(x) rdists.fx$rloc(k[x])*tree$edge.length[sb[[x]]])
+  }
   if(k > 0){
     t2 <- lapply(k,function(x) 2:(x+1))
-  } else {t2 <- numeric(0)}
+  } else {t2 <- lapply(1:length(k), function(x) numeric(0))}
   theta <- lapply(k,function(x) rdists.fx$rtheta(x+1))
   simpar <- lapply(1:nsim,function(x) c(simpar[[x]],list(ntheta=k[x]+1, theta=theta[[x]],sb=sb[[x]],loc=loc[[x]],t2=t2[[x]])))
   #}

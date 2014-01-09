@@ -30,7 +30,7 @@
   \item{prior}{A prior function of class 'priorFn' that
   gives the prior distribution of all parameters}
 
-  \item{ngen}{The number of gneerations to run the Markov
+  \item{ngen}{The number of generations to run the Markov
   Chain}
 
   \item{samp}{The frequency at which Markov samples are

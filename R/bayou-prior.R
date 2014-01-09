@@ -29,7 +29,7 @@
 #' using a multinomial distribution with probabilities proportional to branch lengths taken from the tree. \code{"dloc"} indicates the prior probability of a shift on a given branch. Currently, all locations are
 #' given equal density of 1. All distributions are set to return log-transformed probability densities. 
 #' 
-#' @return returns a prior function that calculates the log prior density for a set of parameter values provided in a list with correctly named values.
+#' @return returns a prior function of class "priorFn" that calculates the log prior density for a set of parameter values provided in a list with correctly named values.
 #' 
 #' @examples 
 #' ## Load data
@@ -67,7 +67,21 @@
 #' prior.emap(pars,emap=emap)
 #' prior.simmap(pars,tree)
 
-make.prior <- function(tree,dists=list(),param=list(),plot.prior=TRUE,model="OU",type="pars"){
+#prior <- make.prior(tree, dists=list(dalpha="dlnorm", dsig2="dlnorm",dsb="fixed", dk="fixed"), 
+#                    param=list(dalpha=list(meanlog=-5, sdlog=2), dsig2=list(meanlog=-1, sdlog=5), 
+#                               dk=list(lambda=15, kmax=200), dsb=list(bmax=1,prob=1), dtheta=list(mean=mean(dat), sd=2)))
+#dists=list(dalpha="dlnorm", dsig2="dlnorm",dsb="fixed", dk="fixed")
+##param=list(dalpha=list(meanlog=-5, sdlog=2), dsig2=list(meanlog=-1, sdlog=5),dk=list(lambda=15, kmax=200), dsb=list(bmax=1,prob=1), dtheta=list(mean=mean(dat), sd=2))
+#plot.prior=TRUE
+#model="OU"
+#type="pars"
+#dists=list(dsb="fixed", dk="fixed", dloc="dloc")
+#param= list()
+#fixed= list(sb=c(20,32,64), t2=c(2,3,2), loc=c(0.01,0.01,0.01))
+#fixed=list()
+#model="OU"
+#type="pars"
+make.prior <- function(tree, dists=list(), param=list(), fixed=list(), plot.prior=TRUE,model="OU",type="pars"){
   tree <- reorder.phylo(tree, "postorder")
   nH <- max(nodeHeights(tree))
   ntips <- length(tree$tip.label)
@@ -88,12 +102,24 @@ make.prior <- function(tree,dists=list(),param=list(),plot.prior=TRUE,model="OU"
   if(length(setdiff(names(default$dists),names(dists)))>0)
     stop("Provided parameters are not in the model")
   if(dists$dsb=="dsb") param$dsb$ntips <- ntips
-  if(dists$dloc=="dunif" & grep("dsb",dists$dsb)==1){
+  if(dists$dloc=="dunif" & dists$dsb=="dsb"){
         dists$dloc <- "dloc"
     }
-  prior.fx <- lapply(dists,get)
-  param <- suppressWarnings(lapply(param,function(x){ x$log = TRUE; x}))
-  prior.param <- param[match(names(prior.fx),names(param))]
+  remove <- which(unlist(dists)=="fixed")
+  if(length(remove)>0){
+    dists2get <- dists[-remove]
+    param2get <- param[-(match(names(remove),names(param)))]
+    fixed.param <- gsub('^[a-zA-Z]',"",names(remove)) 
+    if("sb" %in% fixed.param & !("k" %in% names(fixed))) fixed$k <- length(fixed$sb)
+    if("sb" %in% fixed.param & !("t2" %in% names(fixed)) & length(fixed$sb)>0) fixed$t2 <- 2:(length(fixed$sb)+1)
+    missing.fixed <- fixed.param[!(fixed.param %in% names(fixed))]
+    if(length(missing.fixed)>0){
+      stop(paste("'", paste(missing.fixed, collapse="', '"), "' set as 'fixed' but not provided", sep=""))
+    }
+  } else {dists2get <- dists; param2get <- param}
+  prior.fx <- lapply(dists2get,get)
+  param2get <- suppressWarnings(lapply(param2get,function(x){ x$log = TRUE; x}))
+  prior.param <- param2get[match(names(prior.fx),names(param2get))]
   prior.fx <- lapply(1:length(prior.param),function(x) .set.defaults(prior.fx[[x]],defaults=prior.param[[x]]))
   names(prior.fx) <- names(prior.param)
   #if(model %in% c("OUcpp","QGcpp","OUreparcpp")){
@@ -102,14 +128,16 @@ make.prior <- function(tree,dists=list(),param=list(),plot.prior=TRUE,model="OU"
       #droot(x[1])
     #}
   #}
-  par.names <- gsub('^[a-zA-Z]',"",names(dists))
+  par.names <- gsub('^[a-zA-Z]',"",names(dists2get))
   
   if(plot.prior){
-    par(mfrow=rep(ceiling(sqrt(length(dists))),2))
-    rfx <- lapply(gsub('^[a-zA-Z]',"r",dists),function(x) try(get(x),silent=TRUE))
+    par(mfrow=c(ceiling(length(dists2get)/2),2))
+    rfx <- lapply(gsub('^[a-zA-Z]',"r",dists2get),function(x) try(get(x),silent=TRUE))
     rprior.param <- prior.param[1:(length(prior.param))]
     rprior.param <- lapply(rprior.param, function(x) x[-length(x)])
-    if(dists$dsb=="dsb" & any(rprior.param$dsb$bmax==1)){rprior.param$dsb$bmax[rprior.param$dsb$bmax==1] <- Inf; rprior.param$dsb$prob <- 1}
+    if(!is.null(dists2get$dsb) & !is.null(dists2get$dloc)){
+      if(dists2get$dsb=="dsb" & any(rprior.param$dsb$bmax==1)){rprior.param$dsb$bmax[rprior.param$dsb$bmax==1] <- Inf; rprior.param$dsb$prob <- 1}
+    }
     rfx <- lapply(1:length(rprior.param),function(x) try(.set.defaults(rfx[[x]],defaults=rprior.param[[x]]),silent=TRUE))
     plot.names<-par.names[sapply(rfx,class)=="function"]
     rfx <- rfx[sapply(rfx,class)=="function"]
@@ -119,13 +147,12 @@ make.prior <- function(tree,dists=list(),param=list(),plot.prior=TRUE,model="OU"
       if(names(rfx)[i]=="dsb"){
         curve(sapply(x,function(y) prior.fx$dsb(y,log=FALSE)),xlim=c(1,(2*ntips-2)),ylab="Density",main="branches")
       } else {
-        x <- rfx[[i]](nsim)
-        qq <- quantile(x,c(0.001,0.999))
-        plot(density(x),xlim=qq, main=plot.names[i],lwd=2)
-      }
-    }
-  }    
-  
+          x <- rfx[[i]](nsim)
+          qq <- quantile(x,c(0.001,0.999))
+          plot(density(x),xlim=qq, main=plot.names[i],lwd=2)
+          }
+      }  
+  }
   if(type=="pars"){
     priorFUN <- function(pars,cache){
       if(any(!(par.names %in% names(pars)))) stop(paste("Missing parameters: ", paste(par.names[!(par.names %in% names(pars))],collapse=" ")))
@@ -165,7 +192,14 @@ make.prior <- function(tree,dists=list(),param=list(),plot.prior=TRUE,model="OU"
       return(lnprior)
     }
   }
-  attributes(priorFUN) <- list("model"=model,"parnames"=par.names,"distributions"=dists,"parameters"=prior.param,"functions"=prior.fx)
+  if(length(remove)>0){
+    if("sb" %in% fixed.param){
+      prior.param$dsb$bmax <- rep(0, nrow(tree$edge))
+      prior.param$dsb$bmax[fixed$sb] <- 1
+      prior.param$dsb$prob <- prior.param$dsb$bmax
+    }
+  }
+  attributes(priorFUN) <- list("model"=model,"parnames"=par.names,"distributions"=dists,"parameters"=prior.param,"fixed"=fixed, "functions"=prior.fx)
   class(priorFUN) <- c("priorFn","function")
   return(priorFUN)
 }

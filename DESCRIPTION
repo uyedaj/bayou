@@ -28,4 +28,5 @@ Collate:
     'bayou-mcmc.R'
     'bayou-plotting.R'
     'bayou-simulation.r'
-
+    'bayou-steppingstone.R'
+    'deprecated.R'

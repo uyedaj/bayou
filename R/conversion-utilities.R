@@ -191,3 +191,42 @@ read.emap <- function(sb,sl,t2,phy){
   tree$maps <- maps
   return(tree)
 }
+
+OUwie2bayou <- function(tree, trait){
+  tree <- reorder(tree, 'postorder')
+  tip.states <- trait[,2]
+  names(tip.states) <- trait[,1]
+  states <- c(tip.states[tree$tip.label], tree$node.label)
+  states <- unname(states)
+  e1 <- states[tree$edge[,1]]
+  e2 <- states[tree$edge[,2]]
+  sb <- which(e1 != e2)
+  loc <- 0.5*tree$edge.length[sb]
+  t2 <- as.numeric(factor(e2[sb]))+1
+  k <- length(sb)
+  ntheta <- length(unique(t2))+1
+  pars <- list(k=k, ntheta=ntheta, sb=sb, loc=loc, t2=t2)
+  class(pars) <- c("bayoupars","list")
+  return(pars)
+}
+bayou2OUwie <- function(pars, tree, dat){
+  if(is.null(names(dat))){
+    warning("No labels on trait data, assuming the same order as the tip labels")
+  } else {dat <- dat[tree$tip.label]}
+  ntips <- length(tree$tip.label)
+  cache <- .prepare.ou.univariate(tree, dat)
+  tr <- .toSimmap(.pars2map(pars, cache),cache)
+  tips <- which(tr$edge[,2] <= ntips)
+  node.states <- sapply(tr$maps, function(x) names(x)[1])
+  names(node.states) <- tr$edge[,1]
+  node.states <- rev(node.states[unique(names(node.states))])
+  tr$node.label <- as.numeric(node.states)
+  tip.states <- sapply(tr$maps[tips], function(x) names(x)[length(x)])
+  names(tip.states) <- tr$tip.label[tr$edge[tips,2]]
+  tip.states <- as.numeric(tip.states[tr$tip.label])
+  OUwie.dat <- data.frame("Genus_species"=tr$tip.label, "Reg"= tip.states, "X"= dat)
+  rownames(OUwie.dat) <- NULL
+  return(list(tree=tr, dat=OUwie.dat))
+}
+  
+  

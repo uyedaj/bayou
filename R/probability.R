@@ -131,3 +131,50 @@ dloc <- function(loc,min=0,max=1,log=TRUE) if(log) return (rep(0,length(loc))) e
 rloc <- function(k,min=0,max=1){
   return(runif(k))
 }
+
+dIdentity <- function(x,k, log=TRUE,...){
+  log(1)
+}
+rIdentity <- function(x,k,log=TRUE,...){
+  rep(k,x)
+}
+
+##Half cauchy distribution taken from Laplace's Demon
+
+dhalfcauchy <- function(x, scale=25, log=FALSE)
+{
+  x <- as.vector(x); scale <- as.vector(scale)
+  if(any(scale <= 0)) stop("The scale parameter must be positive.")
+  NN <- max(length(x), length(scale))
+  x <- rep(x, len=NN); scale <- rep(scale, len=NN)
+  dens <- log(2*scale) - log(pi*{x*x + scale*scale})
+  if(log == FALSE) dens <- exp(dens)
+  return(dens)
+}
+phalfcauchy <- function(q, scale=25)
+{
+  q <- as.vector(q); scale <- as.vector(scale)
+  if(any(scale <= 0)) stop("The scale parameter must be positive.")
+  NN <- max(length(q), length(scale))
+  q <- rep(q, len=NN); scale <- rep(scale, len=NN)
+  z <- {2/pi}*atan(q/scale)
+  return(z)
+}
+qhalfcauchy <- function(p, scale=25)
+{
+  p <- as.vector(p); scale <- as.vector(scale)
+  if(any(p < 0) || any(p > 1)) stop("p must be in [0,1].")
+  if(any(scale <= 0)) stop("The scale parameter must be positive.")
+  NN <- max(length(p), length(scale))
+  p <- rep(p, len=NN); scale <- rep(scale, len=NN)
+  q <- scale*tan({pi*p}/2)
+  return(q)
+}
+rhalfcauchy <- function(n, scale=25)
+{
+  scale <- rep(scale, len=n)
+  if(any(scale <= 0)) stop("The scale parameter must be positive.")
+  p <- runif(n, 0, 1)
+  x <- scale*tan({pi*p}/2)
+  return(x)
+}

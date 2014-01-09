@@ -3,7 +3,8 @@
 \title{Make a prior function for bayOU}
 \usage{
   make.prior(tree, dists = list(), param = list(),
-    plot.prior = TRUE, model = "OU", type = "pars")
+    fixed = list(), plot.prior = TRUE, model = "OU",
+    type = "pars")
 }
 \arguments{
   \item{tree}{A tree object of class "phylo"}
@@ -34,9 +35,9 @@
   shifts obtained from \code{tree$maps})}
 }
 \value{
-  returns a prior function that calculates the log prior
-  density for a set of parameter values provided in a list
-  with correctly named values.
+  returns a prior function of class "priorFn" that
+  calculates the log prior density for a set of parameter
+  values provided in a list with correctly named values.
 }
 \description{
   This function generates a prior function to be used for

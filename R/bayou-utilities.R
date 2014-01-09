@@ -54,7 +54,7 @@
 .prepare.ou.univariate <- function(tree,X, SE=0, ...){
   ntips <- length(tree$tip.label)
   rownames(tree$edge) <- 1:(length(tree$edge[,1]))
-  cache <- .prepare.bm.univariate(tree, X, SE=SE, ...)
+  cache <- .prepare.bm.univariate(tree, X, SE=SE)#, ...)
   ind <- as.numeric(rownames(cache$edge))
   cache$nH <- nodeHeights(tree)[ind,1]
   cache$maps <- tree$maps[ind]
@@ -64,9 +64,10 @@
   cache$ind <- ind
   cache$ordering <- "postorder"
   cache$ht <- geiger:::.heights.cache(cache)
+  cache$edge <- unname(cache$edge)
   plook <- function(x){mapply(paste,x[2:length(x)],x[1:(length(x)-1)],sep=",")}
   tB <- cache$desc$anc[1:ntips]
-  tB <- mapply(c,1:ntips,tB)
+  tB <- mapply(c,1:ntips,tB, SIMPLIFY=FALSE)
   lookup <- lapply(tB,plook)
   edge.names <- mapply(paste,cache$edge[,1],cache$edge[,2],sep=",")
   cache$branchtrace <- t(sapply(lookup,function(x) as.numeric(edge.names %in% x)))
@@ -128,15 +129,27 @@
 }
 
 print.priorFn <- function(x, ...){
-  cat("prior function for bayOU\n")
+  cat("prior function for bayou\n")
   cat(paste("expecting ", attributes(x)$model, " model\n", sep=""))
   cat("'pars' should be a list with named parameter values: list(", paste(gsub('^[a-zA-Z]',"",names(attributes(x)$param)),collapse=", "),")\n",sep="")
-  cat("prior distribution functions for used:\n")
-  print(unlist(attributes(prior)$dist))
+  cat("prior distribution functions used:\n")
+  print(unlist(attributes(x)$dist))
   cat("\n")
   cat("definition:\n")
-  attributes(prior) <- NULL
-  print(prior)
+  attributes(x) <- NULL
+  print(x)
+}
+
+print.refFn <- function(x, ...){
+  cat("reference function for bayou\n")
+  cat(paste("expecting ", attributes(x)$model, " model\n", sep=""))
+  cat("'pars' should be a list with named parameter values: list(", paste(names(attributes(x)$dist),collapse=", "),")\n",sep="")
+  cat("prior distribution functions used:\n")
+  print(unlist(attributes(x)$dist))
+  cat("\n")
+  cat("definition:\n")
+  attributes(x) <- NULL
+  print(x)
 }
 
 
@@ -165,4 +178,42 @@ ouMatrix <- function(vcvMatrix, alpha)
    Tij = diagi + diagj - (2 * vcvMatrix)
    vcvRescaled = (1 / (2 * alpha)) * exp(-alpha * Tij) * (1 - exp(-2 * alpha * vcvMatrix))
    return(vcvRescaled)
+}
+
+identify.branches <- function(tree, n, fixed.loc=TRUE, plot.simmap=TRUE){
+  mar.old <- par('mar')
+  par(mfrow=c(1,1), mar=c(0.1,0.1,0.1,0.1))
+  tree <- reorder(tree,"postorder")
+  plot(tree, cex=0.5)
+  L <- get("last_plot.phylo",envir=.PlotPhyloEnv)
+  nH <- nodeHeights(tree)
+  xx <- L$xx
+  yy <- L$yy
+  yH <- yy[tree$edge[,2]]
+  sb <- numeric()
+  loc.x <- numeric()
+  for(i in 1:n){
+    lx <- locator(1)    
+    xmatch <- which(nH[,1] < lx$x & nH[,2] > lx$x)
+    ymatch <- which(abs(yH[xmatch]-lx$y)==min(abs(yH[xmatch]-lx$y)))
+    sb[i] <- xmatch[ymatch]
+    loc.x[i] <- lx$x
+    points(lx$x,yH[xmatch][ymatch],pch=21,bg="gray50")
+    text(lx$x,yH[xmatch][ymatch],labels=sb[i],pos=4)
+  }
+  loc <- loc.x - nH[sb,1]
+  if(plot.simmap){
+    dum <- numeric(length(tree$tip.label))
+    names(dum) <- tree$tip.label
+    cache <- .prepare.ou.univariate(tree,dum)
+    pars <- list(sb=sb, loc=loc, t2=1:n+1)
+    tr <- .toSimmap(.pars2map(pars, cache),cache)
+    cols <- rainbow(length(sb)+1)
+    names(cols) <- 1:(length(sb)+1)
+    plotSimmap(tr, pts=FALSE, fsize=0.5,colors=cols)
+  }
+  par(mar=mar.old)
+  out <- list(sb=sb)
+  if(fixed.loc) out$loc <- loc
+  return(out)
 }
