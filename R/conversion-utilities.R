@@ -192,6 +192,13 @@ read.emap <- function(sb,sl,t2,phy){
   return(tree)
 }
 
+#' Converts OUwie data into bayou format
+#' 
+#' \code{OUwie2bayou} calculates the probability density of a value 
+#' 
+#' @param tree A phylogenetic tree with states at internal nodes as node labels
+#' @param trait A data frame in OUwie format
+#' @export
 OUwie2bayou <- function(tree, trait){
   tree <- reorder(tree, 'postorder')
   tip.states <- trait[,2]
@@ -209,6 +216,17 @@ OUwie2bayou <- function(tree, trait){
   class(pars) <- c("bayoupars","list")
   return(pars)
 }
+
+#' Converts bayou data into OUwie format
+#' 
+#' \code{OUwie2bayou} calculates the probability density of a value 
+#' 
+#' @param pars A list with parameter values specifying \code{sb} = the branches with shifts,
+#' \code{loc} = the location on branches where a shift occurs and \code{t2} = the optima to which
+#' descendants of that shift inherit
+#' @param tree A phylogenetic tree
+#' @param dat A vector of tip states
+#' @export
 bayou2OUwie <- function(pars, tree, dat){
   if(is.null(names(dat))){
     warning("No labels on trait data, assuming the same order as the tip labels")
@@ -228,5 +246,5 @@ bayou2OUwie <- function(pars, tree, dat){
   rownames(OUwie.dat) <- NULL
   return(list(tree=tr, dat=OUwie.dat))
 }
-  
+   
   

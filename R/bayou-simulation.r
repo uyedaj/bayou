@@ -1,3 +1,7 @@
+#' Simulates parameters from bayou models
+#' 
+#' \code{priorSim} Simulates parameters from the prior distribution specified by \code{make.prior}
+#' @export
 priorSim <- function(prior,tree,plot=TRUE,nsim=1,exclude.branches=NULL, ...){
   tree <- reorder(tree,'postorder')
   model <- attributes(prior)$model
@@ -67,6 +71,10 @@ priorSim <- function(prior,tree,plot=TRUE,nsim=1,exclude.branches=NULL, ...){
   return(list(pars=simpar,tree=tree))
 }
 
+#' Simulates data from bayou models
+#' 
+#' \code{priorSim} Simulates data for a given bayou model
+#' @export
 dataSim <- function(pars, model, tree, map.type="pars", emap=NULL, SE=0, phenogram=TRUE, ...){
   if(model %in% c("QG")){
     pars$alpha <- QG.alpha(pars)

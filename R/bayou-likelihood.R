@@ -305,7 +305,7 @@ smOU.lik <- function(pars,tree,X,SE=0,model="OU"){
 #' Calculates the likelihood of an OU model with regimes specified by a parameter list
 #' 
 #' @rdname sdOU.lik
-#' 
+#' @export
 OU.lik <- function(pars,tree,X,SE=0,model="OU"){
   if(class(tree)=="phylo"){
     cache <- .prepare.ou.univariate(tree, X, SE=SE)

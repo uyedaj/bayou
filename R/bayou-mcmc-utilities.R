@@ -1,3 +1,7 @@
+#' Loads a bayou object
+#' 
+#' \code{load.bayou} loads a bayouFit object that was created using \code{bayou.mcmc()}
+#' @export
 load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE){#dir=NULL,outname="bayou",model="OU"){
   outname <- bayouFit$outname
   model <- bayouFit$model
@@ -79,7 +83,9 @@ load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE){#dir
   return(chain)
 }
 
-
+#' Calculate Gelman's R statistic
+#' 
+#' @export
 gelman.R <- function(parameter,chain1,chain2,freq=20,start=1,plot=TRUE, ...){
   R <- NULL
   R.UCI <- NULL
@@ -97,6 +103,7 @@ gelman.R <- function(parameter,chain1,chain2,freq=20,start=1,plot=TRUE, ...){
   }
   return(data.frame("R"=R,"UCI.95"=R.UCI))
 }
+
 posterior.Q <- function(parameter,chain1,chain2,pars=simpar$pars,burnin=0.3){
   postburn <- round(burnin*length(chain1$gen),0):length(chain1$gen)
   chain <- mcmc.list(mcmc(chain1[[parameter]][postburn]),mcmc(chain2[[parameter]][postburn]))
@@ -106,6 +113,8 @@ posterior.Q <- function(parameter,chain1,chain2,pars=simpar$pars,burnin=0.3){
   Q
 }
 
+#' Return a posterior of shift locations
+#' @export
 Lposterior <- function(chain,tree,burnin=0, simpar=NULL,mag=TRUE){
   pb.start <- ifelse(burnin>0,round(length(chain$gen)*burnin,0),1)
   postburn <- pb.start:length(chain$gen)
@@ -132,7 +141,9 @@ Lposterior <- function(chain,tree,burnin=0, simpar=NULL,mag=TRUE){
   return(Lpost)
 }
 
-
+#' Discard burnin
+#' 
+#' @export
 discard.burnin <- function(chain,burnin.prop=0.3){
   lapply(chain,function(x) x[(burnin.prop*length(x)):length(x)])
 }
@@ -159,6 +170,10 @@ pull.pars <- function(i,chain,model="OU"){
   return(pars)
 }
 
+
+#' Combine mcmc chains
+#' 
+#' @export
 combine.chains <- function(chain1,chain2,burnin.prop=0){
   nn <- names(chain1)
   postburn <- (burnin.prop*(length(chain1$gen))+1):(length(chain1$gen))
@@ -264,6 +279,9 @@ store.bayOU <- function(i, pars, ll, pr, store, samp, chunk, parorder){
   return(store)
 }
 
+#' S3 method for printing bayouFit objects
+#' @export
+#' @method print bayouFit
 print.bayouFit <- function(bayouFit){
   cat("bayou modelfit\n")
   cat(paste(bayouFit$model, " parameterization\n\n",sep=""))
@@ -279,6 +297,9 @@ print.bayouFit <- function(bayouFit){
   print(prop.N)
 }
 
+#' S3 method for summarizing bayouMCMC objects
+#' @export
+#' @method summary bayouMCMC
 summary.bayouMCMC <- function(chain, burnin=0.3){
   cat("bayou MCMC chain:", max(chain$gen), "generations\n")
   cat(length(chain$gen), "samples, first", eval(round(burnin*length(chain$gen),0)), "samples discarded as burnin\n")

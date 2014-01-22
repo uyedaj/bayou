@@ -25,7 +25,7 @@ cdpois <- function(k,lambda,kmax,log=TRUE){
   } else {num/R }
 }
 #' @rdname cdpois
-#' 
+#' @export
 rdpois <- function(n,lambda,kmax, ...){
   kmax <- ceiling(kmax)
   i=rep(kmax+1,n)
@@ -37,7 +37,7 @@ rdpois <- function(n,lambda,kmax, ...){
   }
   return(i)
 }
-
+#' @export
 dsb <- function(sb, ntips=ntips, bmax=1, prob=1, log=TRUE){
   if(any(!(bmax %in% c(0,1,Inf)))) stop("Number of shifts allowed per branch must be 0, 1, or Inf") 
   if(length(bmax)==1) bmax <- rep(bmax, 2*ntips-2)
@@ -62,7 +62,7 @@ dsb <- function(sb, ntips=ntips, bmax=1, prob=1, log=TRUE){
     }
   }    
 }
-
+#' @export
 rsb <- function(k, ntips=ntips, bmax=1, prob=1, log=TRUE){
   if(any(!(bmax %in% c(0,1,Inf)))) stop("Number of shifts allowed per branch must be 0, 1, or Inf") 
   if(length(bmax)==1) bmax <- rep(bmax, 2*ntips-2)
@@ -125,22 +125,23 @@ rsb.free <- function(k, ntips=ntips, edge.length=edge.length, exclude.branches=N
   sb <- suppressWarnings(.sample(br,k,prob=prb, replace=TRUE))
   return(sb)
 }
-
+#' @export
 dloc <- function(loc,min=0,max=1,log=TRUE) if(log) return (rep(0,length(loc))) else return(rep(1,length(loc)))
-
+#' @export
 rloc <- function(k,min=0,max=1){
   return(runif(k))
 }
-
+#'@export
 dIdentity <- function(x,k, log=TRUE,...){
   log(1)
 }
+#'@export
 rIdentity <- function(x,k,log=TRUE,...){
   rep(k,x)
 }
 
 ##Half cauchy distribution taken from Laplace's Demon
-
+#'@export
 dhalfcauchy <- function(x, scale=25, log=FALSE)
 {
   x <- as.vector(x); scale <- as.vector(scale)
@@ -151,6 +152,7 @@ dhalfcauchy <- function(x, scale=25, log=FALSE)
   if(log == FALSE) dens <- exp(dens)
   return(dens)
 }
+#' @export
 phalfcauchy <- function(q, scale=25)
 {
   q <- as.vector(q); scale <- as.vector(scale)
@@ -160,6 +162,7 @@ phalfcauchy <- function(q, scale=25)
   z <- {2/pi}*atan(q/scale)
   return(z)
 }
+#' @export
 qhalfcauchy <- function(p, scale=25)
 {
   p <- as.vector(p); scale <- as.vector(scale)
@@ -170,6 +173,7 @@ qhalfcauchy <- function(p, scale=25)
   q <- scale*tan({pi*p}/2)
   return(q)
 }
+#' @export
 rhalfcauchy <- function(n, scale=25)
 {
   scale <- rep(scale, len=n)

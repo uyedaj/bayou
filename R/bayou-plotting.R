@@ -58,6 +58,7 @@ makeTransparent <- function(someColor, alpha=100)
                                               blue=curcoldata[3],alpha=alpha, maxColorValue=255)})
 }
 
+#' @export
 plotSimmap.mcmc <- function (tree,chain,burnin=NULL,colors = NULL, fsize = 1, ftype = "reg", lwd = 2, 
                              pts = TRUE, node.numbers = FALSE, mar = NULL, add = FALSE, 
                              offset = NULL,alpha=10,sh.cex=1,type="dashes",circle.col=NULL,pch=21) {
@@ -239,6 +240,9 @@ regime.plot2 <- function(pars,tree,cols,type='rect',alpha=255){
   }
 }
 
+#' Plot a pheongram with the posterior density for optima values
+#' 
+#' @export
 phenogram.density <- function(tree, dat, burnin=0, chain ,colors=NULL, pp.cutoff=NULL, K=NULL, ...){
   tree <- reorder(tree,"postorder")
   dat <- dat[tree$tip.label]
@@ -402,6 +406,10 @@ phenogram.density <- function(tree, dat, burnin=0, chain ,colors=NULL, pp.cutoff
     return(W.all)
 }
 
+#' S3 method for plotting bayouMCMC objects
+#' 
+#' @export
+#' @method plot bayouMCMC
 plot.bayouMCMC <- function(chain, burnin=0, ...){
   postburn <- round(length(chain$gen)*burnin,0):length(chain$gen)
   chain2 <- lapply(chain,function(x) x[postburn])
@@ -415,6 +423,10 @@ plot.bayouMCMC <- function(chain, burnin=0, ...){
 }
 
 
+#' S3 method for plotting bayoupars objects
+#' 
+#' @export
+#' @method plot bayoupars
 plot.bayoupars <- function(pars, tree,...){
   tree <- reorder(tree, 'postorder')
   X <- rep(0, length(tree$tip.label))

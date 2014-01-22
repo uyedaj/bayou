@@ -31,6 +31,7 @@
 #' 
 #' @return returns a prior function of class "priorFn" that calculates the log prior density for a set of parameter values provided in a list with correctly named values.
 #' 
+#' @export
 #' @examples 
 #' ## Load data
 #' data(chelonia.simmap)

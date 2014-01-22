@@ -25,6 +25,8 @@
 #' @param moves A named list providing the proposal functions to be used in the mcmc. Names correspond to the parameters to be modified in the parameter list. See 'details' for default values.
 #' @param control.weights A named vector providing the relative frequency each proposal mechanism is to be used during the mcmc
 #' 
+#' 
+#' @export
 #' @details 
 #' By default, the alpha, sig2 (and various reparameterizations of these parameters) are adjusted with multiplier proposals, theta are adjusted with sliding window proposals,
 #' and the number of shifts is adjusted by splitting and merging, as well as sliding the shifts both within and between branches. Allowed shift locations are specified by the 

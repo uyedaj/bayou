@@ -15,6 +15,7 @@
 #' are fit. For discrete distributions, \code{k}, negative binomial, poisson and geometric distributions are fit.
 #' Best-fitting distributions are determined by AIC. 
 #' 
+#' @export
 #' @return Returns a reference function of class "refFn" that takes a parameter list and returns the log density 
 #' given the reference distribution. If \code{plot=TRUE}, a plot is produced showing the density of variable parameters
 #' and the fitted distribution from the reference function (in red).
@@ -124,7 +125,7 @@ make.refFn <- function(chain, prior, burnin=0.3, plot=TRUE){
 #' @param refFn The reference function generated using \code{make.refFn()} from a preexisting mcmc chain
 #' 
 #' @details For use in stepping stone estimation of the marginal likelihood using the method of Fan et al. (2011).
-#' 
+#' @export
 #' @return A function of class "powerposteriorFn" that returns a list of four values: \code{result} (the log density of the power posterior), 
 #' \code{lik} (the log likelihood), \code{prior} (the log prior), \code{ref} the log reference density. 
 make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
@@ -316,13 +317,14 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
 #' of the individual mcmc chains will not be reported, and if \code{ngen} is high, it may take a considerable amount of time to run. Furthermore, if many samples 
 #' are saved from each mcmc run, and a number of steps along \code{Bk} is large, the returned object may require a substantial amount of memory. 
 #' 
+#' @export
 #' @return A list of class "ssMCMC" that provides the log marginal likelihood \code{lnr}, a list of the individual normalizing constants estimated at each step \code{lnrk},
 #' a list of the mcmc chains used for importance sampling to estimating the marginal likelihood at each step \code{chains}, and mcmc fit data from each of the runs \code{fits}.
 #' Note that this object may become quite large if a number of chains are run for many generations. To reduce the number of samples taken, increase the parameter \code{samp} (default = 10)
 #' which sets the frequency at which samples are saved in the mcmc chain. 
 steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burnin=0.3, ngen=10000, powerposteriorFn=NULL, cores=1, ...){
   model <- attributes(prior)$model
-  if(cores > 1){
+  if(cores >= 1){
     require(foreach)
     require(doMC)
     registerDoMC(cores=cores)
@@ -338,7 +340,7 @@ steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burn
   }
   cat("Loading mcmc chains...\n")
   Kchains <- foreach(i = 1:length(Bk)) %dopar% {
-    load.bayou(ssfits[[i]], save.Rdata=FALSE, cleanup=TRUE)
+    suppressWarnings(load.bayou(ssfits[[i]], save.Rdata=FALSE, cleanup=TRUE))
   }
   Kchains <- lapply(1:length(Kchains), function(x){Kchains[[x]]$ref <- ssfits[[x]]$ref; Kchains[[x]]})
   postburn <- round(burnin*length(Kchains[[1]][[1]]),0):length(Kchains[[1]][[1]])
@@ -347,6 +349,10 @@ steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burn
   class(out) <- c("ssMCMC", "list")
   return(out)
 }
+
+#' S3 method for printing ssMCMC objects
+#' @export
+#' @method print ssMCMC
 print.ssMCMC <- function(out){
   cat("Stepping stone estimation of marginal likelihood\n")
   cat("Marginal Likelihood:\n")
@@ -354,7 +360,9 @@ print.ssMCMC <- function(out){
   cat(paste("A total of ", length(out$Bk), " power posteriors were run along the sequence: ",paste(round(out$Bk,5), collapse="\t\t"), "\n", sep=""))
   cat("lnr_k", round(unlist(out$lnrk),2))  
 }
-
+#' S3 method for plotting ssMCMC objects
+#' @export
+#' @method plot ssMCMC
 plot.ssMCMC <- function(out, burnin=0.3){
   par(mfrow=c(2,2))
   postburn <- round(burnin*length(out$chains[[1]][[1]]),0):length(out$chains[[1]][[1]])
@@ -392,6 +400,11 @@ plot.ssMCMC <- function(out, burnin=0.3){
   return(list(Lmax=Lmax,Lfactored=Lfactored))
 }
 
+#' Compute marginal likelihood
+#' 
+#' \code{computelnr} computes the marginal likelihood of a set of chains estimated via stepping stone
+#' sampling and produced by the function \code{steppingstone}
+#' @export
 computelnr <- function(Kchains,ssfits,Bk,samp){
   lnr <- list()
   for(i in 1:(length(Bk)-1)){

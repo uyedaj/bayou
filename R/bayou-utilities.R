@@ -180,6 +180,11 @@ ouMatrix <- function(vcvMatrix, alpha)
    return(vcvRescaled)
 }
 
+#' Identify shifts on branches of a phylogenetic tree
+#' 
+#' \code{identify.branches} opens an interactive phylogeny plot that allows the user to specify the location
+#' of shifts in a phylogenetic tree.
+#' @export
 identify.branches <- function(tree, n, fixed.loc=TRUE, plot.simmap=TRUE){
   mar.old <- par('mar')
   par(mfrow=c(1,1), mar=c(0.1,0.1,0.1,0.1))
