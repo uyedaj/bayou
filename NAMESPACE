@@ -1,5 +1,6 @@
 S3method(plot,bayouMCMC)
 S3method(plot,bayoupars)
+S3method(plot,ssMCMC)
 S3method(print,bayouFit)
 S3method(print,ssMCMC)
 S3method(summary,bayouMCMC)
