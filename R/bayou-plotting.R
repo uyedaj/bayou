@@ -262,7 +262,7 @@ phenogram.density <- function(tree, dat, burnin=0, chain ,colors=NULL, pp.cutoff
     pars$sb <- which(pp > pp.cutoff)
     pars$k <- length(pars$sb)
     pars$ntheta <- length(pars$sb)+1
-    pars$loc <- L$rel.location[pars$sb]
+    pars$loc <- L$rel.location[pars$sb]*tree$edge.length[pars$sb]
     pars$t2 <- 2:(length(pars$sb)+1)
     if(length(pars$sb)>0){
       tr <- pars2simmap(pars, tree)

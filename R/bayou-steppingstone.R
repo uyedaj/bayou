@@ -340,7 +340,7 @@ steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burn
   }
   cat("Loading mcmc chains...\n")
   Kchains <- foreach(i = 1:length(Bk)) %dopar% {
-    suppressWarnings(load.bayou(ssfits[[i]], save.Rdata=FALSE, cleanup=TRUE))
+    load.bayou(ssfits[[i]], save.Rdata=FALSE, cleanup=FALSE)
   }
   Kchains <- lapply(1:length(Kchains), function(x){Kchains[[x]]$ref <- ssfits[[x]]$ref; Kchains[[x]]})
   postburn <- round(burnin*length(Kchains[[1]][[1]]),0):length(Kchains[[1]][[1]])
