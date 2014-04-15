@@ -2,7 +2,7 @@
 \alias{plot.bayouMCMC}
 \title{S3 method for plotting bayouMCMC objects}
 \usage{
-  \method{plot}{bayouMCMC} (chain, burnin = 0, ...)
+  \method{plot}{bayouMCMC} (chain, ...)
 }
 \description{
   S3 method for plotting bayouMCMC objects

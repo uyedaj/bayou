@@ -10,11 +10,21 @@ Description: Tools for fitting and simulating multi-optima Ornstein-Uhlenbeck
     methods.
 License: GPL (>= 2)
 Depends:
-    Rcpp (>= 0.10.3),
     ape (>= 3.0-6),
-    geiger,
-    phytools
-LinkingTo: Rcpp
+    geiger(>= 2.0),
+    R (>= 2.15.0),
+    phytools,
+    coda
+Imports:
+    Rcpp (>= 0.10.3),
+    RcppArmadillo,
+    MASS,
+    mnormt,
+    fitdistrplus
+Suggests:
+    doMC,
+    foreach
+LinkingTo: Rcpp, RcppArmadillo
 Collate:
     'RcppExports.R'
     'bayou-utilities.R'

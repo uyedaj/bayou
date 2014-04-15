@@ -32,7 +32,7 @@
 #' and the number of shifts is adjusted by splitting and merging, as well as sliding the shifts both within and between branches. Allowed shift locations are specified by the 
 #' prior function (see make.prior()). 
 
-bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, chunk=100, control=NULL, tuning=NULL, new.dir=FALSE, plot.freq=500, outname="bayou", ticker.freq=1000, tuning.int=c(0.1,0.2,0.3), startpar=NULL, moves=NULL, control.weights=NULL){
+bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, chunk=100, control=NULL, tuning=NULL, new.dir=FALSE, plot.freq=500, outname="bayou", ticker.freq=1000, tuning.int=c(0.1,0.2,0.3), startpar=NULL, moves=NULL, control.weights=NULL, lik.fn=NULL){
   fixed <- gsub('^[a-zA-Z]',"",names(attributes(prior)$distributions)[which(attributes(prior)$distributions=="fixed")])
   if("loc" %in% fixed){
     fixed <- c(fixed,"slide")
@@ -44,7 +44,7 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
     moves <- moves[which(!(names(moves) %in% fixed))]
   }
   
-  cache <- .prepare.ou.univariate(tree,dat)
+  cache <- .prepare.ou.univariate(tree,dat, SE=SE)
   dat <- cache$dat
   if(is.null(startpar)){
     if(any(fixed %in% c("h2", "P", "w2", "Ne", "halflife", "Vy"))){
@@ -88,9 +88,8 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
   oldpar <- startpar
   store <- list("out"=list(), "sb"=list(), "loc"=list(), "t2"=list())
 
-  
-  lik.fn <- .OU.lik
-  oll  <- lik.fn(oldpar, cache, dat, SE, model=model)$loglik
+  if(is.null(lik.fn)) lik.fn <- bayou.lik #.OU.lik
+  oll  <- lik.fn(oldpar, cache, dat, model=model)$loglik
   pr1 <- prior(oldpar,cache)
   parorder <- switch(model,"QG"=c("h2","P","w2","Ne","k","ntheta","theta"), "OU"=c("alpha","sig2","k","ntheta","theta"),"OUrepar"=c("halflife","Vy","k","ntheta","theta"),"OUcpp"=c("alpha","sig2","sig2jump","k","ntheta","theta"))#,"QGcpp"=c("h2","P","w2","Ne","sig2jump","k","ntheta","theta"),"OUreparcpp"=c("halflife","Vy","sig2jump","k","ntheta","theta"))
   
@@ -113,7 +112,7 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
     accept.type <- c(accept.type,paste(prop$decision,prop$move,sep="."))
     pr2 <- prior(new.pars,cache)
     hr <- prop$hr
-    new <- lik.fn(new.pars, cache, dat, SE=SE, model=model)
+    new <- lik.fn(new.pars, cache, dat, model=model)
     nll <- new$loglik
     if (runif(1) < exp(nll-oll+pr2-pr1+hr)){
       oldpar <- new.pars
@@ -152,7 +151,7 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
     }
   }
   closeAllConnections()
-  out <- list('model'=model, 'dir.name'=dir.name,'dir'=dir, 'outname'=outname, 'accept'=accept,'accept.type'=accept.type)
+  out <- list('model'=model, 'dir.name'=dir.name,'dir'=dir, 'outname'=outname, 'accept'=accept,'accept.type'=accept.type, 'tree'=tree, 'dat'=dat)
   class(out) <- c("bayouFit", "list")
   return(out)
 }

@@ -1,6 +1,6 @@
-#' Make a prior function for bayOU
+#' Make a prior function for bayou
 #' 
-#' This function generates a prior function to be used for bayOU according to user specifications.
+#' This function generates a prior function to be used for bayou according to user specifications.
 #'
 #' @param tree A tree object of class "phylo"
 #' @param dists A list providing the function names of the distribution functions describing the prior distributions of parameters (see details). If no
@@ -9,64 +9,64 @@
 #' @param plot.prior A logical indicating whether the prior distributions should be plotted.
 #' @param model One of three specifications of the OU parameterization used. 
 #' Takes values \code{"OU"} (alpha & sig2), \code{"QG"} (h2, P, w2, Ne), or \code{"OUrepar"} (halflife,Vy)
-#' @param type Specifies the type of input for regime mapping used. Takes values 
-#' \code{"pars"} (regime shits specified in the parameter list by \code{pars$sb} and \code{pars$loc}),
-#' \code{"emap"} (regime shifts specified by a provided edge map), or \code{"simmap"} (regime shifts obtained from \code{tree$maps})
+#' @param fixed A list of parameters that are to be fixed at provided values. These are removed from calculation of the prior value.
+#' @param type Type of regime painting to be evaluated by the returned prior function. Takes either "pars" for a parameter list or "simmap" 
+#' if the function evaluates a provided simmap tree. 
 #' 
 #' @details Default distributions and parameter values are given as follows:
-#' OU: \code{list(dists=list("dalpha"="dlnorm","dsig2"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="equal","dloc"="dunif"),
+#' OU: \code{list(dists=list("dalpha"="dlnorm","dsig2"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dunif"),
 #'    param=list("dalpha"=list(),"dsig2"=list(),"dtheta"=list(),"dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list()))}
-#' QG: \code{list(dists=list("dh2"="dbeta","dP"="dlnorm","dw2"="dlnorm","dNe"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="equal","dloc"="dunif"),
+#' QG: \code{list(dists=list("dh2"="dbeta","dP"="dlnorm","dw2"="dlnorm","dNe"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dunif"),
 #'    param=list("dh2"=list(shape1=1,shape2=1),"dP"=list(),"dw2"=list(),"dNe"=list(),"dtheta"=list(),"dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list()))}
-#' OUrepar: \code{list(dists=list("dhalflife"="dlnorm","dVy"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="equal","dloc"="dunif"),
+#' OUrepar: \code{list(dists=list("dhalflife"="dlnorm","dVy"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dunif"),
 #'    param=list("dhalflife"=list("meanlog"=0.25,"sdlog"=1.5),"dVy"=list("meanlog"=1,"sdlog"=2),"dk"=list(lambda=1,kmax=2*ntips-2),"dtheta"=list(),"dloc"=list(min=0,max=1)),"dsb"=list())}
 #' 
 #' \code{dalpha, dsig2, dh2, dP, dw2, dNe, dhalflife},  and \code{dVy} must be positive continuous distributions and provide the parameters used to calculate alpha and sigma^2 of the OU model. 
 #' \code{dtheta} must be continuous and describes the prior distribution of the optima. dk is the prior distribution for the number of shifts. For Poisson and conditional Poisson (cdpois) are provided
 #' the parameter \code{lambda}, which provides the total number of shifts expected on the tree (not the rate per unit branch length). Otherwise, \code{dk} can take any positive, discrete distribution.  
-#' dsb indicates the prior probability of a given set of branches having shifts. Three options are possible: \code{"equal"},\code{"equalnotips"} or \code{"free"}. \code{"equal"} assigns equal probability to each branch
-#' sampled without replacement. \code{"equalnotips"} but restricts shifts to only internal branches. \code{"free"} allows multiple shifts per branch, and determines the prior probability of a set of shift locations
-#' using a multinomial distribution with probabilities proportional to branch lengths taken from the tree. \code{"dloc"} indicates the prior probability of a shift on a given branch. Currently, all locations are
-#' given equal density of 1. All distributions are set to return log-transformed probability densities. 
+#' dsb indicates the prior probability of a given set of branches having shifts, and is generally specified by the "dsb" function in the bayou package. See the documentation for dsb for specifying the number
+#' of shifts allowed per branch, the probability of a branch having a shift, and specifying constraints on where shifts can occur.\code{"dloc"} indicates the prior probability of the location of a shift within
+#' a single branch. Currently, all locations are given uniform density. All distributions are set to return log-transformed probability densities. 
 #' 
 #' @return returns a prior function of class "priorFn" that calculates the log prior density for a set of parameter values provided in a list with correctly named values.
 #' 
 #' @export
 #' @examples 
 #' ## Load data
-#' data(chelonia.simmap)
-#' tree <- chelonia.simmap$tree
-#' dat <- chelonia.simmap$dat
+#' data(chelonia)
+#' tree <- chelonia$phy
+#' dat <- chelonia$dat
 #' 
-#' ##Make prior function
-#' prior <- make.prior(tree,dists=list(dalpha="dunif",dsig2="dunif"),param=list(dalpha=list(min=0,max=10),dsig2=list(min=0,max=10)),type="pars")
+#' #Create a prior that allows only one shift per branch with equal probability across branches
+#' prior <- make.prior(tree, dists=list(dalpha="dlnorm", dsig2="dlnorm",dsb="dsb", dk="cdpois", dtheta="dnorm"), 
+#'              param=list(dalpha=list(meanlog=-5, sdlog=2), dsig2=list(meanlog=-1, sdlog=5), 
+#'              dk=list(lambda=15, kmax=200), dsb=list(bmax=1,prob=1), dtheta=list(mean=mean(dat), sd=2)))
+#'              
+#' #Evaluate some parameter sets
+#' pars1 <- list(alpha=0.1, sig2=0.1, k=5, ntheta=6, theta=rnorm(6, mean(dat), 2), sb=c(32, 53, 110, 350, 439), loc=rep(0.1, 5), t2=2:6)
+#' pars2 <- list(alpha=0.1, sig2=0.1, k=5, ntheta=6, theta=rnorm(6, mean(dat), 2), sb=c(43, 43, 432, 20, 448), loc=rep(0.1, 5), t2=2:6)
+#' prior(pars1) 
+#' prior(pars2) #-Inf because two shifts on one branch
 #' 
-#' ##Define a set of parameter values
-#' emap <- chelonia.simmap$emap
-#' pars <- list(alpha=0.1, sig2=1, k=16, theta=c(3,4,5,6), sb=which(emap$sh==1), loc=emap$r1[which(emap$sh==1)])
+#' #Create a prior that allows any number of shifts along each branch with probability proportional to branch length
+#' prior <- make.prior(tree, dists=list(dalpha="dlnorm", dsig2="dlnorm",dsb="dsb", dk="cdpois", dtheta="dnorm"), 
+#'              param=list(dalpha=list(meanlog=-5, sdlog=2), dsig2=list(meanlog=-1, sdlog=5), 
+#'              dk=list(lambda=15, kmax=200), dsb=list(bmax=Inf,prob=tree$edge.length), dtheta=list(mean=mean(dat), sd=2)))
+#' prior(pars1)
+#' prior(pars2)
 #' 
-#' ##Calculate prior probability
-#' prior(pars)
+#' #Create a prior with fixed regime placement and sigma^2 value
+#' prior <- make.prior(tree, dists=list(dalpha="dlnorm", dsig2="fixed", dsb="fixed", dk="fixed", dtheta="dnorm", dloc="dunif"), 
+#'              param=list(dalpha=list(meanlog=-5, sdlog=2), dtheta=list(mean=mean(dat), sd=2)),
+#'                  fixed=list(sig2=1, k=3, ntheta=4, sb=c(447, 396, 29))
+#' pars3 <- list(alpha=0.01, theta=rnorm(4, mean(dat), 2), loc=rep(0.1, 4))
+#' prior(pars3)
 #' 
 #' ##Return a list of functions used to calculate prior
 #' attributes(prior)$functions
 #' 
 #' ##Return parameter values used in prior distribution
 #' attributes(prior)$parameters
-#' 
-#' ##Alternative parameterization using phylogenetic half-life and stationary variance
-#' pars <- list(halflife=20, Vy=1, k=16, theta=c(3,4,5,6), sb=which(emap$sh==1), loc=emap$r1[which(emap$sh==1)])
-#' prior2 <- make.prior(tree,dists=list(dhalflife="dlnorm",dVy="dlnorm"),param=list(dhalflife=list(meanlog=3,sdlog=1),dVy=list(meanlog=0,sdlog=2)),model="OUrepar",type="pars")
-#' prior2(pars)
-#' 
-#' ##Specify different types of inputs
-#' prior.pars <- make.prior(tree, model="OUrepar", type="pars")
-#' prior.emap <- make.prior(tree, model="OUrepar", type="emap")
-#' prior.simmap <- make.prior(tree, model="OUrepar", type="simmap")
-#' 
-#' prior.pars(pars)
-#' prior.emap(pars,emap=emap)
-#' prior.simmap(pars,tree)
 
 #prior <- make.prior(tree, dists=list(dalpha="dlnorm", dsig2="dlnorm",dsb="fixed", dk="fixed"), 
 #                    param=list(dalpha=list(meanlog=-5, sdlog=2), dsig2=list(meanlog=-1, sdlog=5), 

@@ -3,6 +3,8 @@
 #' \code{load.bayou} loads a bayouFit object that was created using \code{bayou.mcmc()}
 #' @export
 load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE){#dir=NULL,outname="bayou",model="OU"){
+  tree <- bayouFit$tree
+  dat <- bayouFit$dat
   outname <- bayouFit$outname
   model <- bayouFit$model
   dir <- bayouFit$dir
@@ -60,6 +62,8 @@ load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE){#dir
     chain$t2 <- mapst2
   }
   attributes(chain)$model <- bayouFit$model
+  attributes(chain)$tree <- tree
+  attributes(chain)$dat <- dat
   class(chain) <- c("bayouMCMC", "list")
   if(save.Rdata==FALSE & cleanup==TRUE){
     ans <- toupper(readline("Warning: You have selected to delete all created MCMC files and not to save them as an .Rda file. 
@@ -164,7 +168,7 @@ tune.D <- function(D,accept,accept.type){
 }
 
 pull.pars <- function(i,chain,model="OU"){
-  parorder <- switch(model,"QG"=c("h2","P","w2","Ne","nb","ntheta","optima"), "OU"=c("alpha","sig2","nb","ntheta","optima"),"OUrepar"=c("halflife","Vy","nb","ntheta","optima"))
+  parorder <- switch(model,"QG"=c("h2","P","w2","Ne","k","ntheta","theta", "sb", "loc", "t2"), "OU"=c("alpha","sig2","k","ntheta","theta", "sb", "loc", "t2"),"OUrepar"=c("halflife","Vy","k","ntheta","theta", "sb", "loc", "t2"))
   pars <- lapply(parorder,function(x) chain[[x]][[i]])
   names(pars) <- parorder
   return(pars)
@@ -179,6 +183,7 @@ combine.chains <- function(chain1,chain2,burnin.prop=0){
   postburn <- (burnin.prop*(length(chain1$gen))+1):(length(chain1$gen))
   chains <- lapply(nn,function(x) c(chain1[[x]][postburn],chain2[[x]][postburn]))
   names(chains) <- nn
+  class(chains) <- c("bayouMCMC", "list")
   return(chains)
 }
 
@@ -282,7 +287,7 @@ store.bayOU <- function(i, pars, ll, pr, store, samp, chunk, parorder){
 #' S3 method for printing bayouFit objects
 #' @export
 #' @method print bayouFit
-print.bayouFit <- function(bayouFit){
+print.bayouFit <- function(bayouFit, ...){
   cat("bayou modelfit\n")
   cat(paste(bayouFit$model, " parameterization\n\n",sep=""))
   cat("Results are stored in directory\n")
@@ -297,14 +302,38 @@ print.bayouFit <- function(bayouFit){
   print(prop.N)
 }
 
+#' Set the burnin proportion for bayouMCMC objects
+#' @export
+#' @param chain A bayouMCMC chain or an ssMCMC chain
+#' @param burnin The burnin proportion of samples to be discarded from downstream analyses.
+#' 
+#' @return A bayouMCMC chain or ssMCMC chain with burnin proportion stored in the attributes.
+set.burnin <- function(chain, burnin=0.3){
+  cl <- class(chain)[1]
+  attributes(chain)$burnin = burnin
+  if(cl=="bayouMCMC") {
+    class(chain) <- c("bayouMCMC", "list")
+  } 
+  if(cl=="ssMCMC"){
+    class(chain) <- c("ssMCMC", "list")
+  }
+  return(chain)
+}
+
 #' S3 method for summarizing bayouMCMC objects
 #' @export
 #' @method summary bayouMCMC
-summary.bayouMCMC <- function(chain, burnin=0.3){
-  cat("bayou MCMC chain:", max(chain$gen), "generations\n")
-  cat(length(chain$gen), "samples, first", eval(round(burnin*length(chain$gen),0)), "samples discarded as burnin\n")
+summary.bayouMCMC <- function(chain, ...){
+  tree <- attributes(chain)$tree
   model <- attributes(chain)$model
-  postburn <- round(burnin*length(chain$gen),0):length(chain$gen)
+  if(is.null(attributes(chain)$burnin)){
+    start <- 1
+  } else {
+    start <- round(attributes(chain)$burnin*length(chain$gen),0)
+  }
+  cat("bayou MCMC chain:", max(chain$gen), "generations\n")
+  cat(length(chain$gen), "samples, first", eval(start), "samples discarded as burnin\n")
+  postburn <- start:length(chain$gen)
   chain <- lapply(chain,function(x) x[postburn])
   parorder <- switch(model,"QG"=c("lnL","prior", "h2","P","w2","Ne","k","ntheta"), "OU"=c("lnL","prior","alpha","sig2","k","ntheta"),"OUrepar"=c("lnL","prior","halflife","Vy","k","ntheta"))
   summat <- matrix(unlist(chain[parorder]),ncol=length(parorder))

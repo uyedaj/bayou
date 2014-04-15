@@ -1,9 +1,10 @@
 optima.ages <- function(pars,tree){
+  nH <- nodeHeights(tree)
   reg <- sapply(tree$maps,function(x) names(x)[length(x)])
   adj <- sapply(tree$maps,function(x) ifelse(length(x)>1,x[1],0))
-  abs.age <- nodeHeights(tree)[,1]+adj
+  abs.age <- nH[,1]+adj
   start <- tapply(abs.age,reg,min)
-  end <- rep(max(abs.age),pars$ntheta)+1
+  end <- rep(max(nH),pars$ntheta)+1
   o <- as.character(1:pars$ntheta)
   names(end) <- names(start)
   return(cbind(start[o],end[o]))
@@ -197,16 +198,6 @@ plotSimmap.mcmc <- function (tree,chain,burnin=NULL,colors = NULL, fsize = 1, ft
   par(mar = c(5, 4, 4, 2) + 0.1)
 }
 
-plotSimmap.posterior <- function(chain,i,tree,dat,alpha=255){
-  emap <- read.emap(chain$branch.shift[[i]],chain$location[[i]],chain$t2[[i]],tree)$emap
-  pars <- list("alpha"=chain$alpha[[i]],"sig2"=chain$sig2[[i]],nb=chain$nb[[i]],optima=chain$optima[[i]],ntheta=chain$ntheta[[i]])
-  tr <- emap2simmap(emap,tree)
-  phenogram(tr,dat,colors=tr$col,ftype="off")
-  regime.plot2(pars,tr,cols=tr$col,type="density",alpha=100)
-  phenogram(tr,dat,colors=tr$col,add=TRUE,ftype="off") 
-}
-
-
 regime.plot2 <- function(pars,tree,cols,type='rect',alpha=255){
   OA <- optima.ages(pars,tree)
   CIU95 <- pars$optima+2*sqrt(pars$sig2/(2*pars$alpha))
@@ -286,132 +277,17 @@ phenogram.density <- function(tree, dat, burnin=0, chain ,colors=NULL, pp.cutoff
   tmp <- sapply(1:length(dens.theta),function(Q){lines(nH+dens.theta[[Q]]$y*(0.3*nH)/max(dens.theta[[Q]]$y),dens.theta[[Q]]$x,col=Q+1)})
 }
 
-##Not working yet. Attempt to do ancestral state reconstruction under a multi-optimum OU model. 
-#acemOU <- function(pars, tree, dat){
-#  ntips <- length(tree$tip.label)
-#  names(X) <- 1:(2*ntips-1)
-#  cache <- .prepare.ou.univariate(tree, dat)
-#  W <- .mOU.W(cache, pars)
-#  E.X <- (W%*%pars$theta)[,1]
-#  ouMatrix <- function(vcvMatrix, alpha)
-##  {  vcvDiag<-diag(vcvMatrix)
-#     diagi<-matrix(vcvDiag, nrow=length(vcvDiag), ncol=length(vcvDiag))
-#     diagj<-matrix(vcvDiag, nrow=length(vcvDiag), ncol=length(vcvDiag), byrow=T)
-#     Tij = diagi + diagj - (2 * vcvMatrix)
-##     vcvRescaled = (1 / (2 * alpha)) * exp(-alpha * Tij) * (1 - exp(-2 * alpha * vcvMatrix))
-##     return(vcvRescaled)
-#  }
-#  C <- vcvPhylo(cache$phy,anc.nodes=TRUE)
-#  Sigma <- ouMatrix(C, pars$alpha)
-#  likancFx <- function(px){
-##    x <- c(dat, px)
-#    res <- -dmnorm(x, mean=E.X, varcov=Sigma, log=TRUE)
-#    return(res)
-#  }
-#  ip <- E.X[(ntips+1):(2*ntips-2)]
-#  np <- length(ip)
-#  x <- ip
-#  x[419-226-1]<- ip[419-226-1]+0.1
-#  likancFx(x)
-#  res.opt <- nlminb(ip, likancFx, lower=rep(0,np), upper=rep(max(dat)*2,np))
-#  res.opt <- nlm(likancFx, ip)
-  
-#}
-
-##Return a weight matrix for all tips and internal nodes.
-.mOU.W <- function(cache, pars){
-    ntips <- cache$ntips
-    plook <- function(x){mapply(paste,x[2:length(x)],x[1:(length(x)-1)],sep=",")}
-    tB <- cache$desc$anc
-    tB <- mapply(c,1:(2*ntips-1),tB)
-    lookup <- lapply(tB,plook)
-    edge.names <- mapply(paste,cache$edge[,1],cache$edge[,2],sep=",")
-    branchtrace <- t(sapply(lookup,function(x) as.numeric(edge.names %in% x)))
-    nH <- nodeHeights(cache$phy)
-    nbranch <- length(cache$edge.length)
-    #create a vector called shifts that indicates the number of shifts for each branch
-    nshifts <- table(pars$sb)
-    shifts <- rep(0,nbranch)
-    shifts[as.numeric(attributes(nshifts)$dimnames[[1]])]<- nshifts
-    #Create an index equal to the number of segments that identifies the branch on which each segment is found
-    irow <- rep(1:nbranch,shifts+1)
-    #For now, starting height is just the height of the node
-    csbase <- cache$nH[irow]
-    #Calculate the ending height by sorting the edge.length and the location of shifts by their branch identity and location
-    csadd <- c(cache$edge.length, pars$loc)
-    tmp.o <- c(1:nbranch, pars$sb)
-    names(csadd) <- tmp.o
-    add.o <- order(tmp.o,csadd)
-    csadd <- csadd[add.o]
-    #Ending height of the segment
-    csmaps <- csadd + csbase
-    #We need to know what the ending theta is for each segment, so we sort pars$t2 as we did for pars$loc, but +1 because t2 is the ending regime
-    t2index <- add.o[which(add.o > nbranch)]
-    t2b <- c(rep(1,length(csmaps)))
-    t2b[match(t2index,add.o)+1] <- pars$t2[t2index-nbranch]
-    #Now we need to cascade these regime down the tree. We won't need to cascade sandwiches, as they are trapped on the branch they occur. So we find them below:
-    loc.o <- order(pars$loc,decreasing=TRUE)
-    sandwiches <- tmp.o[duplicated(pars$sb[loc.o])]
-    # And remove them:
-    if(length(sandwiches)>0){
-      sb.down <- pars$sb[-sandwiches]
-      t2.down <- pars$t2[-sandwiches]
-    } else {sb.down <- pars$sb; t2.down <- pars$t2}
-    #Now we order the sb's and t2's to prepare for a postorder tree traversal
-    sb.o <- order(sb.down)
-    sb.down <- sb.down[sb.o]
-    t2.down <- t2.down[sb.o]
-    sb.desc <- cache$bdesc[sb.down]
-    #Loop traveling down the tree, saving all descendents that are from that shift into the vector censored. These branches cannot be modified by shifts further down the tree.
-    censored <- NULL
-    name.o <- names(csmaps)
-    names(t2b) <- name.o
-    for(i in 1:length(sb.desc)){
-      sb.desc[[i]] <- sb.desc[[i]][!(sb.desc[[i]] %in% censored)]
-      censored <- c(censored, sb.desc[[i]])
-      t2b[name.o[name.o %in% sb.desc[[i]]]] <- t2.down[i]
-    }
-    names(csmaps) <- t2b
-    multips <- which(irow[2:length(irow)]==irow[1:(length(irow)-1)])
-    #Set segments with more than one shift per branch to start at end of last shift
-    csbase[multips+1] <- csmaps[multips]
-    mOU.W.nH <- function(nh, cache, pars, csbase, csmaps, irow, nbranch){
-      #Exponential term 1
-      oW <- pars$alpha*(csbase-nh)
-      #Exponential term 2
-      nW <- (csmaps-csbase)*pars$alpha
-    #If value of expnential term is too large (resulting in overflow), then use approximation
-      if(any(nW>500)){
-        tmp <- ifelse(nW>500, exp(nW+oW), exp(oW)*(exp(nW)-1))
-      } else {
-        tmp <- exp(oW)*(exp(nW)-1)
-      }
-    #Set up branch weight matrix
-      bW <- matrix(0,nrow=nbranch,ncol=pars$ntheta)
-    #Set up index over matrix, so that values go to right row index and column, based on the name of the segment in maps
-      index <- irow + (as.integer(names(tmp))-1)*nbranch
-      if(any(duplicated(index))){
-        tmp <- tapply(tmp,index,sum)
-        bW[as.numeric(names(tmp))] <- tmp
-      } else {bW[index] <- tmp}
-      bW[449:450,1] <- bW[449:450,1]+exp(-nh*pars$alpha)
-      return(bW)
-    }
-    W.nn <- NULL
-    for(i in (ntips+2):(2*ntips-1)){
-      W.nn <- rbind(W.nn,branchtrace[i,]%*%mOU.W.nH(nH[which(cache$edge[,2]==i),2], cache, pars, csbase, csmaps, irow, nbranch))
-    }
-    W <- .parmap.W(cache, pars)
-    W.all <- rbind(W, W.nn)
-    return(W.all)
-}
-
 #' S3 method for plotting bayouMCMC objects
 #' 
 #' @export
 #' @method plot bayouMCMC
-plot.bayouMCMC <- function(chain, burnin=0, ...){
-  postburn <- round(length(chain$gen)*burnin,0):length(chain$gen)
+plot.bayouMCMC <- function(chain, ...){
+  if(is.null(attributes(chain)$burnin)){
+    start <- 1
+  } else {
+    start <- round(attributes(chain)$burnin*length(chain$gen),0)
+  }
+  postburn <- start:length(chain$gen)
   chain2 <- lapply(chain,function(x) x[postburn])
   chain.length <- length(chain2$gen)
   univariates <- chain2[sapply(chain2,function(x) length(unlist(x)))==length(chain2$gen)]
@@ -423,15 +299,16 @@ plot.bayouMCMC <- function(chain, burnin=0, ...){
 }
 
 
-#' S3 method for plotting bayoupars objects
+#' Plot parameter list as a simmap tree
 #' 
 #' @export
-#' @method plot bayoupars
-plot.bayoupars <- function(pars, tree,...){
+plotBayoupars <- function(pars, tree,...){
+  mar <- par()$mar
   tree <- reorder(tree, 'postorder')
   X <- rep(0, length(tree$tip.label))
   names(X) <- tree$tip.label
   cache <- .prepare.ou.univariate(tree, X)
   tr <- .toSimmap(.pars2map(pars, cache),cache)
   plotSimmap(tr,...)
+  par(mar=mar)
 }

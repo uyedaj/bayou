@@ -51,15 +51,22 @@
 #' \code{.prepare.ou.univariate} is an internal function and not generally called by the user
 #' 
 #' This is an internal function modified from geiger's function .prepare.bm.univariate for use with OU models.
+##Merging .prepare.ou.phylolm and .prepare.ou.univariate
+
+##Clean this up to make sure I actually need all this!!
 .prepare.ou.univariate <- function(tree,X, SE=0, ...){
   ntips <- length(tree$tip.label)
   rownames(tree$edge) <- 1:(length(tree$edge[,1]))
-  cache <- .prepare.bm.univariate(tree, X, SE=SE)#, ...)
+  cache <- bayou:::.prepare.bm.univariate(tree, X, SE=SE)#, ...)
   ind <- as.numeric(rownames(cache$edge))
-  cache$nH <- nodeHeights(tree)[ind,1]
+  cache$n <- ntips
+  cache$N <- nrow(cache$phy$edge)
+  cache$nH <- phytools::nodeHeights(tree)[ind,1]
   cache$maps <- tree$maps[ind]
   cache$mapped.edge <- tree$mapped.edge[ind,]
-  cache$height <- max(nodeHeights(tree))
+  cache$height <- max(phytools::nodeHeights(tree))
+  cache$anc <- cache$phy$edge[,1]
+  cache$des <- cache$phy$edge[,2]
   cache$ntips <- length(X)
   cache$ind <- ind
   cache$ordering <- "postorder"
@@ -75,8 +82,31 @@
   cache$bdesc <- lapply(cache$bdesc,function(x) x[-length(x)])
   cache$lookup <- lookup
   rownames(cache$edge)=NULL
+  cache$distFromRoot <- .pruningwise.distFromRoot(cache$phy, n=cache$n, N=cache$N)
+  cache$tipFromRoot <- cache$distFromRoot[1:cache$n]
+  cache$ultrametric <- as.numeric(is.ultrametric(cache$phy))
+  D <- max(cache$distFromRoot[1:cache$n]) - cache$distFromRoot[1:cache$n]
+  cache$D <- D - mean(D)
+  phy2 <- cache$phy
+  for (i in 1:cache$n) {
+    tmp = phy2$edge.length[which(cache$phy$edge[,2]==i)]
+    phy2$edge.length[which(cache$phy$edge[,2]==i)] = tmp + cache$D[i]      
+  }
+  cache$times <- .pruningwise.branching.times(phy2, n=cache$n, des=phy2$edge[,2], anc=phy2$edge[,1])
+  names(cache$times) <- (cache$n+1):(cache$n+cache$phy$Nnode) 
+  cache$Tmax <- max(cache$times)
+  cache$branches.anc <- lapply(1:cache$N, function(x) which(names(cache$times)==cache$phy$edge[,1][x]))
+  cache$branches.des <- lapply(1:cache$N, function(x) which(names(cache$times)==cache$phy$edge[,2][x]))
+  cache$branches.des2 <- cache$branches.des
+  cache$branches.des2[which(sapply(cache$branches.des,length)==0)] <- -1
+  cache$branches.des2 <- unlist(cache$branches.des2)
+  cache$branches.anc2 <- unlist(cache$branches.anc)
+  cache$externalEdge <- cache$phy$edge[,2]<=cache$n
   return(cache)
 }
+
+
+
 
 
 #' bayOU internal function. 

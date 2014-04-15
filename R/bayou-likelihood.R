@@ -90,7 +90,7 @@
                 descRight = as.integer(n.cache$children[, 1]), descLeft = as.integer(n.cache$children[, 
                                                                                                       2]), drift = as.numeric(dd))
     parsC = as.numeric(rep(sigsq, n.cache$z))
-    out = .Call("bm_direct", dat = datC, pars = parsC, PACKAGE = "geiger")
+    out = .Call("bm_direct", dat = datC, pars = parsC, PACKAGE = "bayou")
     loglik <- sum(out$lq)
     if (is.na(loglik)) 
       loglik = -Inf
@@ -172,144 +172,28 @@
   likfx = fx_exporter()
   return(likfx)
 }
-#' bayOU internal function. 
-#' 
-#' \code{.emOU.lik} is an internal function and not generally called by the user
-#' 
-#' This is an internal function that calculates the likelihood of a multioptima OU model.
-.emOU.lik <- function(pars,emap,cache,X,SE=0,model="OU",fast=TRUE){
-  if(model=="QG"){
-    pars$alpha <- QG.alpha(pars)
-    pars$sig2 <- QG.sig2(pars)
-  }
-  if(model=="OUrepar"){
-    repar <- OU.repar(pars)
-    pars$alpha <- repar$alpha
-    pars$sig2 <- repar$sig2
-  }
-  TotExp=exp(-cache$height*pars$alpha)
-  W <- .edgemap.W(cache,pars,emap,TotExp)
-  if(pars$ntheta>1){
-    E.th=W%*%pars$theta
-  } else {E.th=W*pars$theta}
-  X.c<-X-as.vector(E.th)
-  if(fast){
-    lnL.fx<-.fastbm.lik(cache,X.c,SE=TRUE,model="OU")
-    #lnL.fx<-bm.lik(cache$phy,X.c,SE=NA,model="OU")
-    loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=ROOT.GIVEN)
-  } else {
-    lnL.fx <- bm.lik(cache,X.c,SE=TRUE,model="OU")
-    loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=ROOT.GIVEN)
-  }
-  list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th)
-}
 
-emOU.lik <- function(pars,emap,tree,X,SE=0, method="pruning",model="OU"){
-  if(model=="QG"){
-    pars$alpha <- QG.alpha(pars)
-    pars$sig2 <- QG.sig2(pars)
-  }
-  if(model=="OUrepar"){
-    repar <- OU.repar(pars)
-    pars$alpha <- repar$alpha
-    pars$sig2 <- repar$sig2
-  }
-  if(class(tree)=="phylo"){
-    cache = .prepare.ou.univariate(tree, X, SE = SE)
-    #cache <- .prepare.ou.univariate(tree, X)
-  } else {cache <- tree}
-  TotExp=exp(-cache$height*pars$alpha)
-  W <- .edgemap.W(cache,pars,emap,TotExp,X)
-  E.th=as.matrix(W)%*%pars$theta
-  if(method=="pruning"){system.time({
-    ##Convert the data into residuals from the expected values
-    X.c<-X-as.vector(E.th)
-    ##Make the pruning algorithm function for a single-optimum OU model
-    lnL<-.fastbm.lik(cache,X.c,SE=TRUE,model=c("OU"))
-    ##Call the pruning algorithm function we just made
-    loglik=lnL(pars=c(pars$alpha,pars$sig2, 0),root=ROOT.GIVEN)
-  })->time}
-  if(method=="invert"){system.time({
-    ##Standard calculation of the likelihood by inverting the VCV matrix
-    ouMatrix <- function(vcvMatrix, alpha)
-    {  vcvDiag<-diag(vcvMatrix)
-       diagi<-matrix(vcvDiag, nrow=length(vcvDiag), ncol=length(vcvDiag))
-       diagj<-matrix(vcvDiag, nrow=length(vcvDiag), ncol=length(vcvDiag), byrow=T)
-       Tij = diagi + diagj - (2 * vcvMatrix)
-       vcvRescaled = (1 / (2 * alpha)) * exp(-alpha * Tij) * (1 - exp(-2 * alpha * vcvMatrix))
-       return(vcvRescaled)
-    }
-    Sigma <- ouMatrix(vcv.phylo(cache$phy),pars$alpha)*pars$sig2
-    diag(Sigma) <- diag(Sigma)+SE^2
-    X.c <- X-as.vector(E.th)
-    loglik <- dmnorm(as.vector(X.c),rep(0,length(X.c)),Sigma,log=TRUE)
-  })->time}
-  list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th,time=time)
-}
-
-#' Calculate the likelihood of a multi-optima OU model from simmap format regimes
+#' Function for calculating likelihood of an OU model in bayou using the threepoint algorithm
 #' 
-#' Calculates the likelihood of an OU model with regimes stored in tree$maps. 
+#' @param pars A list of parameters to calculate the likelihood
+#' @param cache A bayou cache object generated using .prepare.ou.univariate
+#' @param X A named vector giving the tip data
+#' @param SE A named vector or single number giving the standard errors of the data
+#' @param model Parameterization of the OU model. Either "OU", "QG" or "OUrepar".
 #' 
-#' @rdname sdOU.lik
+#' @details This function will likely be deprecated in the near future, and replaced by bayou.lik. Currently,
+#' it is included because it is capable of handling standard errors.
 #' 
-smOU.lik <- function(pars,tree,X,SE=0,model="OU"){
-  if(class(tree)=="phylo"){
-    cache <- .prepare.ou.univariate(tree, X, SE=SE)
-  } else {cache <- tree}
-  if(model=="QG"){
-    pars$alpha <- QG.alpha(pars)
-    pars$sig2 <- QG.sig2(pars)
-  }
-  if(model=="OUrepar"){
-    repar <- OU.repar(pars)
-    pars$alpha <- repar$alpha
-    pars$sig2 <- repar$sig2
-  }
-  W <- .simmap.W(cache,pars)
-  if(pars$ntheta>1){
-    E.th <- W%*%pars$theta
-  } else {E.th <- W*pars$theta}
-  X.c<-X-as.vector(E.th)
-  lnL.fx<-.fastbm.lik(cache,X.c,SE=TRUE,model="OU")
-  #lnL.fx<-bm.lik(cache$phy,X.c,SE=NA,model="OU")
-  loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=ROOT.GIVEN)
-  list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th)
-}
-
+#' @return A list returning the log likelihood ("loglik"), the weight matrix ("W"), the optima ("theta"),
+#' the residuals ("resid") and the expected values ("Exp").
 #' 
-#' 
-.smOU.lik <- function(pars,cache,X,SE=0,model="OU"){
-  if(model=="QG"){
-    pars$alpha <- QG.alpha(pars)
-    pars$sig2 <- QG.sig2(pars)
-  }
-  if(model=="OUrepar"){
-    repar <- OU.repar(pars)
-    pars$alpha <- repar$alpha
-    pars$sig2 <- repar$sig2
-  }
-  W <- .simmap.W(cache,pars)
-  if(pars$ntheta>1){
-    E.th=W%*%pars$theta
-  } else {E.th=W*pars$theta}
-  X.c<-X-as.vector(E.th)
-  lnL.fx<-.fastbm.lik(cache,X.c,SE=TRUE,model="OU")
-  loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=ROOT.GIVEN)
-  list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th)
-}
-
-#' Calculate the likelihood of a multi-optima OU model from parameter list that includes shifts branches (sb),
-#' shift locations (loc) and shift optima (t2)
-#' 
-#' Calculates the likelihood of an OU model with regimes specified by a parameter list
-#' 
-#' @rdname sdOU.lik
+#' @rdname OU.lik
 #' @export
 OU.lik <- function(pars,tree,X,SE=0,model="OU"){
   if(class(tree)=="phylo"){
     cache <- .prepare.ou.univariate(tree, X, SE=SE)
   } else {cache <- tree}
+  dat <- cache$dat
   if(model=="QG"){
     pars$alpha <- QG.alpha(pars)
     pars$sig2 <- QG.sig2(pars)
@@ -323,7 +207,7 @@ OU.lik <- function(pars,tree,X,SE=0,model="OU"){
   if(pars$ntheta>1){
     E.th <- W%*%pars$theta
   } else {E.th <- W*pars$theta}
-  X.c<-X-as.vector(E.th)
+  X.c<-dat-as.vector(E.th)
   lnL.fx<-.fastbm.lik(cache,X.c,SE=TRUE,model="OU")
   #lnL.fx<-bm.lik(cache$phy,X.c,SE=NA,model="OU")
   loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=ROOT.GIVEN)
@@ -350,4 +234,79 @@ OU.lik <- function(pars,tree,X,SE=0,model="OU"){
   lnL.fx<-.fastbm.lik(cache,X.c,SE=TRUE,model="OU")
   loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=ROOT.GIVEN)
   list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th)
+}
+
+
+#' Function for calculating likelihood of an OU model in bayou using the threepoint algorithm
+#' 
+#' @param pars A list of parameters to calculate the likelihood
+#' @param cache A bayou cache object generated using .prepare.ou.univariate
+#' @param X A named vector giving the tip data
+#' @param SE A named vector or single number giving the standard errors of the data (currently ignored)
+#' @param model Parameterization of the OU model. Either "OU", "QG" or "OUrepar".
+#' 
+#' @details This function implements the algorithm of Ho and Ane (2014) implemented in the package
+#' phylolm for the "OUfixedRoot" model. It is faster than the equivalent pruning algorithm in geiger,
+#' and can be used on non-ultrametric trees (unlike OU.lik, which is based on the pruning algorithm in
+#' geiger). However, currently, the standard error argument is ignored.
+#' @export
+bayou.lik <- function(pars, cache, X, model="OU"){
+  if(model=="QG"){
+    pars$alpha <- QG.alpha(pars)
+    pars$sig2 <- QG.sig2(pars)
+  }
+  if(model=="OUrepar"){
+    repar <- OU.repar(pars)
+    pars$alpha <- repar$alpha
+    pars$sig2 <- repar$sig2
+  }
+  n <- cache$n
+  X <- cache$dat
+  #W <- C_weightmatrix(cache,pars)$W
+  #if(pars$ntheta>1){
+  #  E.th=W%*%pars$theta
+  #} else {E.th=W*pars$theta}
+  #X.c<-X-as.vector(E.th)
+  X.c <- C_weightmatrix(cache, pars)$resid
+  #tree.trans = .transf.branch.lengths(cache, model, pars$alpha)
+  transf.phy <- C_transf_branch_lengths(cache, 1, X.c, pars$alpha)
+  transf.phy$edge.length[cache$externalEdge] <- transf.phy$edge[cache$externalEdge] + cache$SE^2*(2*pars$alpha)/pars$sig2
+  #transf.phy$diagMatrix <- transf.phy$diagMatrix
+  #P <- cbind(y)
+  #comp4 <- .three.point.compute2(transf.phy, cache, P, Q=NULL)
+  #comp3 <- three.point.compute(transf.phy$tree,P,Q=NULL,transf.phy$diagMatrix)
+  #comp2 <- .three.point.compute(transf.phy, cache, P, Q=NULL)
+  comp <- C_threepoint(list(n=n, N=cache$N, anc=cache$phy$edge[, 1], des=cache$phy$edge[, 2], diagMatrix=transf.phy$diagMatrix, P=X.c, root=transf.phy$root.edge, len=transf.phy$edge.length))
+  #t(y) %*% inv.ouV %*% (y)*1/pars$sig2
+  if(pars$alpha==0){
+    inv.yVy <- comp$PP
+    detV <- comp$logd
+  } else {
+    inv.yVy <- comp$PP*(2*pars$alpha)/(pars$sig2)
+    detV <- comp$logd+n*log(pars$sig2/(2*pars$alpha))
+  }
+  #log(det(souV))  
+  llh <- -0.5*(n*log(2*pi)+detV+inv.yVy)
+  #return(list(loglik=llh, W=W,theta=pars$theta,resid=X.c,Exp=E.th, comp=comp, transf.phy=transf.phy))
+  return(list(loglik=llh, theta=pars$theta,resid=X.c, comp=comp, transf.phy=transf.phy))
+}
+
+.pruningwise.branching.times <- function(phy, n, des, anc) {     
+  xx <- numeric(phy$Nnode)
+  interns <- which(phy$edge[, 2] > n)
+  for (j in length(interns):1) {
+    i = interns[j]
+    xx[des[i] - n] <- xx[anc[i] - n] + phy$edge.length[i]
+  }
+  depth <- xx[phy$edge[1, 1] - n] + phy$edge.length[1]
+  xx <- depth - xx
+  names(xx) <- if (is.null(phy$node.label)) (n + 1):(n + phy$Nnode) else phy$node.label
+  return(xx)
+}
+
+.pruningwise.distFromRoot <- function(phy, n, N) {   
+  xx <- numeric(phy$Nnode+n)
+  for (i in N:1) xx[phy$edge[i, 2]] <- xx[phy$edge[i, 1]] + phy$edge.length[i]
+  names(xx) <- if (is.null(phy$node.label)) 1:(n + phy$Nnode) else phy$node.label
+  return(xx)
 }

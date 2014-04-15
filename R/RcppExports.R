@@ -5,3 +5,15 @@ rcpp_hello_world <- function() {
     .Call('bayou_rcpp_hello_world', PACKAGE = 'bayou')
 }
 
+C_threepoint <- function(dat) {
+    .Call('bayou_C_threepoint', PACKAGE = 'bayou', dat)
+}
+
+C_transf_branch_lengths <- function(dat, model, y, alpha) {
+    .Call('bayou_C_transf_branch_lengths', PACKAGE = 'bayou', dat, model, y, alpha)
+}
+
+C_weightmatrix <- function(dat, parameters) {
+    .Call('bayou_C_weightmatrix', PACKAGE = 'bayou', dat, parameters)
+}
+

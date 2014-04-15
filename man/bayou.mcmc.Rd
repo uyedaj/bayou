@@ -7,7 +7,7 @@
     tuning = NULL, new.dir = FALSE, plot.freq = 500,
     outname = "bayou", ticker.freq = 1000,
     tuning.int = c(0.1, 0.2, 0.3), startpar = NULL,
-    moves = NULL, control.weights = NULL)
+    moves = NULL, control.weights = NULL, lik.fn = NULL)
 }
 \arguments{
   \item{tree}{a phylogenetic tree of class 'phylo'}

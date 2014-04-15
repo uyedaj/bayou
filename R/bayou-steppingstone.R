@@ -132,7 +132,7 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
   model <- attributes(priorFn)$model
   if(model != attributes(refFn)$model) stop("Error: prior and reference function are not of same type")
   powerposteriorFn <- function(k, Bk, pars, cache, dat, SE, model){
-    lik <- .OU.lik(pars, cache, dat, SE=SE, model=model)$loglik
+    lik <- bayou.lik(pars, cache, dat, model=model)$loglik
     prior <- priorFn(pars, cache)
     ref <- refFn(pars, cache)
     coeff <- c(Bk[k],Bk[k],(1-Bk[k]))
@@ -162,7 +162,7 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
     moves <- moves[which(!(names(moves) %in% fixed))]
   }
   
-  cache <- .prepare.ou.univariate(tree,dat)
+  cache <- .prepare.ou.univariate(tree,dat, SE=SE)
   dat <- cache$dat
   if(is.null(startpar)){
     if(any(fixed %in% c("h2", "P", "w2", "Ne", "halflife", "Vy"))){
@@ -208,8 +208,8 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
   store <- list("out"=list(), "sb"=list(), "loc"=list(), "t2"=list())
   
   
-  lik.fn <- .OU.lik
-  oll  <- lik.fn(oldpar, cache, dat, SE, model=model)$loglik
+  lik.fn <- bayou.lik
+  oll  <- lik.fn(oldpar, cache, dat, model=model)$loglik
   pr1 <- prior(oldpar,cache)
   parorder <- switch(model,"QG"=c("h2","P","w2","Ne","k","ntheta","theta"), "OU"=c("alpha","sig2","k","ntheta","theta"),"OUrepar"=c("halflife","Vy","k","ntheta","theta"),"OUcpp"=c("alpha","sig2","sig2jump","k","ntheta","theta"))#,"QGcpp"=c("h2","P","w2","Ne","sig2jump","k","ntheta","theta"),"OUreparcpp"=c("halflife","Vy","sig2jump","k","ntheta","theta"))
   
@@ -336,7 +336,7 @@ steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burn
   } else {ppost <- powerposteriorFn}
   cat("Running mcmc chains...\n")
   ssfits <- foreach(k = 1:length(Bk)) %dopar% {
-    .steppingstone.mcmc(k=k, Bk=Bk, tree=tree, dat=dat, SE=SE, prior=prior, powerposteriorFn=ppost, startpar=startpar, plot.freq=NULL, new.dir=TRUE,  ...)
+    .steppingstone.mcmc(k=k, Bk=Bk, tree=tree, dat=dat, SE=SE, prior=prior, powerposteriorFn=ppost, startpar=startpar, plot.freq=NULL, new.dir=TRUE, ngen=ngen,  ...)
   }
   cat("Loading mcmc chains...\n")
   Kchains <- foreach(i = 1:length(Bk)) %dopar% {
@@ -353,7 +353,7 @@ steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burn
 #' S3 method for printing ssMCMC objects
 #' @export
 #' @method print ssMCMC
-print.ssMCMC <- function(out){
+print.ssMCMC <- function(out, ...){
   cat("Stepping stone estimation of marginal likelihood\n")
   cat("Marginal Likelihood:\n")
   print(out$lnr)
@@ -363,9 +363,14 @@ print.ssMCMC <- function(out){
 #' S3 method for plotting ssMCMC objects
 #' @export
 #' @method plot ssMCMC
-plot.ssMCMC <- function(out, burnin=0.3){
+plot.ssMCMC <- function(out, ...){
   par(mfrow=c(2,2))
-  postburn <- round(burnin*length(out$chains[[1]][[1]]),0):length(out$chains[[1]][[1]])
+  if(is.null(attributes(out)$burnin)){
+    start <- 1
+  } else {
+    start <- round(attributes(out)$burnin*length(out$chains[[1]][[1]]),0)
+  }
+  postburn <- start:length(out$chains[[1]][[1]])
   lnL <- lapply(out$chains, function(x) x$lnL[postburn])
   rangelnL <- c(min(unlist(lnL))-2, max(unlist(lnL))+2)
   plot(0,0,type="n", xlim=c(0,length(unlist(lnL))), ylim=rangelnL,xaxt="n",xlab="",ylab="lnL", main="lnL")

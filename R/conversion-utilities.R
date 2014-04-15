@@ -14,6 +14,10 @@ emap2simmap <- function(emap,tree){
   tree
 }
 
+
+#' Convert a bayou parameter list into a simmap formatted phylogeny
+#' 
+#' @export
 pars2simmap <- function(pars,tree,theta=NULL,root.theta=0){
   sb <- pars$sb
   loc <- pars$loc

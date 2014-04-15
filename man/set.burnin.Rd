@@ -1,0 +1,20 @@
+\name{set.burnin}
+\alias{set.burnin}
+\title{Set the burnin proportion for bayouMCMC objects}
+\usage{
+  set.burnin(chain, burnin = 0.3)
+}
+\arguments{
+  \item{chain}{A bayouMCMC chain or an ssMCMC chain}
+
+  \item{burnin}{The burnin proportion of samples to be
+  discarded from downstream analyses.}
+}
+\value{
+  A bayouMCMC chain or ssMCMC chain with burnin proportion
+  stored in the attributes.
+}
+\description{
+  Set the burnin proportion for bayouMCMC objects
+}
+
