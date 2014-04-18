@@ -70,15 +70,23 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
   if(is.null(tuning)){
     D <- switch(model, "OU"=list(alpha=1, sig2= 1, k = 4,theta=2,slide=1), "QG"=list(h2=1, P=1, w2=1, Ne=1, k = 4, theta=2, slide=1), "OUrepar"=list(halflife=1, Vy=1, k=4, theta=2, slide=1))#,"OUcpp"=list(alpha=1, sig2= 1,sig2jump=2, k = 4,theta=2,slide=1),"QGcpp"=list(h2=1,P=1,w2=1,Ne=1,sig2jump=2,k=4,theta=2,slide=1),"OUreparcpp"=list(halflife=1,Vy=1,sig2jump=2,k=4,theta=2,slide=1))
   } else {D <- tuning}
+  if(is.logical(new.dir)){
+    if(new.dir){
+      dir.name <- paste(sample(LETTERS,10),collapse="")
+      dir <- paste(tempdir(),"/",dir.name,"/",sep="")
+      dir.create(dir)
+      } else {
+      dir <- paste(getwd(),"/",sep="")
+      dir.name <- sapply(strsplit(dir,'/'), function(x) x[length(x)])
+    }
+  } else {
+    if(is.character(new.dir)){
+      dir.name <- paste(sample(LETTERS,10),collapse="")
+      dir <- paste(new.dir,"/",dir.name,"/",sep="")
+      dir.create(dir)
+    }
+  } 
   
-  if(new.dir){
-    dir.name <- paste(sample(LETTERS,10),collapse="")
-    dir <- paste(tempdir(),"/",dir.name,"/",sep="")
-    dir.create(dir)
-    } else {
-    dir <- paste(getwd(),"/",sep="")
-    dir.name <- sapply(strsplit(dir,'/'), function(x) x[length(x)])
-  }
   
   mapsb <<- file(paste(dir, outname,".sb",sep=""),open="w")
   mapsloc <<- file(paste(dir, outname,".loc",sep=""),open="w")

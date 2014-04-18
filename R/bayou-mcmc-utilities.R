@@ -73,8 +73,8 @@ load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE){#dir
   }
   if(save.Rdata){
     if(is.null(file)){
-      save(chain, file=paste(tempdir(),"/", outname, ".chain.Rda",sep=""))
-      cat(paste("file saved to", paste(tempdir(),"/",outname,".chain.Rda\n",sep="")))
+      save(chain, file=paste(bayouFit$dir,"../", outname, ".chain.rds",sep=""))
+      cat(paste("file saved to", paste(bayouFit$dir,"/",outname,".chain.rds\n",sep="")))
     } else {
       save(chain, file=file)
       cat(paste("file saved to", file))
