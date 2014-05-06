@@ -181,6 +181,8 @@ pull.pars <- function(i,chain,model="OU"){
 combine.chains <- function(chain1,chain2,burnin.prop=0){
   nn <- names(chain1)
   postburn <- (burnin.prop*(length(chain1$gen))+1):(length(chain1$gen))
+  chain1$gen <- chain1$gen + 0.1
+  chain2$gen <- chain2$gen + 0.2
   chains <- lapply(nn,function(x) c(chain1[[x]][postburn],chain2[[x]][postburn]))
   names(chains) <- nn
   class(chains) <- c("bayouMCMC", "list")

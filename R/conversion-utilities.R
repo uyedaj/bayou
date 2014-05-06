@@ -19,6 +19,7 @@ emap2simmap <- function(emap,tree){
 #' 
 #' @export
 pars2simmap <- function(pars,tree,theta=NULL,root.theta=0){
+  tree <- reorder(tree, "postorder")
   sb <- pars$sb
   loc <- pars$loc
   t2 <- pars$t2

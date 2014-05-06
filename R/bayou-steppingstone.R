@@ -190,23 +190,29 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
     D <- switch(model, "OU"=list(alpha=1, sig2= 1, k = 4,theta=2,slide=1), "QG"=list(h2=1, P=1, w2=1, Ne=1, k = 4, theta=2, slide=1), "OUrepar"=list(halflife=1, Vy=1, k=4, theta=2, slide=1))#,"OUcpp"=list(alpha=1, sig2= 1,sig2jump=2, k = 4,theta=2,slide=1),"QGcpp"=list(h2=1,P=1,w2=1,Ne=1,sig2jump=2,k=4,theta=2,slide=1),"OUreparcpp"=list(halflife=1,Vy=1,sig2jump=2,k=4,theta=2,slide=1))
   } else {D <- tuning}
   
-  if(new.dir){
-    dir.name <- paste(sample(LETTERS,10),collapse="")
-    dir <- paste(tempdir(),"/",dir.name,"/",sep="")
-    dir.create(dir)
-  } else {
-    dir <- paste(getwd(),"/",sep="")
-    dir.name <- sapply(strsplit(dir,'/'), function(x) x[length(x)])
-  }
+  if(is.logical(new.dir)){
+    if(new.dir){
+      dir.name <- paste(sample(LETTERS,10),collapse="")
+      dir <- paste(tempdir(),"/",dir.name,"/",sep="")
+      dir.create(dir)
+    } else {
+      dir <- paste(getwd(),"/",sep="")
+      dir.name <- sapply(strsplit(dir,'/'), function(x) x[length(x)])
+      }
+    } else {
+      dir.name <- paste(sample(LETTERS,10),collapse="")
+      dir <- paste(new.dir,"/",dir.name,"/",sep="")
+      dir.create(dir)
+    }
   
   #mapsb <<- file(paste(dir, outname,".", k, ".sb",sep=""),open="w")
   #mapsloc <<- file(paste(dir, outname,".", k, ".loc",sep=""),open="w")
   #mapst2 <<- file(paste(dir, outname,".", k, ".t2",sep=""),open="w")
   #pars.output <<- file(paste(dir, outname,".", k, ".pars",sep=""),open="w")
-  files <- list(mapsb=file(paste(dir, outname,".sb",sep=""),open="a"), 
-                mapsloc=file(paste(dir, outname,".loc",sep=""),open="a"),
-                mapst2=file(paste(dir, outname,".t2",sep=""),open="a"),
-                pars.output=file(paste(dir, outname,".pars",sep=""),open="a"))
+  files <- list(mapsb=file(paste(dir, outname,".",k,".sb",sep=""),open="a"), 
+                mapsloc=file(paste(dir, outname,".",k,".loc",sep=""),open="a"),
+                mapst2=file(paste(dir, outname,".",k,".t2",sep=""),open="a"),
+                pars.output=file(paste(dir, outname,".",k,".pars",sep=""),open="a"))
   
   
   oldpar <- startpar
@@ -341,7 +347,7 @@ steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burn
   } else {ppost <- powerposteriorFn}
   cat("Running mcmc chains...\n")
   ssfits <- foreach(k = 1:length(Bk)) %dopar% {
-    .steppingstone.mcmc(k=k, Bk=Bk, tree=tree, dat=dat, SE=SE, prior=prior, powerposteriorFn=ppost, startpar=startpar, plot.freq=NULL, new.dir=TRUE, ngen=ngen,  ...)
+    .steppingstone.mcmc(k=k, Bk=Bk, tree=tree, dat=dat, SE=SE, prior=prior, powerposteriorFn=ppost, startpar=startpar, plot.freq=NULL, ngen=ngen,  ...)
   }
   cat("Loading mcmc chains...\n")
   Kchains <- foreach(i = 1:length(Bk)) %dopar% {

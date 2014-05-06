@@ -10,48 +10,6 @@ optima.ages <- function(pars,tree){
   return(cbind(start[o],end[o]))
 }
 
-regime.plot <- function(pars,tree,cols,type='rect',model="OU"){
-  if(model=="QG"){
-    pars$alpha <- QG.alpha(pars)
-    pars$sig2 <- QG.sig2(pars)
-  }
-  if(model=="OUrepar"){
-    repar <- OU.repar(pars)
-    pars$alpha <- repar$alpha
-    pars$sig2 <- repar$sig2
-  }
-  OA <- optima.ages(pars,tree)
-  CIU95 <- pars$optima+2*sqrt(pars$sig2/(2*pars$alpha))
-  CIL95 <- pars$optima-2*sqrt(pars$sig2/(2*pars$alpha))
-  if(type=="lines"){
-    for(i in 1:pars$ntheta){
-      lines(c(OA[i,1],OA[i,2]),rep(pars$optima[i],2),col=cols[i],lwd=3)
-      lines(c(OA[i,1],OA[i,2]),rep(CIU95[i],2),col=cols[i],lwd=1.25,lty=2)
-      lines(c(OA[i,1],OA[i,2]),rep(CIL95[i],2),col=cols[i],lwd=1.25,lty=2)
-    }
-  }
-  if(type=="rect"){
-    for(i in 1:pars$ntheta){
-      rect(OA[i,1],CIL95[i],OA[i,2],CIU95[i],col=cols[i],border=NA)
-    }
-  }
-  if(type=="density"){
-    ylim <- par('usr')[3:4]
-    for(i in 1:pars$ntheta){
-      x <- seq(OA[i,1],OA[i,2],length=10)
-      y <- seq(ylim[1],ylim[2],length=100)
-      Z <- matrix(nrow=length(x),ncol=length(y))
-      for(j in 1:length(x)){
-        Z[j,] <- dnorm(y,pars$optima[i],sqrt(pars$sig2/(2*pars$alpha)))
-      }
-      if(sum(Z)!=0){
-        densregion(x,y,Z,colmax=cols[i],colmin="transparent")
-      }
-      lines(c(OA[i,1],OA[i,2]),rep(pars$optima[i],2),col=cols[i],lwd=2)
-    }
-  }
-}
-
 makeTransparent <- function(someColor, alpha=100)
 {
   newColor<-col2rgb(someColor)
@@ -198,20 +156,21 @@ plotSimmap.mcmc <- function (tree,chain,burnin=NULL,colors = NULL, fsize = 1, ft
   par(mar = c(5, 4, 4, 2) + 0.1)
 }
 
-regime.plot2 <- function(pars,tree,cols,type='rect',alpha=255){
+regime.plot <- function(pars,tree,cols,type='rect',transparency=100){
+  require(denstrip)
   OA <- optima.ages(pars,tree)
-  CIU95 <- pars$optima+2*sqrt(pars$sig2/(2*pars$alpha))
-  CIL95 <- pars$optima-2*sqrt(pars$sig2/(2*pars$alpha))
+  CIU95 <- pars$theta+2*sqrt(pars$sig2/(2*pars$alpha))
+  CIL95 <- pars$theta-2*sqrt(pars$sig2/(2*pars$alpha))
   if(type=="lines"){
     for(i in 1:pars$ntheta){
-      lines(c(OA[i,1],OA[i,2]),rep(pars$optima[i],2),col=cols[i],lwd=3)
-      lines(c(OA[i,1],OA[i,2]),rep(CIU95[i],2),col=cols[i],lwd=1.25,lty=2)
-      lines(c(OA[i,1],OA[i,2]),rep(CIL95[i],2),col=cols[i],lwd=1.25,lty=2)
+      lines(c(OA[i,1],OA[i,2]),rep(pars$optima[i],2),col=makeTransparent(cols[i],transparency),lwd=3)
+      lines(c(OA[i,1],OA[i,2]),rep(CIU95[i],2),col=makeTransparent(cols[i],transparency),lwd=1.25,lty=2)
+      lines(c(OA[i,1],OA[i,2]),rep(CIL95[i],2),col=makeTransparent(cols[i],transparency),lwd=1.25,lty=2)
     }
   }
   if(type=="rect"){
     for(i in 1:pars$ntheta){
-      rect(OA[i,1],CIL95[i],OA[i,2],CIU95[i],col=cols[i],border=NA)
+      rect(OA[i,1],CIL95[i],OA[i,2],CIU95[i],col=makeTransparent(cols[i],transparency),border=NA)
     }
   }
   if(type=="density"){
@@ -221,12 +180,12 @@ regime.plot2 <- function(pars,tree,cols,type='rect',alpha=255){
       y <- seq(ylim[1],ylim[2],length=100)
       Z <- matrix(nrow=length(x),ncol=length(y))
       for(j in 1:length(x)){
-        Z[j,] <- dnorm(y,pars$optima[i],sqrt(pars$sig2/(2*pars$alpha)))
+        Z[j,] <- dnorm(y,pars$theta[i],sqrt(pars$sig2/(2*pars$alpha)))
       }
       if(sum(Z)!=0){
-        densregion(x,y,Z,colmax=makeTransparent(cols[i],alpha),colmin="transparent")
+        densregion(x,y,Z,colmax=makeTransparent(cols[i],transparency),colmin="transparent")
       }
-      lines(c(OA[i,1],OA[i,2]),rep(pars$optima[i],2),col=cols[i],lwd=2)
+      lines(c(OA[i,1],OA[i,2]),rep(pars$theta[i],2),col=makeTransparent(cols[i],min(255, 50+(transparency))),lwd=2)
     }
   }
 }
@@ -311,4 +270,113 @@ plotBayoupars <- function(pars, tree,...){
   tr <- .toSimmap(.pars2map(pars, cache),cache)
   plotSimmap(tr,...)
   par(mar=mar)
+}
+
+OU.asr <- function(tree, dat, pars, start=NULL, SE=0){
+  phy <- reorder(tree, "postorder")
+  dat <- dat[phy$tip.label]
+  if(length(SE)>1){
+    SE[phy$tip.label]
+  }
+  require(mnormt)
+  if(length(phy$tip.label) > 100) cat("This may take a while for large trees")
+  EV <- .vcv.asrOU(phy, dat, pars)
+  ntips <- length(phy$tip.label)
+  ExpV <- EV$ExpV
+  VCV <- EV$VCV
+  diag(VCV) <- diag(VCV)+SE^2
+  lik.fn <- function(anc){
+    -1*dmnorm(as.vector(c(dat, anc)), mean=ExpV[,1], varcov=VCV, log=TRUE)
+  }
+  if(is.null(start)){
+    start = ExpV[(length(dat)+1):(length(phy$edge.length)+1)]
+  } 
+  result <- optim(start, lik.fn, method="L-BFGS-B")
+  x <- c(dat, result$par)
+  names(x)[(ntips+1):length(x)] <- (ntips+1):length(x)
+  return(x)
+}  
+
+
+.vcv.asrOU <- function(phy, dat, pars, internal=TRUE){
+  cache <- bayou:::.prepare.ou.univariate(phy, dat, SE=SE)
+  phy <- cache$phy
+  new.pars <- pars
+  ntips <- length(phy$tip.label)
+  sig2 <- new.pars$sig2
+  alpha <- new.pars$alpha
+  D <- dist.nodes(phy)
+  Cii <- D[ntips+1,]
+  C <- D; C[,] <- 0
+  ##Covariance[y_i, y_j]= s2/(2*alpha) * Exp[-alpha*t_ij] *  [1 - Exp(-2*alpha*t_a1)]
+  for(i in 1:nrow(D)) for(j in 1:ncol(D))
+    C[i,j]<- sig2/(2*alpha)*exp(-alpha*D[i,j])*(1-exp(-2*alpha*(Cii[i]+Cii[j]-D[i,j])))
+  ##Calculate expectations
+  mu <- rep(0, nrow(D))
+  mu[1:ntips] <- dat
+  W <- allnodes.W(cache, new.pars, SE=SE)
+  ExpV <- W %*% new.pars$theta
+  return(list(ExpV=ExpV, VCV=C))
+}
+
+allnodes.W <- function(tree, pars){
+  a <- pars$alpha
+  s2 <- pars$sig2
+  nbranch <- length(tree$edge.length)
+  if(class(tree)=="phylo"){
+    X <- rep(NA,length(tree$tip.label))
+    names(X) <- tree$tip.label
+    cache <- bayou:::.prepare.ou.univariate(tree,X)
+  } else {cache <- tree}
+  if(is.null(pars$ntheta)){
+    pars$ntheta <- length(pars$theta)
+  }
+  plook <- function(x){mapply(paste,x[2:length(x)],x[1:(length(x)-1)],sep=",")}
+  tB <- cache$desc$anc[1:(cache$n.node+cache$ntips)]
+  tB <- mapply(c,1:(cache$n.node+cache$ntips),tB, SIMPLIFY=FALSE)
+  lookup <- lapply(tB,plook)
+  edge.names <- mapply(paste,cache$edge[,1],cache$edge[,2],sep=",")
+  cache$branchtrace <- t(sapply(lookup,function(x) as.numeric(edge.names %in% x)))
+  smtree <- pars2simmap(pars, cache$phy)
+  maps <- smtree$tree$maps
+  allnodes <- cache$n.node+cache$ntips
+  W <- matrix(0, ncol=pars$ntheta, allnodes)
+  for(i in 1:allnodes){
+    m <- maps[as.logical(cache$branchtrace[i,])]
+    m <- c(0, rev(unlist(lapply(m, rev))))
+    names(m)[1] <- 1
+    TH <- sum(m)
+    csm <- cumsum(m)
+    eT <- exp(-a*TH)*(exp(a*csm[2:length(csm)])-exp(a*csm[1:(length(csm)-1)]))
+    w <- tapply(eT, names(csm)[2:length(csm)], sum)
+    W[i, as.numeric(names(w))] <- w
+    W[i, 1] <- W[i,1] + exp(-a*TH)
+  }
+  return(W)
+}
+
+OUphenogram <- function(pars, tree, dat, col=NULL, ...){
+  datanc <- OU.asr(tree, dat, pars)
+  tr <- pars2simmap(pars, reorder(tree,"postorder"))
+  OA <- optima.ages(pars, tr$tree)
+  CIU95 <- pars$theta+2*sqrt(pars$sig2/(2*pars$alpha))
+  CIL95 <- pars$theta-2*sqrt(pars$sig2/(2*pars$alpha))
+  if(is.null(col)){
+    cols <- tr$col
+  } else {cols <- col}
+  phenogram(tr$tree, c(dat, datanc), col=cols, ...)
+  ylim <- par('usr')[3:4]
+  for(i in 1:pars$ntheta){
+    x <- seq(OA[i,1],OA[i,2],length=10)
+    y <- seq(ylim[1],ylim[2],length=100)
+    Z <- matrix(nrow=length(x),ncol=length(y))
+    for(j in 1:length(x)){
+      Z[j,] <- dnorm(y,pars$theta[i],sqrt(pars$sig2/(2*pars$alpha)))
+    }
+    if(sum(Z)!=0){
+      densregion(x,y,Z,colmax=makeTransparent(cols[i]),colmin="transparent")
+    }
+    lines(c(OA[i,1],OA[i,2]),rep(pars$theta[i],2),col=cols[i],lwd=2)
+  }
+  phenogram(tr$tree, c(dat, datanc), col=cols, add=TRUE, ...)
 }
