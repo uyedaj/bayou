@@ -66,8 +66,8 @@ load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE){#dir
   attributes(chain)$dat <- dat
   class(chain) <- c("bayouMCMC", "list")
   if(save.Rdata==FALSE & cleanup==TRUE){
-    ans <- toupper(readline("Warning: You have selected to delete all created MCMC files and not to save them as an .Rda file. 
-                    Your mcmc results will not be saved on your hard drive. If you do not output to a variable, your results will be lost. 
+    ans <- toupper(readline("Warning: You have selected to delete all created MCMC files and not to save them as an .rds file. 
+                    Your mcmc results will not be saved on your hard drive. If you do not output to a object, your results will be lost. 
                     Continue? (Y or N):"))
     cleanup <- ifelse(ans=="Y", TRUE, FALSE)
   }
@@ -246,7 +246,7 @@ combine.chains <- function(chain1,chain2,burnin.prop=0){
   return(ct)
 }
 
-store.bayOU <- function(i, pars, ll, pr, store, samp, chunk, parorder){
+store.bayOU <- function(i, pars, ll, pr, store, samp, chunk, parorder, files){
   if(i%%samp==0){
     j <- (i/samp)%%chunk
     if(j!=0 & i>0){
@@ -267,10 +267,10 @@ store.bayOU <- function(i, pars, ll, pr, store, samp, chunk, parorder){
       #write.table(chunk.mapst1,file=mapst1,append=TRUE,col.names=FALSE,row.names=FALSE)
       #write.table(chunk.mapst2,file=mapst2,append=TRUE,col.names=FALSE,row.names=FALSE)
       #write.table(chunk.mapsr2,file=mapsr2,append=TRUE,col.names=FALSE,row.names=FALSE)
-      lapply(store$out,function(x) cat(c(x,"\n"),file=pars.output,append=TRUE))
-      lapply(store$sb,function(x) cat(c(x,"\n"),file=mapsb,append=TRUE))
-      lapply(store$t2,function(x) cat(c(x,"\n"),file=mapst2,append=TRUE))
-      lapply(store$loc,function(x) cat(c(x,"\n"),file=mapsloc,append=TRUE))
+      lapply(store$out,function(x) cat(c(x,"\n"),file=files$pars.output,append=TRUE))
+      lapply(store$sb,function(x) cat(c(x,"\n"),file=files$mapsb,append=TRUE))
+      lapply(store$t2,function(x) cat(c(x,"\n"),file=files$mapst2,append=TRUE))
+      lapply(store$loc,function(x) cat(c(x,"\n"),file=files$mapsloc,append=TRUE))
       #chunk.mapst1 <<- matrix(0,ncol=dim(oldmap)[1],nrow=chunk)
       #chunk.mapst2 <<- matrix(0,ncol=dim(oldmap)[1],nrow=chunk)
       #chunk.mapsr2 <<- matrix(0,ncol=dim(oldmap)[1],nrow=chunk)

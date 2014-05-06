@@ -88,10 +88,14 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
   } 
   
   
-  mapsb <<- file(paste(dir, outname,".sb",sep=""),open="w")
-  mapsloc <<- file(paste(dir, outname,".loc",sep=""),open="w")
-  mapst2 <<- file(paste(dir, outname,".t2",sep=""),open="w")
-  pars.output <<- file(paste(dir, outname,".pars",sep=""),open="w")
+  #mapsb <<- file(paste(dir, outname,".sb",sep=""),open="w")
+  #mapsloc <<- file(paste(dir, outname,".loc",sep=""),open="w")
+  #mapst2 <<- file(paste(dir, outname,".t2",sep=""),open="w")
+  #pars.output <<- file(paste(dir, outname,".pars",sep=""),open="w")
+  files <- list(mapsb=file(paste(dir, outname,".sb",sep=""),open="a"), 
+                mapsloc=file(paste(dir, outname,".loc",sep=""),open="a"),
+                mapst2=file(paste(dir, outname,".t2",sep=""),open="a"),
+                pars.output=file(paste(dir, outname,".pars",sep=""),open="a"))
   
   oldpar <- startpar
   store <- list("out"=list(), "sb"=list(), "loc"=list(), "t2"=list())
@@ -130,7 +134,7 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
     } else {
       accept <- c(accept,0)
     }
-    store <- store.bayOU(i, oldpar, oll, pr1, store, samp, chunk, parorder)
+    store <- store.bayOU(i, oldpar, oll, pr1, store, samp, chunk, parorder,files)
     if(!is.null(plot.freq)){
       if(i %% plot.freq==0){
         tr <- .toSimmap(.pars2map(oldpar, cache),cache)
@@ -158,7 +162,7 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
       cat(c(tick,'\n'),sep='\t\t\t')
     }
   }
-  closeAllConnections()
+  lapply(files, close)
   out <- list('model'=model, 'dir.name'=dir.name,'dir'=dir, 'outname'=outname, 'accept'=accept,'accept.type'=accept.type, 'tree'=tree, 'dat'=dat)
   class(out) <- c("bayouFit", "list")
   return(out)

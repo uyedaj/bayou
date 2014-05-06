@@ -199,11 +199,16 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
     dir.name <- sapply(strsplit(dir,'/'), function(x) x[length(x)])
   }
   
-  mapsb <<- file(paste(dir, outname,".", k, ".sb",sep=""),open="w")
-  mapsloc <<- file(paste(dir, outname,".", k, ".loc",sep=""),open="w")
-  mapst2 <<- file(paste(dir, outname,".", k, ".t2",sep=""),open="w")
-  pars.output <<- file(paste(dir, outname,".", k, ".pars",sep=""),open="w")
-    
+  #mapsb <<- file(paste(dir, outname,".", k, ".sb",sep=""),open="w")
+  #mapsloc <<- file(paste(dir, outname,".", k, ".loc",sep=""),open="w")
+  #mapst2 <<- file(paste(dir, outname,".", k, ".t2",sep=""),open="w")
+  #pars.output <<- file(paste(dir, outname,".", k, ".pars",sep=""),open="w")
+  files <- list(mapsb=file(paste(dir, outname,".sb",sep=""),open="a"), 
+                mapsloc=file(paste(dir, outname,".loc",sep=""),open="a"),
+                mapst2=file(paste(dir, outname,".t2",sep=""),open="a"),
+                pars.output=file(paste(dir, outname,".pars",sep=""),open="a"))
+  
+  
   oldpar <- startpar
   store <- list("out"=list(), "sb"=list(), "loc"=list(), "t2"=list())
   
@@ -254,7 +259,7 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
         Ref <- c(Ref,pB.new$ref)
       }
     }
-    store <- store.bayOU(i, oldpar, oll, pr1, store, samp, chunk, parorder)
+    store <- store.bayOU(i, oldpar, oll, pr1, store, samp, chunk, parorder, files)
     if(!is.null(plot.freq)){
       if(i %% plot.freq==0){
         tr <- .toSimmap(.pars2map(oldpar, cache),cache)
@@ -282,7 +287,7 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
       cat(c(tick,'\n'),sep='\t\t\t')
     }
   }
-  closeAllConnections()
+  lapply(files, close)
   out <- list('model'=model, 'dir.name'=dir.name,'dir'=dir, 'outname'=paste(outname,".",k,sep=""), 'accept'=accept,'accept.type'=accept.type, 'ref'=Ref)
   class(out) <- c("ssbayouFit", "list")
   return(out)
