@@ -39,7 +39,8 @@ make.refFn <- function(chain, prior, burnin=0.3, plot=TRUE){
     parname <- gsub('^[a-zA-Z]',"",names(varDists)[i])
     xx <- unlist(chain[[parname]][postburn])
     if(parname %in% c("P", "w2", "Ne", "alpha", "sig2", "halflife", "Vy")){
-      tmpFits <- lapply(poscontdists, function(x) fitdist(xx, x))
+      tmpFits <- lapply(poscontdists, function(x) suppressWarnings(try(fitdist(xx, x), silent=TRUE)))
+      tmpFits <- tmpFits[sapply(tmpFits, function(x) !(class(x)=="try-error"))]
       aic <- sapply(tmpFits, function(x) x$aic)
       fit <- tmpFits[[which(aic==min(aic,na.rm=TRUE))]]
       fitPars <- as.list(fit$estimate)
@@ -49,7 +50,8 @@ make.refFn <- function(chain, prior, burnin=0.3, plot=TRUE){
       refFx[[i]] <- .set.defaults(fitfx, defaults=fitPars)
     }
     if(parname %in% c("h2")){
-      tmpFits <- lapply(bounddists, function(x) fitdist(xx, x))
+      tmpFits <- lapply(bounddists, function(x) suppressWarnings(try(fitdist(xx, x), silent=TRUE)))
+      tmpFits <- tmpFits[sapply(tmpFits, function(x) !(class(x)=="try-error"))]
       aic <- sapply(tmpFits, function(x) x$aic)
       fit <- tmpFits[[which(aic==min(aic,na.rm=TRUE))]]
       fitPars <- as.list(fit$estimate)
@@ -59,7 +61,8 @@ make.refFn <- function(chain, prior, burnin=0.3, plot=TRUE){
       refFx[[i]] <- .set.defaults(fitfx, defaults=fitPars)
     }
     if(parname %in% c("theta")){
-      tmpFits <- lapply(contdists, function(x) fitdist(xx, x))
+      tmpFits <- lapply(contdists, function(x) suppressWarnings(try(fitdist(xx, x), silent=TRUE)))
+      tmpFits <- tmpFits[sapply(tmpFits, function(x) !(class(x)=="try-error"))]
       aic <- sapply(tmpFits, function(x) x$aic)
       fit <- tmpFits[[which(aic==min(aic,na.rm=TRUE))]]
       fitPars <- as.list(fit$estimate)
