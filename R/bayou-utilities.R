@@ -182,23 +182,17 @@ print.refFn <- function(x, ...){
   print(x)
 }
 
-
-.filldown.emap <- function(emap, tree){
-  shifts <- emap$sh
-  K <- sum(shifts)
-  nopt <- rep(1,length(shifts)+1)
-  opt <- 1
-  for(i in length(shifts):1){
-    if(shifts[i]==1){
-      opt <- opt+1
-      nopt[emap$e2[i]] <- opt
-    } else {
-      nopt[emap$e2[i]] <- nopt[emap$e1[i]]
-    }
-  }
-  edge.map <- data.frame(tree$edge,nopt[tree$edge[,1]],nopt[tree$edge[,2]],shifts,tree$tip.label[tree$edge[,2]],emap$r1,emap$r2,tree$edge.length)
-  names(edge.map) <- c("e1","e2","t1","t2","sh","tip","r1","r2","r")
-  return(edge.map)
+#' bayOU internal function. 
+#' 
+#' \code{.heights.cache} is an internal function and not generally called by the user
+#' 
+#' This function calculates the change in optima at each shift point on the tree
+.D.from.theta <- function(pars, cache, sort=TRUE){
+  map <- bayou:::.pars2map(pars, cache)
+  reg.shifts <- cbind(map$theta[which(duplicated(names(map$theta)))-1], map$theta[which(duplicated(names(map$theta)))])
+  D <- pars$theta[reg.shifts[,2]] - pars$theta[reg.shifts[,1]]
+  D <- D[order(reg.shifts[,2])]
+  return(list(D=D, map=reg.shifts))
 }
 
 ouMatrix <- function(vcvMatrix, alpha)

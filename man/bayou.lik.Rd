@@ -1,0 +1,35 @@
+\name{bayou.lik}
+\alias{bayou.lik}
+\title{Function for calculating likelihood of an OU model in bayou using the threepoint algorithm}
+\usage{
+  bayou.lik(pars, cache, X, model = "OU")
+}
+\arguments{
+  \item{pars}{A list of parameters to calculate the
+  likelihood}
+
+  \item{cache}{A bayou cache object generated using
+  .prepare.ou.univariate}
+
+  \item{X}{A named vector giving the tip data}
+
+  \item{SE}{A named vector or single number giving the
+  standard errors of the data (currently ignored)}
+
+  \item{model}{Parameterization of the OU model. Either
+  "OU", "QG" or "OUrepar".}
+}
+\description{
+  Function for calculating likelihood of an OU model in
+  bayou using the threepoint algorithm
+}
+\details{
+  This function implements the algorithm of Ho and Ane
+  (2014) implemented in the package phylolm for the
+  "OUfixedRoot" model. It is faster than the equivalent
+  pruning algorithm in geiger, and can be used on
+  non-ultrametric trees (unlike OU.lik, which is based on
+  the pruning algorithm in geiger). However, currently, the
+  standard error argument is ignored.
+}
+

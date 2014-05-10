@@ -17,144 +17,217 @@ makeTransparent <- function(someColor, alpha=100)
                                               blue=curcoldata[3],alpha=alpha, maxColorValue=255)})
 }
 
+#' Plot a phylogenetic tree with posterior probabilities from a bayouMCMC chain (function adapted from phytools' plotSimmap)
+#' 
+#' @param tree A tree of class phylo
+#' @param chain A bayouMCMC chain
+#' @param burnin The proportion of runs to be discarded
+#' @param colors A named vector of colors corresponding to the regimes in the stored simmap map in the tree
+#' @param fsize relative font size for tip labels
+#' @param ftype font type- options are "reg", "i" (italics), "b" (bold), or "bi" (bold-italics)
+#' @param lwd line width for plotting
+#' @param node.numbers a logical value indicating whether or not node numbers should be plotted
+#' @param mar vector containing the margins for the plot to be passed to par. If not specified, the default margins are (0.1,0.1,0.1,0.1)
+#' @param add a logical value indicating whether or not the tree should be plotted in the current or a new plot
+#' @param offset offset for the tip labels
+#' @param pp.cutoff the posterior probability above which a shift should be reconstructed on the tree. If this value is provided, it overrides any preexisting simmap associated with the tree.
+#' @param circle a logical value indicating whether or not a circle should be plotted at the base of the node with values that correspond to the posterior probability of having a shift.
+#' @param circle.pch the type of symbol used to plot at the node to indicate posterior probability
+#' @param circle.pal a palette of colors that will be used to color the interior of the circles. This will be varied over the interval proportional to the deviation that occurs at that shift on the phylogeny.
+#' @param circle.lwd the line width of the points plotted at the nodes
+#' @param circle.alpha a value between 0 and 255 that indicates the transparency of the circles (255 is completely opaque).
+#' @param dash a logical value indicating whether or not a dash (or other point) should be plotted on the branches at every location that a shift was present in the posterior chain.
+#' @param dash.pal Ignored for now
+#' @param dash.cex the relative size of dashes
+#' @param dash.pch the plotting symbol for dashes
+#' @param dash.lwd the line width for dashes
+#' @param dash.alpha the transparency of dashes
+#' @param pp.labels a logical indicating whether the posterior probability for each branch should be printed above the branch
+#' @param pp.alpha a logical or numeric value indicating transparency of posterior probability labels. If TRUE, then transparency is ramped from invisible (pp=0), to black (pp=1). If numeric, all labels are given the same transparency. If NULL, then no transparency is given. 
+#' @param pp.cex the size of the posterior probability labels 
+#' 
 #' @export
-plotSimmap.mcmc <- function (tree,chain,burnin=NULL,colors = NULL, fsize = 1, ftype = "reg", lwd = 2, 
-                             pts = TRUE, node.numbers = FALSE, mar = NULL, add = FALSE, 
-                             offset = NULL,alpha=10,sh.cex=1,type="dashes",circle.col=NULL,pch=21) {
-  tree <- reorder.phylo(tree,order="postorder")
-  if(type=="circles"){
-    L <- Lposterior(chain,tree)
+plotSimmap.mcmc <- function (tree, chain, burnin=NULL, colors = NULL, fsize = 1, ftype = "reg", lwd = 0.75, 
+                             node.numbers = FALSE, mar = NULL, add = FALSE, offset = NULL, pp.cutoff=NULL, 
+                             circle=TRUE, circle.pch=21, circle.pal=cm.colors, circle.lwd=0.75, circle.alpha=200, 
+                             dash=FALSE, dash.pal=cm.colors, dash.cex=0.5, dash.pch="|", dash.lwd=0.5, dash.alpha=10, pp.labels=FALSE, pp.alpha=NULL, pp.cex=0.75) {
+  dummy <- setNames(rep(1, length(tree$tip.label)), tree$tip.label)
+  cache <- .prepare.ou.univariate(tree, dummy)
+  tree <- cache$phy
+  if(is.null(burnin)) burnin = attributes(chain)$burnin
+  postburn <- round(burnin*length(chain$gen),0):length(chain$gen)
+  L <- Lposterior(chain, tree)
+  pull.map <- function(x, chain){
+    pars.list <- lapply(x, function(x) list(k=chain$k[[i]], ntheta=chain$ntheta[[i]], theta=chain$theta[[i]], sb=chain$sb[[i]], t2=chain$t2[[i]], loc=chain$loc[[i]]))
+    return(pars.list)
+  }
+  map2color<-function(x,pal,limits=NULL){
+    if(is.null(limits)) limits=range(x)
+    pal(100)[findInterval(x,seq(limits[1],limits[2],length.out=100+1), all.inside=TRUE)]
+  }
+  pars.list <- pull.map(postburn, chain)
+  Div <- unlist(lapply(pars.list, function(x) .D.from.theta(x, cache)$D), F,F)
+  sb <- unlist(lapply(pars.list, function(x) x$sb), F, F)
+  sb <- factor(sb, levels=1:nrow(tree$edge))
+  ave.Div <- tapply(Div, sb, mean)
+  ave.Div[is.na(ave.Div)] <- 0
+  
+  if(!is.null(pp.cutoff)){
+    pp <- L$pp
+    pars <- list()
+    pars$sb <- which(pp > pp.cutoff)
+    pars$k <- length(pars$sb)
+    pars$ntheta <- length(pars$sb)+1
+    pars$loc <- L$rel.location[pars$sb]*tree$edge.length[pars$sb]
+    pars$t2 <- 2:(length(pars$sb)+1)
+    if(length(pars$sb)>0){
+      tr <- pars2simmap(pars, tree)
+      tree <- tr$tree
+      colors <- tr$col
+      names(colors) <- 1:length(colors)
+    } else {
+      tr <- tree
+      colors <- 1; names(colors) <-1
+    }
   }
   if (is.null(tree$maps)){
     tree$maps <- lapply(tree$edge.length,function(x){names(x) <- 1; x})
   } 
   nb <- length(unique(unlist(sapply(tree$maps,names))))
-  if (class(tree) == "multiPhylo") {
-    par(ask = TRUE)
-    for (i in 1:length(tree)) plotSimmap(tree[[i]], colors = colors, 
-                                         fsize = fsize, ftype = ftype, lwd = lwd, pts = pts, 
-                                         node.numbers = node.numbers)
-  } else {
-    
-    ftype <- which(c("off", "reg", "b", "i", "bi") == ftype) - 1
-    if (!ftype) 
-      fsize = 0
-    if (is.null(colors)) {
-      colors <- rainbow(nb-1)
-      colors <- c("gray50",colors)
-      names(colors) <- as.character(1:nb)
-    }
-    if (class(tree) != "phylo") 
-      stop("tree should be object of class 'phylo.'")
-    tree$tip.label <- gsub("_", " ", tree$tip.label)
-    cw <- reorderSimmap(tree)
-    o <- phytools:::whichorder(cw$edge[,2],tree$edge[,2])
-    ob <- (1:length(tree$edge.length))[o]
-    #shifts.o <- shifts[o,]
-    pw <- reorderSimmap(tree, "pruningwise")
-    n <- length(cw$tip)
-    m <- cw$Nnode
-    Y <- matrix(NA, m + n, 1)
-    Y[cw$edge[cw$edge[, 2] <= length(cw$tip), 2]] <- 1:n
-    nodes <- unique(pw$edge[, 1])
-    for (i in 1:m) {
-      desc <- pw$edge[which(pw$edge[, 1] == nodes[i]), 
-                      2]
-      Y[nodes[i]] <- (min(Y[desc]) + max(Y[desc]))/2
-    }
-    root <- length(cw$tip) + 1
-    node.height <- matrix(NA, nrow(cw$edge), 2)
-    for (i in 1:nrow(cw$edge)) {
-      if (cw$edge[i, 1] == root) {
-        node.height[i, 1] <- 0
-        node.height[i, 2] <- cw$edge.length[i]
-      }
-      else {
-        node.height[i, 1] <- node.height[match(cw$edge[i, 
-                                                       1], cw$edge[, 2]), 2]
-        node.height[i, 2] <- node.height[i, 1] + cw$edge.length[i]
-      }
-    }
-    #shifts.o <- node.height[,1]+shifts.o
-    postburn <- round(burnin*length(chain$branch.shift),0):length(chain$branch.shift)
-    b.shift <- unlist(chain$branch.shift[postburn])
-    r1 <- tree$edge.length[b.shift]-unlist(chain$location[postburn])
-    loc.shift <- r1
-    shifts.o <- node.height[match(b.shift,o),1]+loc.shift
-    L <- L[o,]
-    if (is.null(mar)) {
-      par(mar = c(0.1, 0.1, 0.1, 0.1))
-    } else par(mar = mar)
-    if (!add) 
-      plot.new()
-    if (fsize * max(strwidth(cw$tip.label)) < 1) {
-      c <- (1 - fsize * max(strwidth(cw$tip.label)))/max(node.height)
-      cw$edge.length <- c * cw$edge.length
-      cw$maps <- lapply(cw$maps, function(x) x <- c * x)
-      node.height <- c * node.height
-    } else message("Font size too large to properly rescale tree to window.")
-    height <- max(nodeHeights(tree))
-    if (!add) 
-      plot.window(xlim = c(0, max(node.height) + fsize * 
-                             max(strwidth(cw$tip.label))), ylim = c(1, max(Y)))
-    for (i in 1:m) lines(node.height[which(cw$edge[, 1] == 
-                                             nodes[i]), 1], Y[cw$edge[which(cw$edge[, 1] == nodes[i]), 
-                                                                      2]], col = colors[names(cw$maps[[match(nodes[i], 
-                                                                                                             cw$edge[, 1])]])[1]], lwd = lwd)
-    for (i in 1:nrow(cw$edge)) {
-      x <- node.height[i, 1]
-      #  bs <- shifts.o/height
-      # points(bs,rep(Y[cw$edge[i,2]],length(bs)),cex=sh.cex,pch="|",lwd=(lwd-1),col=makeTransparent("#000000",alpha=alpha))
-      for (j in 1:length(cw$maps[[i]])) {
-        lines(c(x, x + cw$maps[[i]][j]), c(Y[cw$edge[i, 
-                                                     2]], Y[cw$edge[i, 2]]), col = colors[names(cw$maps[[i]])[j]], 
-              lwd = lwd, lend = 2)
-        if (pts)
-          points(c(x, x + cw$maps[[i]][j]), c(Y[cw$edge[i, 
-                                                        2]], Y[cw$edge[i, 2]]), pch = 20, lwd = (lwd - 
-                                                                                                   1))
-        x <- x + cw$maps[[i]][j]
-        j <- j + 1
-      }
-    }
-    
-    if(type=="dashes"){
-      bs <- shifts.o*c
-      points(bs,Y[tree$edge[b.shift,2]],cex=sh.cex,pch="|",lwd=(lwd-1),col=makeTransparent("#000000",alpha=alpha))
-    }
-    if(type=="circles"){
-      if(is.null(circle.col)){circle.col="#000000"} else {circle.col=circle.col[o]}
-      points(node.height[,1], Y[cw$edge[, 2]],cex=L[,1]*5,lwd=1.2,bg=makeTransparent(circle.col,alpha=alpha),pch=pch)
-    }
-    
-    if (node.numbers) {
-      symbols(0, mean(Y[cw$edge[cw$edge[, 1] == (length(cw$tip) + 
-                                                   1), 2]]), rectangles = matrix(c(1.2 * fsize * 
-                                                                                     strwidth(as.character(length(cw$tip) + 1)), 1.4 * 
-                                                                                     fsize * strheight(as.character(length(cw$tip) + 
-                                                                                                                      1))), 1, 2), inches = F, bg = "white", add = T)
-      text(0, mean(Y[cw$edge[cw$edge[, 1] == (length(cw$tip) + 
-                                                1), 2]]), length(cw$tip) + 1, cex = fsize)
-      for (i in 1:nrow(cw$edge)) {
-        x <- node.height[i, 2]
-        if (cw$edge[i, 2] > length(tree$tip)) {
-          symbols(x, Y[cw$edge[i, 2]], rectangles = matrix(c(1.2 * 
-                                                               fsize * strwidth(as.character(cw$edge[i, 
-                                                                                                     2])), 1.4 * fsize * strheight(as.character(cw$edge[i, 
-                                                                                                                                                        2]))), 1, 2), inches = F, bg = "white", add = T)
-          text(x, Y[cw$edge[i, 2]], cw$edge[i, 2], cex = fsize)
-        }
-      }
-    }
-    if (is.null(offset)) 
-      offset <- 0.2 * lwd/3 + 0.2/3
-    for (i in 1:n) if (ftype) 
-      text(node.height[which(cw$edge[, 2] == i), 2], Y[i], 
-           cw$tip.label[i], pos = 4, offset = offset, cex = fsize, 
-           font = ftype)
+  ftype <- which(c("off", "reg", "b", "i", "bi") == ftype) - 1
+  if (!ftype) 
+    fsize = 0
+  if (is.null(colors)) {
+    colors <- rainbow(nb-1)
+    colors <- c("gray50",colors)
+    names(colors) <- as.character(1:nb)
   }
+  if (class(tree) != "phylo") 
+    stop("tree should be object of class 'phylo.'")
+  tree$tip.label <- gsub("_", " ", tree$tip.label)
+  cw <- reorderSimmap(tree)
+  o <- phytools:::whichorder(cw$edge[,2],tree$edge[,2])
+  ob <- (1:length(tree$edge.length))[o]
+  #shifts.o <- shifts[o,]
+  pw <- reorderSimmap(tree, "pruningwise")
+  n <- length(cw$tip)
+  m <- cw$Nnode
+  Y <- matrix(NA, m + n, 1)
+  Y[cw$edge[cw$edge[, 2] <= length(cw$tip), 2]] <- 1:n
+  nodes <- unique(pw$edge[, 1])
+  for (i in 1:m) {
+    desc <- pw$edge[which(pw$edge[, 1] == nodes[i]), 
+                    2]
+    Y[nodes[i]] <- (min(Y[desc]) + max(Y[desc]))/2
+  }
+  root <- length(cw$tip) + 1
+  node.height <- matrix(NA, nrow(cw$edge), 2)
+  for (i in 1:nrow(cw$edge)) {
+    if (cw$edge[i, 1] == root) {
+      node.height[i, 1] <- 0
+      node.height[i, 2] <- cw$edge.length[i]
+    } else {
+      node.height[i, 1] <- node.height[match(cw$edge[i, 
+                                                     1], cw$edge[, 2]), 2]
+      node.height[i, 2] <- node.height[i, 1] + cw$edge.length[i]
+    }
+  }
+  ### Here is stuff I've added
+  b.shift <- unlist(chain$sb[postburn])
+  r1 <- tree$edge.length[b.shift]-unlist(chain$loc[postburn])
+  loc.shift <- r1
+  shifts.o <- node.height[match(b.shift,o),1]+loc.shift
+  L <- L[o,]
+  ####
+  if (is.null(mar)) {
+    par(mar = c(0.1, 0.1, 0.1, 0.1))
+  } else par(mar = mar)
+  if (!add) 
+    plot.new()
+  if (fsize * max(strwidth(cw$tip.label)) < 1) {
+    c <- (1 - fsize * max(strwidth(cw$tip.label)))/max(node.height)
+    cw$edge.length <- c * cw$edge.length
+    cw$maps <- lapply(cw$maps, function(x) x <- c * x)
+    node.height <- c * node.height
+  } else message("Font size too large to properly rescale tree to window.")
+  height <- max(nodeHeights(tree))
+  if (!add) 
+    plot.window(xlim = c(0, max(node.height) + fsize * 
+                           max(strwidth(cw$tip.label))), ylim = c(1, max(Y)))
+  for (i in 1:m) lines(node.height[which(cw$edge[, 1] == nodes[i]), 1], Y[cw$edge[which(cw$edge[, 1] == nodes[i]), 2]], col = colors[names(cw$maps[[match(nodes[i], cw$edge[, 1])]])[1]], lwd = lwd)
+  for (i in 1:nrow(cw$edge)) {
+    x <- node.height[i, 1]
+    #  bs <- shifts.o/height
+    # points(bs,rep(Y[cw$edge[i,2]],length(bs)),cex=sh.cex,pch="|",lwd=(lwd-1),col=makeTransparent("#000000",alpha=alpha))
+    for (j in 1:length(cw$maps[[i]])) {
+      lines(c(x, x + cw$maps[[i]][j]), c(Y[cw$edge[i, 
+                                                   2]], Y[cw$edge[i, 2]]), col = colors[names(cw$maps[[i]])[j]], 
+            lwd = lwd, lend = 2)
+
+      x <- x + cw$maps[[i]][j]
+      j <- j + 1
+    }
+  }
+  
+  #    if(type=="dashes"){
+  #     bs <- shifts.o*c
+  #      points(bs,Y[tree$edge[b.shift,2]],cex=sh.cex,pch="|",lwd=(lwd-1),col=makeTransparent("#000000",alpha=alpha))
+  #    }
+  if(dash){
+    bs <- shifts.o*c
+    points(bs,Y[tree$edge[b.shift,2]],cex=dash.cex, pch=dash.pch,lwd=dash.lwd, col=makeTransparent("black", dash.alpha))
+  }
+  if(circle){
+    cols <- map2color(ave.Div[o], circle.pal)
+    points(node.height[,1], Y[cw$edge[, 2]], cex=L[,1]*5,lwd=circle.lwd,bg=makeTransparent(cols,alpha=circle.alpha),pch=circle.pch)
+    legend_image <- as.raster(matrix(rev(circle.pal(100)), ncol=1))
+    text(x=1.5, y = round(seq(range(ave.Div)[1],range(ave.Div)[2],l=5),2), labels = seq(range(ave.Div)[1],range(ave.Div)[2],l=5))
+    rasterImage(legend_image, 1, 0.25*length(tree$tip.label), 1.01, length(tree$tip.label)-0.25*length(tree$tip.label))
+    text(1.02, seq(0.25*length(tree$tip.label), length(tree$tip.label)-0.25*length(tree$tip.label), length.out=5), labels=round(seq(range(ave.Div)[1], range(ave.Div)[2], length.out=5),2), cex=fsize)
+  }
+  if(pp.labels){
+    if(is.null(pp.alpha)){
+      pp.col = "black"
+    } else {
+      if(is.numeric(pp.alpha)){
+        pp.col = makeTransparent("black", pp.alpha)
+      }
+      if(pp.alpha){
+        pp.col <- makeTransparent("black",alpha=(0:255)[findInterval(L[,1],seq(0,1,length.out=256))])
+      }
+    }
+    text(node.height[,1]+0.5*apply(node.height,1,diff), Y[cw$edge[, 2]]-(2.5-fsize), labels=round(L[,1],2), cex=pp.cex, pos=3, col=pp.col)
+  }
+  
+  
+  if (node.numbers) {
+    symbols(0, mean(Y[cw$edge[cw$edge[, 1] == (length(cw$tip) + 
+                                                 1), 2]]), rectangles = matrix(c(1.2 * fsize * 
+                                                                                   strwidth(as.character(length(cw$tip) + 1)), 1.4 * 
+                                                                                   fsize * strheight(as.character(length(cw$tip) + 
+                                                                                                                    1))), 1, 2), inches = F, bg = "white", add = T)
+    text(0, mean(Y[cw$edge[cw$edge[, 1] == (length(cw$tip) + 
+                                              1), 2]]), length(cw$tip) + 1, cex = fsize)
+    for (i in 1:nrow(cw$edge)) {
+      x <- node.height[i, 2]
+      if (cw$edge[i, 2] > length(tree$tip)) {
+        symbols(x, Y[cw$edge[i, 2]], rectangles = matrix(c(1.2 * 
+                                                             fsize * strwidth(as.character(cw$edge[i, 
+                                                                                                   2])), 1.4 * fsize * strheight(as.character(cw$edge[i, 
+                                                                                                                                                      2]))), 1, 2), inches = F, bg = "white", add = T)
+        text(x, Y[cw$edge[i, 2]], cw$edge[i, 2], cex = fsize)
+      }
+    }
+  }
+  if (is.null(offset)) 
+    offset <- 0.2 * lwd/3 + 0.2/3
+  for (i in 1:n) if (ftype) 
+    text(node.height[which(cw$edge[, 2] == i), 2], Y[i], 
+         cw$tip.label[i], pos = 4, offset = offset, cex = fsize, 
+         font = ftype)
   par(mar = c(5, 4, 4, 2) + 0.1)
 }
+
 
 regime.plot <- function(pars,tree,cols,type='rect',transparency=100){
   require(denstrip)
