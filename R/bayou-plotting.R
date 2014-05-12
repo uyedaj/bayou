@@ -58,7 +58,7 @@ plotSimmap.mcmc <- function (tree, chain, burnin=NULL, colors = NULL, fsize = 1,
   postburn <- round(burnin*length(chain$gen),0):length(chain$gen)
   L <- Lposterior(chain, tree)
   pull.map <- function(x, chain){
-    pars.list <- lapply(x, function(x) list(k=chain$k[[i]], ntheta=chain$ntheta[[i]], theta=chain$theta[[i]], sb=chain$sb[[i]], t2=chain$t2[[i]], loc=chain$loc[[i]]))
+    pars.list <- lapply(x, function(i) list(k=chain$k[[i]], ntheta=chain$ntheta[[i]], theta=chain$theta[[i]], sb=chain$sb[[i]], t2=chain$t2[[i]], loc=chain$loc[[i]]))
     return(pars.list)
   }
   map2color<-function(x,pal,limits=NULL){
