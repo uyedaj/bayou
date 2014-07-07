@@ -35,6 +35,7 @@
   attr(z, "argn") = "alpha"
   return(z)
 }
+
 #' bayOU internal function. 
 #' 
 #' \code{fastbm.lik} is an internal function and not generally called by the user
@@ -176,10 +177,12 @@
 #' Function for calculating likelihood of an OU model in bayou using the threepoint algorithm
 #' 
 #' @param pars A list of parameters to calculate the likelihood
-#' @param cache A bayou cache object generated using .prepare.ou.univariate
+#' @param tree A phylogenetic tree of class 'phylo'
 #' @param X A named vector giving the tip data
 #' @param SE A named vector or single number giving the standard errors of the data
 #' @param model Parameterization of the OU model. Either "OU", "QG" or "OUrepar".
+#' @param invert A logical indicating whether the likelihood should be solved by matrix inversion, rather than
+#' the pruning algorithm. This is primarily present to test that calculation of the likelihood is correct. 
 #' 
 #' @details This function will likely be deprecated in the near future, and replaced by bayou.lik. Currently,
 #' it is included because it is capable of handling standard errors.
@@ -187,9 +190,8 @@
 #' @return A list returning the log likelihood ("loglik"), the weight matrix ("W"), the optima ("theta"),
 #' the residuals ("resid") and the expected values ("Exp").
 #' 
-#' @rdname OU.lik
 #' @export
-OU.lik <- function(pars,tree,X,SE=0,model="OU"){
+OU.lik <- function(pars,tree,X,SE=0,model="OU", invert=FALSE){
   if(class(tree)=="phylo"){
     cache <- .prepare.ou.univariate(tree, X, SE=SE)
   } else {cache <- tree}
@@ -208,10 +210,20 @@ OU.lik <- function(pars,tree,X,SE=0,model="OU"){
     E.th <- W%*%pars$theta
   } else {E.th <- W*pars$theta}
   X.c<-dat-as.vector(E.th)
-  lnL.fx<-.fastbm.lik(cache,X.c,SE=TRUE,model="OU")
+  if(invert){
+    n <- cache$n
+    V <- vcv(cache$phy)*pars$sig2
+    ouV <- ouMatrix(V, pars$alpha)
+    diag(ouV) <- diag(ouV)+cache$SE^2
+    detV <- determinant(ouV, logarithm=TRUE)
+    loglik <- -0.5*(n*log(2*pi)+detV$modulus+t(X.c)%*%solve(ouV)%*%(X.c))[1,1]
+    return(list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th, ouV=ouV, detV =detV$modulus))
+  } else {
+    lnL.fx<-.fastbm.lik(cache,X.c,SE=TRUE,model="OU")
   #lnL.fx<-bm.lik(cache$phy,X.c,SE=NA,model="OU")
-  loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=ROOT.GIVEN)
-  list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th)
+    loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=ROOT.GIVEN)
+    return(list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th))
+  }
 }
 
 #' 
@@ -270,7 +282,7 @@ bayou.lik <- function(pars, cache, X, model="OU"){
   X.c <- C_weightmatrix(cache, pars)$resid
   #tree.trans = .transf.branch.lengths(cache, model, pars$alpha)
   transf.phy <- C_transf_branch_lengths(cache, 1, X.c, pars$alpha)
-  transf.phy$edge.length[cache$externalEdge] <- transf.phy$edge[cache$externalEdge] + cache$SE^2*(2*pars$alpha)/pars$sig2
+  transf.phy$edge.length[cache$externalEdge] <- transf.phy$edge[cache$externalEdge] + cache$SE[cache$phy$edge[cache$externalEdge, 2]]^2*(2*pars$alpha)/pars$sig2
   #transf.phy$diagMatrix <- transf.phy$diagMatrix
   #P <- cbind(y)
   #comp4 <- .three.point.compute2(transf.phy, cache, P, Q=NULL)
