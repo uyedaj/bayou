@@ -355,6 +355,7 @@
 #' @param x A function of class 'priorFn' produced by \code{make.prior}
 #' @param ... Additional arguments passed to \code{print}
 #' 
+#' @export
 #' @method print priorFn
 print.priorFn <- function(x, ...){
   cat("prior function for bayou\n")
@@ -373,6 +374,7 @@ print.priorFn <- function(x, ...){
 #' @param x A function of class 'refFn' produced by make.refFn
 #' @param ... Additional arguments passed to \code{print}
 #' 
+#' @export
 #' @method print refFn
 print.refFn <- function(x, ...){
   cat("reference function for bayou\n")

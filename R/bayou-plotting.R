@@ -352,6 +352,7 @@ phenogram.density <- function(tree, dat, burnin=0, chain ,colors=NULL, pp.cutoff
 #' @param x A mcmc chain of class 'bayouMCMC' produced by the function bayou.mcmc and loaded into the environment using load.bayou
 #' @param ... Additional arguments passed to \code{plot.mcmc} from the \code{coda} package
 #' 
+#' @export
 #' @method plot bayouMCMC
 plot.bayouMCMC <- function(x, ...){
   if(is.null(attributes(x)$burnin)){

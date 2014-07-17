@@ -370,6 +370,7 @@ combine.chains <- function(chain1,chain2,burnin.prop=0){
 #' @param x A 'bayouFit' object produced by \code{bayou.mcmc}
 #' @param ... Additional parameters passed to \code{print}
 #' 
+#' @export
 #' @method print bayouFit
 print.bayouFit <- function(x, ...){
   cat("bayou modelfit\n")
@@ -415,6 +416,7 @@ set.burnin <- function(chain, burnin=0.3){
 #' summary statistics for a bayouMCMC chain, and \code{branch.posteriors} which summarizes
 #' branch specific data from a bayouMCMC chain.
 #' 
+#' @export
 #' @method summary bayouMCMC
 summary.bayouMCMC <- function(object, ...){
   tree <- attributes(object)$tree

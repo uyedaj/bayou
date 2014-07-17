@@ -366,6 +366,7 @@ steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burn
 #' @param x An ssMCMC object
 #' @param ... Optional arguments passed to print
 #' 
+#' @export
 #' @method print ssMCMC
 print.ssMCMC <- function(x, ...){
   cat("Stepping stone estimation of marginal likelihood\n")
@@ -383,6 +384,7 @@ print.ssMCMC <- function(x, ...){
 #' indicate different power posteriors for each. These chains should appear to be well mixed. The final plot
 #' shows the sum of the marginal likelihood across each of the steps in the stepping stone algorithm. 
 #' 
+#' @export
 #' @method plot ssMCMC
 plot.ssMCMC <- function(x, ...){
   par(mfrow=c(2,2))
