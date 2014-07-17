@@ -1,8 +1,17 @@
 #' Simulates parameters from bayou models
 #' 
 #' \code{priorSim} Simulates parameters from the prior distribution specified by \code{make.prior}
+#' 
+#' @param prior A prior function created by \code{bayou::make.prior}
+#' @param tree A tree of class 'phylo'
+#' @param plot A logical indicating whether the simulated parameters should be plotted
+#' @param nsim The number of parameter sets to be simulated
+#' @param ... Parameters passed on to \code{plotSimmap(...)}
+#' 
+#' @return A list of bayou parameter lists
+#' 
 #' @export
-priorSim <- function(prior,tree,plot=TRUE,nsim=1,exclude.branches=NULL, ...){
+priorSim <- function(prior,tree,plot=TRUE,nsim=1, ...){
   tree <- reorder(tree,'postorder')
   model <- attributes(prior)$model
   dists <- attributes(prior)$dist
@@ -62,7 +71,7 @@ priorSim <- function(prior,tree,plot=TRUE,nsim=1,exclude.branches=NULL, ...){
       par(ask=TRUE)
     }
     for(i in 1:nsim){
-      maps <- pars2simmap(simpar[[i]],tree,theta=simpar[[i]]$theta)
+      maps <- pars2simmap(simpar[[i]],tree)
       col <- maps$col
       plotSimmap(maps$tree,colors=col, ...)
     }
@@ -73,9 +82,20 @@ priorSim <- function(prior,tree,plot=TRUE,nsim=1,exclude.branches=NULL, ...){
 
 #' Simulates data from bayou models
 #' 
-#' \code{priorSim} Simulates data for a given bayou model
+#' \code{dataSim} Simulates data for a given bayou model and parameter set
+#' 
+#' @param pars A bayou formated parameter list
+#' @param model The type of model specified by the parameter list (either "OU", "OUrepar" or "QG").
+#' @param tree A tree of class 'phylo'
+#' @param map.type Either "pars" if the regimes are taken from the parameter list, or "simmap" if taken from the stored simmap in the tree
+#' @param SE A single value or vector equal to the number of tips specifying the measurement error that should be simulated at the tips
+#' @param phenogram A logical indicating whether or not the simulated data should be plotted as a phenogram
+#' @param ... Optional parameters passed to \code{phenogram(...)}.
+#'
+#' @description This function simulates data for a given set of parameter values.
+#' 
 #' @export
-dataSim <- function(pars, model, tree, map.type="pars", emap=NULL, SE=0, phenogram=TRUE, ...){
+dataSim <- function(pars, model, tree, map.type="pars", SE=0, phenogram=TRUE, ...){
   if(model %in% c("QG")){
     pars$alpha <- QG.alpha(pars)
     pars$sig2 <- QG.sig2(pars)
@@ -91,11 +111,7 @@ dataSim <- function(pars, model, tree, map.type="pars", emap=NULL, SE=0, phenogr
   }
   if(map.type=="pars"){
     print("Using mapped regimes from parameter list")
-    maps <- pars2simmap(pars, tree, theta=pars$theta, root.theta=pars$theta[1])$tree$maps
-  }
-  if(map.type=="emap"){
-    print("Using mapped regimes from edge map")
-    maps <- emap2simmap(emap,tree)$maps
+    maps <- pars2simmap(pars, tree)$tree$maps
   }
   dummy <- rep(0, length(tree$tip.label))
   names(dummy) <- tree$tip.label
@@ -106,13 +122,13 @@ dataSim <- function(pars, model, tree, map.type="pars", emap=NULL, SE=0, phenogr
   if(pars$k > 0){
     E.th <- W%*%pars$theta
   } else {E.th <- W*pars$theta}
-  Sigma <- ouMatrix(vcv.phylo(tree),pars$alpha)*pars$sig2
+  Sigma <- .ouMatrix(vcv.phylo(tree),pars$alpha)*pars$sig2
   diag(Sigma) <- diag(Sigma)+SE
   X <- mvrnorm(1,E.th,Sigma)
   if(phenogram){
     col <- c(1,rainbow(pars$k))
     names(col) <- 1:pars$ntheta
-    phenogram(tree,X,colors=col, ...)
+    phenogram(cache$phy,X,colors=col, ...)
   }
   return(list(W=W, E.th=E.th,dat=X))
 }

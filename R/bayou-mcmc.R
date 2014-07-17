@@ -16,7 +16,8 @@
 #' @param chunk The number of samples retained in memory before being written to a file
 #' @param control A list providing a control object governing how often and which proposals are used
 #' @param tuning A named vector that governs how liberal or conservative proposals are that equals the number of proposal mechanisms.
-#' @param new.dir If TRUE, then results are stored in a new temporary directory. If FALSE, results are written to the current working directory.
+#' @param new.dir If TRUE, then results are stored in a new temporary directory. If FALSE, results are written to the current working directory. If a character string,
+#' then results are written to that working directory. 
 #' @param plot.freq How often plots should be made during the mcmc. If NULL, then plots are not produced
 #' @param outname The prefix given to files created by the mcmc
 #' @param ticker.freq How often a summary log should be printed to the screen
@@ -24,8 +25,9 @@
 #' @param startpar A list with the starting parameters for the mcmc. If NULL, starting parameters are simulated from the prior distribution
 #' @param moves A named list providing the proposal functions to be used in the mcmc. Names correspond to the parameters to be modified in the parameter list. See 'details' for default values.
 #' @param control.weights A named vector providing the relative frequency each proposal mechanism is to be used during the mcmc
+#' @param lik.fn Likelihood function to be evaluated. Defaults to \code{bayou.lik}.
 #' 
-#' 
+#' @useDynLib bayou
 #' @export
 #' @details 
 #' By default, the alpha, sig2 (and various reparameterizations of these parameters) are adjusted with multiplier proposals, theta are adjusted with sliding window proposals,
@@ -134,7 +136,7 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
     } else {
       accept <- c(accept,0)
     }
-    store <- store.bayOU(i, oldpar, oll, pr1, store, samp, chunk, parorder,files)
+    store <- .store.bayou(i, oldpar, oll, pr1, store, samp, chunk, parorder,files)
     if(!is.null(plot.freq)){
       if(i %% plot.freq==0){
         tr <- .toSimmap(.pars2map(oldpar, cache),cache)
@@ -163,7 +165,7 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
     }
   }
   lapply(files, close)
-  out <- list('model'=model, 'dir.name'=dir.name,'dir'=dir, 'outname'=outname, 'accept'=accept,'accept.type'=accept.type, 'tree'=tree, 'dat'=dat)
+  out <- list('model'=model, 'dir.name'=dir.name,'dir'=dir, 'outname'=outname, 'accept'=accept,'accept.type'=accept.type, 'tree'=tree, 'dat'=dat, 'tmpdir'=ifelse(new.dir==TRUE, TRUE, FALSE))
   class(out) <- c("bayouFit", "list")
   return(out)
 }

@@ -1,15 +1,15 @@
 \name{OU.lik}
 \alias{OU.lik}
-\title{Function for calculating likelihood of an OU model in bayou using the threepoint algorithm}
+\title{Function for calculating likelihood of an OU model in bayou using pruning algorithm or matrix inversion}
 \usage{
-  OU.lik(pars, tree, X, SE = 0, model = "OU")
+  OU.lik(pars, tree, X, SE = 0, model = "OU",
+    invert = FALSE)
 }
 \arguments{
   \item{pars}{A list of parameters to calculate the
   likelihood}
 
-  \item{cache}{A bayou cache object generated using
-  .prepare.ou.univariate}
+  \item{tree}{A phylogenetic tree of class 'phylo'}
 
   \item{X}{A named vector giving the tip data}
 
@@ -18,6 +18,11 @@
 
   \item{model}{Parameterization of the OU model. Either
   "OU", "QG" or "OUrepar".}
+
+  \item{invert}{A logical indicating whether the likelihood
+  should be solved by matrix inversion, rather than the
+  pruning algorithm. This is primarily present to test that
+  calculation of the likelihood is correct.}
 }
 \value{
   A list returning the log likelihood ("loglik"), the
@@ -26,12 +31,14 @@
 }
 \description{
   Function for calculating likelihood of an OU model in
-  bayou using the threepoint algorithm
+  bayou using pruning algorithm or matrix inversion
 }
 \details{
-  This function will likely be deprecated in the near
-  future, and replaced by bayou.lik. Currently, it is
-  included because it is capable of handling standard
-  errors.
+  This function can be used for calculating single
+  likelihoods using previously implemented methods. It is
+  likely to become deprecated and replaced by
+  \code{bayou.lik} in the future, which is based on
+  \code{phylolm}'s threepoint algorithm, which works on
+  non-ultrametric trees and is substantially faster.
 }
 

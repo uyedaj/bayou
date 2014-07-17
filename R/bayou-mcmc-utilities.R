@@ -1,6 +1,26 @@
 #' Loads a bayou object
 #' 
 #' \code{load.bayou} loads a bayouFit object that was created using \code{bayou.mcmc()}
+#' 
+#' @param bayouFit An object of class \code{bayouFit} produced by the function \code{bayou.mcmc()}
+#' @param save.Rdata A logical indicating whether the resulting chains should be saved as an *.rds file
+#' @param file An optional filename (possibly including path) for the saved *.rds file
+#' @param cleanup A logical indicating whether the files produced by \code{bayou.mcmc()} should be removed. 
+#' 
+#' @details If both \code{save.Rdata} is \code{FALSE} and \code{cleanup} is \code{TRUE}, then \code{load.bayou} will trigger a
+#' warning and ask for confirmation. In this case, if the results of \code{load.bayou()} are not stored in an object,
+#' the results of the MCMC run will be permanently deleted. 
+#' 
+#' @examples
+#' \dontrun{
+#' data(chelonia)
+#' tree <- chelonia$phy
+#' dat <- chelonia$dat
+#' prior <- make.prior(tree)
+#' fit <- bayou.mcmc(tree, dat, model="OU", prior=prior, new.dir=TRUE, ngen=5000)
+#' chain <- load.bayou(fit, save.Rdata=FALSE, cleanup=TRUE)
+#' plot(chain)
+#' }
 #' @export
 load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE){#dir=NULL,outname="bayou",model="OU"){
   tree <- bayouFit$tree
@@ -81,13 +101,28 @@ load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE){#dir
     }
   }
   if(cleanup){
-    unlink(dir,T,T)
-    cat(paste("deleting temporary directory", dir))
+    if(bayouFit$tmpdir){
+      unlink(dir,T,T)
+      cat(paste("deleting temporary directory", dir))
+    } else {
+      file.remove(paste(dir, outname, ".loc", sep=""))
+      file.remove(paste(dir, outname, ".t2", sep=""))
+      file.remove(paste(dir, outname, ".sb", sep=""))
+      file.remove(paste(dir, outname, ".pars", sep=""))
+    }
     }
   return(chain)
 }
 
 #' Calculate Gelman's R statistic
+#' 
+#' @param parameter The name or number of the parameter to calculate the statistic on
+#' @param chain1 The first bayouMCMC chain
+#' @param chain2 The second bayouMCMC chain
+#' @param freq The interval between which the diagnostic is calculated
+#' @param start The first sample to calculate the diagnostic at
+#' @param plot A logical indicating whether the results should be plotted
+#' @param ... Optional arguments passed to \code{gelman.diag(...)} from the \code{coda} package
 #' 
 #' @export
 gelman.R <- function(parameter,chain1,chain2,freq=20,start=1,plot=TRUE, ...){
@@ -108,7 +143,8 @@ gelman.R <- function(parameter,chain1,chain2,freq=20,start=1,plot=TRUE, ...){
   return(data.frame("R"=R,"UCI.95"=R.UCI))
 }
 
-posterior.Q <- function(parameter,chain1,chain2,pars=simpar$pars,burnin=0.3){
+# Function for calculation of the posterior quantiles. Only needed for simulation study, not generally called by the user.
+.posterior.Q <- function(parameter,chain1,chain2,pars,burnin=0.3){
   postburn <- round(burnin*length(chain1$gen),0):length(chain1$gen)
   chain <- mcmc.list(mcmc(chain1[[parameter]][postburn]),mcmc(chain2[[parameter]][postburn]))
   posterior.q <- summary(chain,quantiles=seq(0,1,0.005))$quantiles
@@ -118,6 +154,19 @@ posterior.Q <- function(parameter,chain1,chain2,pars=simpar$pars,burnin=0.3){
 }
 
 #' Return a posterior of shift locations
+#' 
+#' @param chain A bayouMCMC chain
+#' @param tree A tree of class 'phylo'
+#' @param burnin A value giving the burnin proportion of the chain to be discarded
+#' @param simpar An optional bayou formatted parameter list giving the true values (if data were simulated)
+#' @param mag A logical indicating whether the average magnitude of the shifts should be returned
+#' 
+#' @return A data frame with rows corresponding to postordered branches. \code{pp} indicates the
+#' posterior probability of the branch containing a shift. \code{magnitude of theta2} gives the average
+#' value of the new optima after a shift. \code{naive SE of theta2} gives the standard error of the new optima
+#' not accounting for autocorrelation in the MCMC and \code{rel location} gives the average relative location 
+#' of the shift on the branch (between 0 and 1 for each branch). 
+#' 
 #' @export
 Lposterior <- function(chain,tree,burnin=0, simpar=NULL,mag=TRUE){
   pb.start <- ifelse(burnin>0,round(length(chain$gen)*burnin,0),1)
@@ -145,14 +194,15 @@ Lposterior <- function(chain,tree,burnin=0, simpar=NULL,mag=TRUE){
   return(Lpost)
 }
 
-#' Discard burnin
+#' Discards burnin
 #' 
 #' @export
-discard.burnin <- function(chain,burnin.prop=0.3){
+.discard.burnin <- function(chain,burnin.prop=0.3){
   lapply(chain,function(x) x[(burnin.prop*length(x)):length(x)])
 }
 
-tune.D <- function(D,accept,accept.type){
+#' Tuning function, not currently used.
+.tune.D <- function(D,accept,accept.type){
   tuning.samp <- (length(accept)/2):length(accept)
   acc <- tapply(accept[tuning.samp],accept.type[tuning.samp],mean)
   acc.length <- tapply(accept[tuning.samp],accept.type[tuning.samp],length)
@@ -167,6 +217,28 @@ tune.D <- function(D,accept,accept.type){
   return(list("D"=D,"acc.tune"=acc.tune))
 }
 
+#' Utility function for retrieving parameters from an MCMC chain
+#' 
+#' @param i An integer giving the sample to retrieve
+#' @param chain A bayouMCMC chain
+#' @param model The parameterization used, either "OU", "QG" or "OUrepar"
+#' 
+#' @return A bayou formatted parameter list
+#' 
+#' @examples
+#' \dontrun{
+#' tree <- sim.bdtree(n=30)
+#' tree$edge.length <- tree$edge.length/max(branching.times(tree))
+#' prior <- make.prior(tree, dists=list(dk="cdpois", dsig2="dnorm", dtheta="dnorm"), 
+#'              param=list(dk=list(lambda=15, kmax=32), dsig2=list(mean=1, sd=0.01), 
+#'                  dtheta=list(mean=0, sd=3)), plot.prior=FALSE)
+#' pars <- priorSim(prior, tree, plot=FALSE, nsim=1)$pars[[1]]
+#' dat <- dataSim(pars, model="OU", phenogram=FALSE, tree)$dat
+#' fit <- bayou.mcmc(tree, dat, model="OU", prior=prior, new.dir=TRUE, ngen=5000, plot.freq=NULL)
+#' chain <- load.bayou(fit, save.Rdata=TRUE, cleanup=TRUE)
+#' plotBayoupars(pull.pars(300, chain), tree)
+#' }
+#' @export
 pull.pars <- function(i,chain,model="OU"){
   parorder <- switch(model,"QG"=c("h2","P","w2","Ne","k","ntheta","theta", "sb", "loc", "t2"), "OU"=c("alpha","sig2","k","ntheta","theta", "sb", "loc", "t2"),"OUrepar"=c("halflife","Vy","k","ntheta","theta", "sb", "loc", "t2"))
   pars <- lapply(parorder,function(x) chain[[x]][[i]])
@@ -176,6 +248,12 @@ pull.pars <- function(i,chain,model="OU"){
 
 
 #' Combine mcmc chains
+#' 
+#' @param chain1 The first chain to be combined
+#' @param chain2 The second chain to be combined
+#' @param burnin.prop The proportion of burnin from each chain to be discarded
+#' 
+#' @return A combined bayouMCMC chain
 #' 
 #' @export
 combine.chains <- function(chain1,chain2,burnin.prop=0){
@@ -248,7 +326,8 @@ combine.chains <- function(chain1,chain2,burnin.prop=0){
   return(ct)
 }
 
-store.bayOU <- function(i, pars, ll, pr, store, samp, chunk, parorder, files){
+
+.store.bayou <- function(i, pars, ll, pr, store, samp, chunk, parorder, files){
   if(i%%samp==0){
     j <- (i/samp)%%chunk
     if(j!=0 & i>0){
@@ -287,29 +366,34 @@ store.bayOU <- function(i, pars, ll, pr, store, samp, chunk, parorder, files){
 }
 
 #' S3 method for printing bayouFit objects
-#' @export
+#' 
+#' @param x A 'bayouFit' object produced by \code{bayou.mcmc}
+#' @param ... Additional parameters passed to \code{print}
+#' 
 #' @method print bayouFit
-print.bayouFit <- function(bayouFit, ...){
+print.bayouFit <- function(x, ...){
   cat("bayou modelfit\n")
-  cat(paste(bayouFit$model, " parameterization\n\n",sep=""))
+  cat(paste(x$model, " parameterization\n\n",sep=""))
   cat("Results are stored in directory\n")
-  out<-(paste(bayouFit$dir, bayouFit$outname,".*",sep=""))
+  out<-(paste(x$dir, x$outname,".*",sep=""))
   cat(out,"\n")
   cat(paste("To load results, use 'load.bayou(bayouFit)'\n\n",sep=""))
-  cat(paste(length(bayouFit$accept), " generations were run with the following acceptance probabilities:\n"))
-  accept.prob <- round(tapply(bayouFit$accept,bayouFit$accept.type,mean),2)
-  prop.N <- tapply(bayouFit$accept.type,bayouFit$accept.type,length)
-  print(accept.prob)
+  cat(paste(length(x$accept), " generations were run with the following acceptance probabilities:\n"))
+  accept.prob <- round(tapply(x$accept,x$accept.type,mean),2)
+  prop.N <- tapply(x$accept.type,x$accept.type,length)
+  print(accept.prob, ...)
   cat(" Total number of proposals of each type:\n")
-  print(prop.N)
+  print(prop.N, ...)
 }
 
 #' Set the burnin proportion for bayouMCMC objects
-#' @export
+#' 
 #' @param chain A bayouMCMC chain or an ssMCMC chain
 #' @param burnin The burnin proportion of samples to be discarded from downstream analyses.
 #' 
 #' @return A bayouMCMC chain or ssMCMC chain with burnin proportion stored in the attributes.
+#' 
+#' @export
 set.burnin <- function(chain, burnin=0.3){
   cl <- class(chain)[1]
   attributes(chain)$burnin = burnin
@@ -323,34 +407,41 @@ set.burnin <- function(chain, burnin=0.3){
 }
 
 #' S3 method for summarizing bayouMCMC objects
-#' @export
+#' 
+#' @param object A bayouMCMC object
+#' @param ... Additional arguments passed to \code{print}
+#' 
+#' @return An invisible list with two elements: \code{statistics} which provides
+#' summary statistics for a bayouMCMC chain, and \code{branch.posteriors} which summarizes
+#' branch specific data from a bayouMCMC chain.
+#' 
 #' @method summary bayouMCMC
-summary.bayouMCMC <- function(chain, ...){
-  tree <- attributes(chain)$tree
-  model <- attributes(chain)$model
-  if(is.null(attributes(chain)$burnin)){
+summary.bayouMCMC <- function(object, ...){
+  tree <- attributes(object)$tree
+  model <- attributes(object)$model
+  if(is.null(attributes(object)$burnin)){
     start <- 1
   } else {
-    start <- round(attributes(chain)$burnin*length(chain$gen),0)
+    start <- round(attributes(object)$burnin*length(object$gen),0)
   }
-  cat("bayou MCMC chain:", max(chain$gen), "generations\n")
-  cat(length(chain$gen), "samples, first", eval(start), "samples discarded as burnin\n")
-  postburn <- start:length(chain$gen)
-  chain <- lapply(chain,function(x) x[postburn])
+  cat("bayou MCMC chain:", max(object$gen), "generations\n")
+  cat(length(object$gen), "samples, first", eval(start), "samples discarded as burnin\n")
+  postburn <- start:length(object$gen)
+  object <- lapply(object,function(x) x[postburn])
   parorder <- switch(model,"QG"=c("lnL","prior", "h2","P","w2","Ne","k","ntheta"), "OU"=c("lnL","prior","alpha","sig2","k","ntheta"),"OUrepar"=c("lnL","prior","halflife","Vy","k","ntheta"))
-  summat <- matrix(unlist(chain[parorder]),ncol=length(parorder))
+  summat <- matrix(unlist(object[parorder]),ncol=length(parorder))
   colnames(summat) <- parorder
-  summat <- cbind(summat, "root"=sapply(chain$theta,function(x) x[1]))
+  summat <- cbind(summat, "root"=sapply(object$theta,function(x) x[1]))
   sum.1vars <- summary(mcmc(summat))
-  sum.theta <- summary(mcmc(unlist(chain$theta)))
+  sum.theta <- summary(mcmc(unlist(object$theta)))
   statistics <- rbind(cbind(sum.1vars$statistics, "Effective Size" = effectiveSize(summat)),"all theta"=c(sum.theta$statistics[1:2],rep(NA,3)))
   cat("\n\nSummary statistics for parameters:\n")
-  print(statistics)
-  Lpost <- Lposterior(chain, tree)
+  print(statistics, ...)
+  Lpost <- Lposterior(object, tree)
   Lpost.sorted <- Lpost[order(Lpost[,1],decreasing=TRUE),]
   cat("\n\nBranches with posterior probabilities higher than 0.1:\n")
-  print(Lpost.sorted[Lpost.sorted[,1]>0.1,])
+  print(Lpost.sorted[Lpost.sorted[,1]>0.1,], ...)
   out <- list(statistics=statistics, branch.posteriors=Lpost)
-  return(out)
+  invisible(out)
 }
   

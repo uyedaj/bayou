@@ -37,6 +37,45 @@ rdpois <- function(n,lambda,kmax, ...){
   }
   return(i)
 }
+#' Probability density functions for bayou
+#' 
+#' \code{dsb} calculates the probability of a particular arrangement of shifts for a given set of assumptions. 
+#' 
+#' @rdname dsb
+#' @param sb A vector giving the branch numbers (for a post-ordered tree)
+#' @param ntips The number of tips in the phylogeny
+#' @param bmax A single integer or a vector of integers equal to the number of branches in the phylogeny indicating the
+#' maximum number of shifts allowable in the phylogeny. Can take values 0, 1 and Inf.
+#' @param prob A single value or a vector of values equal to the number of branches in the phylogeny indicating the probability that
+#' a randomly selected shift will lie on this branch. Can take any positive value, values need not sum to 1 (they will be scaled to sum to 1)
+#' @param log A logical indicating whether the log probability should be returned. Default is 'TRUE'
+#' @param k The number of shifts to randomly draw from the distribution
+#' 
+#' @description This function provides a means to specify the prior for the location of shifts across the phylogeny. Certain combinations are not
+#' allowed. For example, a maximum shift number of Inf on one branch cannot be combined with a maximum shift number of 1 on another. Thus, bmax must be
+#' either a vector of 0's and Inf's or a vector of 0's and 1's. Also, if bmax == 1, then all probabilities must be equal, as bayou cannot sample unequal 
+#' probabilities without replacement. 
+#' 
+#' @return The log density of the particular number and arrangement of shifts.
+#' 
+#' @examples
+#' n=10
+#' tree <- sim.bdtree(n=n)
+#' tree <- reorder(tree, "postorder")
+#' nbranch <- 2*n-2
+#' sb <- c(1,2, 2, 3)
+#' 
+#' # Allow any number of shifts on each branch, with probability proportional to branch length
+#' dsb(sb, ntips=n, bmax=Inf, prob=tree$edge.length)
+#' 
+#' #Disallow shifts on the first branch, returns -Inf because sb[1] = 1
+#' dsb(sb, ntips=n, bmax=c(0, rep(1, nbranch-1)), prob=tree$edge.length)
+#' 
+#' #Set maximum number of shifts to 1, returns -Inf because two shifts are on branch 2
+#' dsb(sb, ntips=n, bmax=1, prob=1)
+#' 
+#' #Generate a random set of k branches
+#' rsb(5, ntips=n, bmax=Inf, prob=tree$edge.length)
 #' @export
 dsb <- function(sb, ntips=ntips, bmax=1, prob=1, log=TRUE){
   if(any(!(bmax %in% c(0,1,Inf)))) stop("Number of shifts allowed per branch must be 0, 1, or Inf") 
@@ -62,6 +101,7 @@ dsb <- function(sb, ntips=ntips, bmax=1, prob=1, log=TRUE){
     }
   }    
 }
+#' @rdname dsb
 #' @export
 rsb <- function(k, ntips=ntips, bmax=1, prob=1, log=TRUE){
   if(any(!(bmax %in% c(0,1,Inf)))) stop("Number of shifts allowed per branch must be 0, 1, or Inf") 
@@ -82,65 +122,41 @@ rsb <- function(k, ntips=ntips, bmax=1, prob=1, log=TRUE){
   }
 }    
   
-
-
-dsb.equal <- function(sb,ntips=ntips,log=TRUE){
-  if(log){
-    return(log(1/choose(2*ntips-2,length(sb))))
-  } else {return(1/choose(2*ntips-2,length(sb)))}
-}
-dsb.equalnotips <- function(sb,ntips=ntips,log=TRUE){
-  if(log){
-    return(log(1/choose(ntips-2,length(sb))))
-  } else {return(1/choose(ntips-2,length(sb)))}
-}
-dsb.free <- function(sb,ntips=ntips,edge.length=edge.length,log=TRUE){
-  dd <- tapply(sb,sb,length)
-  nd <- unique(sb)
-  pd <- edge.length[nd]/sum(edge.length)
-  dmultinom(c(dd,0),prob=c(pd,1-sum(pd)),log=log)
-} 
-
-rsb.equal <- function(k, ntips=ntips, exclude.branches=NULL){
-  if(!is.null(exclude.branches)){
-    br <- (1:(2*ntips-2))[-c(exclude.branches)]
-  }
-  return(.sample(1:(2*ntips-2),k,replace=FALSE))
-}
-rsb.equalnotips <- function(k, ntips=ntips, tree=tree, exclude.branches=NULL){
-  if(!is.null(exclude.branches)){
-    exclude.branches <- c(exclude.branches,tree$edge[,2]<=ntips)
-  } else {
-    exclude.branches <- which(tree$edge[,2]<=ntips)
-  }
-  br <- (1:(2*ntips-2))[-c(exclude.branches)]
-  return(.sample(br,k,replace=FALSE))
-}
-rsb.free <- function(k, ntips=ntips, edge.length=edge.length, exclude.branches=NULL){
-  if(!is.null(exclude.branches)){
-    br <- (1:(2*ntips-2))[-c(exclude.branches)]
-    edge.length <- edge.length[-c(exclude.branches)]
-  } else {br <- (1:(2*ntips-2))}
-  prb <- edge.length/sum(edge.length)
-  sb <- suppressWarnings(.sample(br,k,prob=prb, replace=TRUE))
-  return(sb)
-}
+#' Probability density function for the location of the shift along the branch
+#' 
+#' \code{dloc} calculates the probability of a shift occuring at a given location along the branch assuming a uniform distribution of unit length
+#' \code{rloc} randomly generates the location of a shift along the branch
+#' 
+#' @param loc The location of the shift along the branch
+#' @param min The minimum position on the branch the shift can take
+#' @param max The maximum position on the branch the shift can take
+#' @param log A logical indicating whether the log density should be returned
+#' @param k The number of shifts to return along a branch
+#' 
+#' @description Since unequal probabilities are incorporated in calculating the density via \code{dsb}, all branches are assumed to be of unit length. 
+#' Thus, the \code{dloc} function simply returns 0 if \code{log=TRUE} and 1 if \code{log=FALSE}. 
+#' @rdname dloc
 #' @export
 dloc <- function(loc,min=0,max=1,log=TRUE) if(log) return (rep(0,length(loc))) else return(rep(1,length(loc)))
+#' @rdname dloc
 #' @export
 rloc <- function(k,min=0,max=1){
   return(runif(k))
 }
-#'@export
-dIdentity <- function(x,k, log=TRUE,...){
-  log(1)
-}
-#'@export
-rIdentity <- function(x,k,log=TRUE,...){
-  rep(k,x)
-}
 
-##Half cauchy distribution taken from Laplace's Demon
+#' Half cauchy distribution taken from the R package LaplacesDemon (Hall, 2012).
+#' 
+#' \code{dhalfcauchy} returns the probability density for a half-Cauchy distribution
+#' 
+#' @param x A parameter value for which the density should be calculated
+#' @param scale The scale parameter of the half-Cauchy distributoin
+#' @param log A logical indicating whether the log density should be returned
+#' @param q A vector of quantiles
+#' @param p A vector of probabilities
+#' @param n The number of observations
+#' 
+#' @rdname dhalfcauchy
+#' 
 #'@export
 dhalfcauchy <- function(x, scale=25, log=FALSE)
 {
@@ -152,6 +168,7 @@ dhalfcauchy <- function(x, scale=25, log=FALSE)
   if(log == FALSE) dens <- exp(dens)
   return(dens)
 }
+#' @rdname dhalfcauchy
 #' @export
 phalfcauchy <- function(q, scale=25)
 {
@@ -162,6 +179,7 @@ phalfcauchy <- function(q, scale=25)
   z <- {2/pi}*atan(q/scale)
   return(z)
 }
+#' @rdname dhalfcauchy
 #' @export
 qhalfcauchy <- function(p, scale=25)
 {
@@ -173,6 +191,7 @@ qhalfcauchy <- function(p, scale=25)
   q <- scale*tan({pi*p}/2)
   return(q)
 }
+#' @rdname dhalfcauchy
 #' @export
 rhalfcauchy <- function(n, scale=25)
 {

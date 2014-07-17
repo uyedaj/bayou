@@ -5,6 +5,26 @@
   gelman.R(parameter, chain1, chain2, freq = 20, start = 1,
     plot = TRUE, ...)
 }
+\arguments{
+  \item{parameter}{The name or number of the parameter to
+  calculate the statistic on}
+
+  \item{chain1}{The first bayouMCMC chain}
+
+  \item{chain2}{The second bayouMCMC chain}
+
+  \item{freq}{The interval between which the diagnostic is
+  calculated}
+
+  \item{start}{The first sample to calculate the diagnostic
+  at}
+
+  \item{plot}{A logical indicating whether the results
+  should be plotted}
+
+  \item{...}{Optional arguments passed to
+  \code{gelman.diag(...)} from the \code{coda} package}
+}
 \description{
   Calculate Gelman's R statistic
 }

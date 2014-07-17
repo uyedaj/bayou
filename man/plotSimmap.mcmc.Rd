@@ -5,12 +5,13 @@
   plotSimmap.mcmc(tree, chain, burnin = NULL,
     colors = NULL, fsize = 1, ftype = "reg", lwd = 0.75,
     node.numbers = FALSE, mar = NULL, add = FALSE,
-    offset = NULL, pp.cutoff = NULL, circle = TRUE,
-    circle.pch = 21, circle.pal = cm.colors,
-    circle.lwd = 0.75, circle.alpha = 200, dash = FALSE,
-    dash.pal = cm.colors, dash.cex = 0.5, dash.pch = "|",
-    dash.lwd = 0.5, dash.alpha = 10, pp.labels = FALSE,
-    pp.alpha = NULL, pp.cex = 0.75)
+    offset = NULL, pp.cutoff = NULL, legend = TRUE,
+    limits = NULL, circle = TRUE, circle.pch = 21,
+    circle.pal = cm.colors, circle.lwd = 0.75,
+    circle.alpha = 200, dash = FALSE, dash.pal = cm.colors,
+    dash.cex = 0.5, dash.pch = "|", dash.lwd = 0.5,
+    dash.alpha = 10, pp.labels = FALSE, pp.alpha = NULL,
+    pp.cex = 0.75)
 }
 \arguments{
   \item{tree}{A tree of class phylo}
@@ -93,6 +94,14 @@
 
   \item{pp.cex}{the size of the posterior probability
   labels}
+
+  \item{legend}{Logical indicating whether or not a legend
+  should be produced}
+
+  \item{limits}{Divergence values assigning the minimum and
+  maximum amounts applied to the extremes of the color
+  palette. Values outside the limits are assigned the most
+  extreme values in the color palette function.}
 }
 \description{
   Plot a phylogenetic tree with posterior probabilities

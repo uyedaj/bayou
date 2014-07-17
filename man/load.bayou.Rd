@@ -5,8 +5,40 @@
   load.bayou(bayouFit, save.Rdata = TRUE, file = NULL,
     cleanup = FALSE)
 }
+\arguments{
+  \item{bayouFit}{An object of class \code{bayouFit}
+  produced by the function \code{bayou.mcmc()}}
+
+  \item{save.Rdata}{A logical indicating whether the
+  resulting chains should be saved as an *.rds file}
+
+  \item{file}{An optional filename (possibly including
+  path) for the saved *.rds file}
+
+  \item{cleanup}{A logical indicating whether the files
+  produced by \code{bayou.mcmc()} should be removed.}
+}
 \description{
   \code{load.bayou} loads a bayouFit object that was
   created using \code{bayou.mcmc()}
+}
+\details{
+  If both \code{save.Rdata} is \code{FALSE} and
+  \code{cleanup} is \code{TRUE}, then \code{load.bayou}
+  will trigger a warning and ask for confirmation. In this
+  case, if the results of \code{load.bayou()} are not
+  stored in an object, the results of the MCMC run will be
+  permanently deleted.
+}
+\examples{
+\dontrun{
+data(chelonia)
+tree <- chelonia$phy
+dat <- chelonia$dat
+prior <- make.prior(tree)
+fit <- bayou.mcmc(tree, dat, model="OU", prior=prior, new.dir=TRUE, ngen=5000)
+chain <- load.bayou(fit, save.Rdata=FALSE, cleanup=TRUE)
+plot(chain)
+}
 }
 

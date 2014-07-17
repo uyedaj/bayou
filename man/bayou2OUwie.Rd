@@ -14,8 +14,13 @@
 
   \item{dat}{A vector of tip states}
 }
+\value{
+  A list with an OUwie formatted tree with mapped regimes
+  and an OUwie formatted data table
+}
 \description{
-  \code{OUwie2bayou} calculates the probability density of
-  a value
+  \code{bayou2OUwie} Converts a bayou formatted parameter
+  list into OUwie formatted tree and data table that can be
+  analyzed in OUwie
 }
 

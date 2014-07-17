@@ -1,39 +1,42 @@
-emap2simmap <- function(emap,tree){
-  foo <- function(x){
-    tmp <- unlist(emap[x,c('r1','r2')])
-    names(tmp) <- c(emap$t1[x],emap$t2[x])
-    tmp[tmp>0]
-  }
-  nb <- sum(emap$sh)
-  if(nb>0){
-    col <- c("#000000",rainbow(nb))
-  } else {col <- 1}
-  names(col) <- 1:(nb+1)
-  tree$maps <- lapply(1:dim(emap)[1],foo)
-  tree$col <- col
-  tree
-}
-
-
 #' Convert a bayou parameter list into a simmap formatted phylogeny
 #' 
+#' \code{pars2simmap} takes a list of parameters and converts it to simmap format
+#' 
+#' @param pars A list that contains \code{sb} (a vector of branches with shifts), \code{loc} (a vector of shift locations),
+#' \code{t2} (a vector of theta indices indicating which theta is present after the shift).
+#' @param tree A tree of class 'phylo'
+#' 
+#' @description This function converts a bayou formatted parameter list specifying regime locations into a simmap formatted tree that can
+#' be plotted using \code{plotSimmap} from phytools.
+#' 
+#' @return A list with elements: \code{tree} A simmap formatted tree, \code{pars} bayou formatted parameter list, and \code{cols} A named vector of colors
+#' that can be passed to \code{plotSimmap}.
+#' 
+#' @examples
+#' tree <- reorder(sim.bdtree(n=100), "postorder")
+#' 
+#' pars <- list(k=5, sb=c(195, 196, 184, 138, 153), loc=rep(0, 5), t2=2:6)
+#' tr <- pars2simmap(pars, tree)
+#' plotSimmap(tr$tree, col=tr$col)
 #' @export
-pars2simmap <- function(pars,tree,theta=NULL,root.theta=0){
+pars2simmap <- function(pars,tree){
   tree <- reorder(tree, "postorder")
   sb <- pars$sb
   loc <- pars$loc
   t2 <- pars$t2
-  Th <- theta
+  if(!all(pars$sb %in% 1:nrow(tree$edge))) stop("Invalid parameter list. Specified branches not found in the tree")
+  if(!all(pars$loc < tree$edge.length[pars$sb])) stop("Invalid parameter list. Some shift locations specified beyond the length of the branch")
+  Th <- NULL
   nbranch <- length(tree$edge.length)
   maps <- lapply(tree$edge.length,function(x){y <- x; names(y) <- 1; y})
   dup <- which(duplicated(sb))
   if(length(dup)>0){
-    maps[sb[-dup]] <- lapply(1:length(sb[-dup]),addshift2map,maps=maps,sb=sb[-dup],loc=loc[-dup],t2=t2[-dup])
+    maps[sb[-dup]] <- lapply(1:length(sb[-dup]),.addshift2map,maps=maps,sb=sb[-dup],loc=loc[-dup],t2=t2[-dup])
   } else {
-    maps[sb] <- lapply(1:length(sb),addshift2map,maps=maps,sb=sb,loc=loc,t2=t2)
+    maps[sb] <- lapply(1:length(sb),.addshift2map,maps=maps,sb=sb,loc=loc,t2=t2)
   }
   for(i in dup){
-    maps[[sb[i]]] <-addshift2map(i,maps=maps,sb=sb,loc=loc,t2=t2)
+    maps[[sb[i]]] <-.addshift2map(i,maps=maps,sb=sb,loc=loc,t2=t2)
   }
   nopt <- rep(1,nbranch)
   for(i in nbranch:1){
@@ -110,84 +113,34 @@ pars2simmap <- function(pars,tree,theta=NULL,root.theta=0){
   return(list(segs=segs,theta=t2b))
 }
 
+#' Calculates the alpha parameter from a QG model
+#' 
+#' @param pars A bayou formatted parameter list with parameters h2 (heritability), P (phenotypic variance) and w2 (width of adaptive landscape)
+#' 
+#' @return An alpha value according to the equation \code{alpha = h2*P/(P+w2+P)}. 
 QG.alpha <- function(pars){
   pars$h2*pars$P/(pars$P+pars$w2*pars$P)
 }
+
+#' Calculates the sigma^2 parameter from a QG model
+#' 
+#' @param pars A bayou formatted parameter list with parameters h2 (heritability), P (phenotypic variance) and Ne (Effective population size)
+#' 
+#' @return An sig2 value according to the equation \code{alpha = h2*P/(Ne)}. 
 QG.sig2 <- function(pars){
   (pars$h2*pars$P)/pars$Ne
 }
 
+
+#' Calculates the alpha and sigma^2 from a parameter list with supplied phylogenetic half-life and stationary variance
+#' 
+#' @param pars A bayou formatted parameter list with parameters halflife (phylogenetic halflife) and Vy (stationary variance)
+#' 
+#' @return A list with values for alpha and sig2.
 OU.repar <- function(pars){
   alpha <- log(2)/pars$halflife
   sig2 <- (2*log(2)/(pars$halflife))*pars$Vy
   return(list(alpha=alpha,sig2=sig2))
-}
-
-
-#' Return an edge map for a given generation from a bayOU mcmc list
-pull.emap <- function(i,chain,cache){
-  sb <- chain$branch.shift[[i]]
-  t2 <- chain$t2[[i]]
-  sl <- chain$location[[i]]
-  phy <- cache$phy
-  shifts <- rep(0,length(cache$edge.length))
-  shifts[sb] <- 1
-  nopt <- rep(1,length(shifts)+1)
-  opt <- 1
-  j <- length(t2)
-  phy$maps <- lapply(phy$edge.length,function(x){names(x) <- 1; x})
-  if(length(sb)>0){
-    phy$maps[sb] <- lapply(1:length(sb),function(x){y <- c(sl[x],phy$maps[[sb[x]]]-sl[x]);names(y)[2] <- t2[x] ;y})
-    for(i in length(shifts):1){
-      if(shifts[i]==1){
-        opt <- t2[j]
-        nopt[phy$edge[i,2]] <- opt
-        j <- j-1
-      } else {
-        nopt[phy$edge[i,2]] <- nopt[phy$edge[i,1]]
-      }
-    }
-  }
-  phy$maps <- lapply(1:length(shifts),function(x){ names(phy$maps[[x]])[1] <- nopt[phy$edge[x,1]];phy$maps[[x]] })
-  phy$maps <- lapply(1:length(shifts),function(x){ names(phy$maps[[x]])[length(phy$maps[[x]])] <- nopt[phy$edge[x,2]];phy$maps[[x]] })
-  S <- phy$edge.length
-  S[sb] <- phy$edge.length[sb]-sl
-  S2 <- rep(0,length(shifts))
-  S2[sb] <- sl
-  edge.map <- data.frame(phy$edge,nopt[phy$edge[,1]],nopt[phy$edge[,2]],shifts,phy$tip.label[phy$edge[,2]],S,S2,phy$edge.length)
-  colnames(edge.map)= c("e1","e2","t1","t2","sh","tip","r1","r2","r")
-  return(list(phy=phy,emap=edge.map))
-}
-
-#' Generate an edge map from a vector of branches, shift locations and optima assignments
-read.emap <- function(sb,sl,t2,phy){
-  shifts <- rep(0,length(phy$edge.length))
-  shifts[sb] <- 1
-  nopt <- rep(1,length(shifts))
-  opt <- 1
-  j <- 1
-  phy$maps <- lapply(phy$edge.length,function(x){names(x) <- 1; x})
-  if(length(sb)>0){
-    phy$maps[sb] <- lapply(1:length(sb),function(x){y <- c(sl[x],phy$maps[[sb[x]]]-sl[x]);names(y)[2] <- x+1 ;y})
-    for(i in length(shifts):1){
-      if(shifts[i]==1){
-        opt <- t2[j]
-        nopt[phy$edge[i,2]] <- opt
-        j <- j+1
-      } else {
-        nopt[phy$edge[i,2]] <- nopt[phy$edge[i,1]]
-      }
-    }
-  }
-  phy$maps <- lapply(1:length(shifts),function(x){ names(phy$maps[[x]])[1] <- nopt[phy$edge[x,1]];phy$maps[[x]] })
-  phy$maps <- lapply(1:length(shifts),function(x){ names(phy$maps[[x]])[length(phy$maps[[x]])] <- nopt[phy$edge[x,2]];phy$maps[[x]] })
-  S <- phy$edge.length
-  S[sb] <- sl
-  S2 <- rep(0,length(shifts))
-  S2[sb] <- phy$edge.length[sb]-sl
-  edge.map <- data.frame(phy$edge,nopt[phy$edge[,1]],nopt[phy$edge[,2]],shifts,phy$tip.label[phy$edge[,2]],S,S2,phy$edge.length)
-  colnames(edge.map)= c("e1","e2","t1","t2","sh","tip","r1","r2","r")
-  return(list(phy=phy,emap=edge.map))
 }
 
 .toSimmap <- function(map, cache){
@@ -199,10 +152,12 @@ read.emap <- function(sb,sl,t2,phy){
 
 #' Converts OUwie data into bayou format
 #' 
-#' \code{OUwie2bayou} calculates the probability density of a value 
+#' \code{OUwie2bayou} Converts OUwie formatted data into a bayou formatted parameter list
 #' 
 #' @param tree A phylogenetic tree with states at internal nodes as node labels
 #' @param trait A data frame in OUwie format
+#' 
+#' @return A bayou formatted parameter list
 #' @export
 OUwie2bayou <- function(tree, trait){
   tree <- reorder(tree, 'postorder')
@@ -224,13 +179,15 @@ OUwie2bayou <- function(tree, trait){
 
 #' Converts bayou data into OUwie format
 #' 
-#' \code{OUwie2bayou} calculates the probability density of a value 
+#' \code{bayou2OUwie} Converts a bayou formatted parameter list into OUwie formatted tree and data table that can be analyzed in OUwie
 #' 
 #' @param pars A list with parameter values specifying \code{sb} = the branches with shifts,
 #' \code{loc} = the location on branches where a shift occurs and \code{t2} = the optima to which
 #' descendants of that shift inherit
 #' @param tree A phylogenetic tree
 #' @param dat A vector of tip states
+#' 
+#' @return A list with an OUwie formatted tree with mapped regimes and an OUwie formatted data table
 #' @export
 bayou2OUwie <- function(pars, tree, dat){
   if(is.null(names(dat))){

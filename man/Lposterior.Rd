@@ -5,6 +5,31 @@
   Lposterior(chain, tree, burnin = 0, simpar = NULL,
     mag = TRUE)
 }
+\arguments{
+  \item{chain}{A bayouMCMC chain}
+
+  \item{tree}{A tree of class 'phylo'}
+
+  \item{burnin}{A value giving the burnin proportion of the
+  chain to be discarded}
+
+  \item{simpar}{An optional bayou formatted parameter list
+  giving the true values (if data were simulated)}
+
+  \item{mag}{A logical indicating whether the average
+  magnitude of the shifts should be returned}
+}
+\value{
+  A data frame with rows corresponding to postordered
+  branches. \code{pp} indicates the posterior probability
+  of the branch containing a shift. \code{magnitude of
+  theta2} gives the average value of the new optima after a
+  shift. \code{naive SE of theta2} gives the standard error
+  of the new optima not accounting for autocorrelation in
+  the MCMC and \code{rel location} gives the average
+  relative location of the shift on the branch (between 0
+  and 1 for each branch).
+}
 \description{
   Return a posterior of shift locations
 }

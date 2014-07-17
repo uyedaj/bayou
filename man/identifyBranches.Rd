@@ -1,0 +1,41 @@
+\name{identifyBranches}
+\alias{identifyBranches}
+\title{Identify shifts on branches of a phylogenetic tree}
+\usage{
+  identifyBranches(tree, n, fixed.loc = TRUE,
+    plot.simmap = TRUE)
+}
+\arguments{
+  \item{tree}{An object of class 'phylo'}
+
+  \item{n}{The number of shifts to map interactively onto
+  the phylogeny}
+
+  \item{fixed.loc}{A logical indicating whether the exact
+  location on the branch should be returned, or the shift
+  will be free to move along the branch}
+
+  \item{plot.simmap}{A logical indicating whether the
+  resulting painting of regimes should be plotted following
+  the selection shift location.}
+}
+\value{
+  Returns a list with elements "sb" which contains the
+  branch numbers of all selected branches with length "n".
+  If "fixed.loc=TRUE", then the list also contains a vector
+  "loc" which contains the location of the selected shifts
+  along the branch.
+}
+\description{
+  This is a convenience function for mapping regimes
+  interactively on the phylogeny. The method locates the
+  nearest branch to where the cursor is clicked on the plot
+  and records the branch number and the location selected
+  on the branch.
+}
+\details{
+  \code{identifyBranches} opens an interactive phylogeny
+  plot that allows the user to specify the location of
+  shifts in a phylogenetic tree.
+}
+

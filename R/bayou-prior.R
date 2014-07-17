@@ -9,10 +9,7 @@
 #' @param plot.prior A logical indicating whether the prior distributions should be plotted.
 #' @param model One of three specifications of the OU parameterization used. 
 #' Takes values \code{"OU"} (alpha & sig2), \code{"QG"} (h2, P, w2, Ne), or \code{"OUrepar"} (halflife,Vy)
-#' @param fixed A list of parameters that are to be fixed at provided values. These are removed from calculation of the prior value.
-#' @param type Type of regime painting to be evaluated by the returned prior function. Takes either "pars" for a parameter list or "simmap" 
-#' if the function evaluates a provided simmap tree. 
-#' 
+#' @param fixed A list of parameters that are to be fixed at provided values. These are removed from calculation of the prior value. 
 #' @details Default distributions and parameter values are given as follows:
 #' OU: \code{list(dists=list("dalpha"="dlnorm","dsig2"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dunif"),
 #'    param=list("dalpha"=list(),"dsig2"=list(),"dtheta"=list(),"dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list()))}
@@ -38,27 +35,34 @@
 #' dat <- chelonia$dat
 #' 
 #' #Create a prior that allows only one shift per branch with equal probability across branches
-#' prior <- make.prior(tree, dists=list(dalpha="dlnorm", dsig2="dlnorm",dsb="dsb", dk="cdpois", dtheta="dnorm"), 
-#'              param=list(dalpha=list(meanlog=-5, sdlog=2), dsig2=list(meanlog=-1, sdlog=5), 
-#'              dk=list(lambda=15, kmax=200), dsb=list(bmax=1,prob=1), dtheta=list(mean=mean(dat), sd=2)))
+#' prior <- make.prior(tree, dists=list(dalpha="dlnorm", dsig2="dlnorm",dsb="dsb", dk="cdpois",
+#'        dtheta="dnorm"), param=list(dalpha=list(meanlog=-5, sdlog=2), 
+#'            dsig2=list(meanlog=-1, sdlog=5), dk=list(lambda=15, kmax=200), 
+#'                dsb=list(bmax=1,prob=1), dtheta=list(mean=mean(dat), sd=2)))
 #'              
 #' #Evaluate some parameter sets
-#' pars1 <- list(alpha=0.1, sig2=0.1, k=5, ntheta=6, theta=rnorm(6, mean(dat), 2), sb=c(32, 53, 110, 350, 439), loc=rep(0.1, 5), t2=2:6)
-#' pars2 <- list(alpha=0.1, sig2=0.1, k=5, ntheta=6, theta=rnorm(6, mean(dat), 2), sb=c(43, 43, 432, 20, 448), loc=rep(0.1, 5), t2=2:6)
+#' pars1 <- list(alpha=0.1, sig2=0.1, k=5, ntheta=6, theta=rnorm(6, mean(dat), 2), 
+#'                  sb=c(32, 53, 110, 350, 439), loc=rep(0.1, 5), t2=2:6)
+#' pars2 <- list(alpha=0.1, sig2=0.1, k=5, ntheta=6, theta=rnorm(6, mean(dat), 2),
+#'                  sb=c(43, 43, 432, 20, 448), loc=rep(0.1, 5), t2=2:6)
 #' prior(pars1) 
 #' prior(pars2) #-Inf because two shifts on one branch
 #' 
-#' #Create a prior that allows any number of shifts along each branch with probability proportional to branch length
-#' prior <- make.prior(tree, dists=list(dalpha="dlnorm", dsig2="dlnorm",dsb="dsb", dk="cdpois", dtheta="dnorm"), 
-#'              param=list(dalpha=list(meanlog=-5, sdlog=2), dsig2=list(meanlog=-1, sdlog=5), 
-#'              dk=list(lambda=15, kmax=200), dsb=list(bmax=Inf,prob=tree$edge.length), dtheta=list(mean=mean(dat), sd=2)))
+#' #Create a prior that allows any number of shifts along each branch with probability proportional 
+#' #to branch length
+#' prior <- make.prior(tree, dists=list(dalpha="dlnorm", dsig2="dlnorm",dsb="dsb", dk="cdpois", 
+#'              dtheta="dnorm"), param=list(dalpha=list(meanlog=-5, sdlog=2), 
+#'                dsig2=list(meanlog=-1, sdlog=5), dk=list(lambda=15, kmax=200), 
+#'                  dsb=list(bmax=Inf,prob=tree$edge.length), dtheta=list(mean=mean(dat), sd=2)))
 #' prior(pars1)
 #' prior(pars2)
 #' 
 #' #Create a prior with fixed regime placement and sigma^2 value
-#' prior <- make.prior(tree, dists=list(dalpha="dlnorm", dsig2="fixed", dsb="fixed", dk="fixed", dtheta="dnorm", dloc="dunif"), 
-#'              param=list(dalpha=list(meanlog=-5, sdlog=2), dtheta=list(mean=mean(dat), sd=2)),
-#'                  fixed=list(sig2=1, k=3, ntheta=4, sb=c(447, 396, 29))
+#' prior <- make.prior(tree, dists=list(dalpha="dlnorm", dsig2="fixed", dsb="fixed", dk="fixed", 
+#'              dtheta="dnorm", dloc="dunif"), param=list(dalpha=list(meanlog=-5, sdlog=2), 
+#'                dtheta=list(mean=mean(dat), sd=2)), fixed=list(sig2=1, k=3, ntheta=4, 
+#'                  sb=c(447, 396, 29)))
+#'                  
 #' pars3 <- list(alpha=0.01, theta=rnorm(4, mean(dat), 2), loc=rep(0.1, 4))
 #' prior(pars3)
 #' 
@@ -68,21 +72,7 @@
 #' ##Return parameter values used in prior distribution
 #' attributes(prior)$parameters
 
-#prior <- make.prior(tree, dists=list(dalpha="dlnorm", dsig2="dlnorm",dsb="fixed", dk="fixed"), 
-#                    param=list(dalpha=list(meanlog=-5, sdlog=2), dsig2=list(meanlog=-1, sdlog=5), 
-#                               dk=list(lambda=15, kmax=200), dsb=list(bmax=1,prob=1), dtheta=list(mean=mean(dat), sd=2)))
-#dists=list(dalpha="dlnorm", dsig2="dlnorm",dsb="fixed", dk="fixed")
-##param=list(dalpha=list(meanlog=-5, sdlog=2), dsig2=list(meanlog=-1, sdlog=5),dk=list(lambda=15, kmax=200), dsb=list(bmax=1,prob=1), dtheta=list(mean=mean(dat), sd=2))
-#plot.prior=TRUE
-#model="OU"
-#type="pars"
-#dists=list(dsb="fixed", dk="fixed", dloc="dloc")
-#param= list()
-#fixed= list(sb=c(20,32,64), t2=c(2,3,2), loc=c(0.01,0.01,0.01))
-#fixed=list()
-#model="OU"
-#type="pars"
-make.prior <- function(tree, dists=list(), param=list(), fixed=list(), plot.prior=TRUE,model="OU",type="pars"){
+make.prior <- function(tree, dists=list(), param=list(), fixed=list(), plot.prior=TRUE,model="OU"){
   tree <- reorder.phylo(tree, "postorder")
   nH <- max(nodeHeights(tree))
   ntips <- length(tree$tip.label)
@@ -154,8 +144,7 @@ make.prior <- function(tree, dists=list(), param=list(), fixed=list(), plot.prio
           }
       }  
   }
-  if(type=="pars"){
-    priorFUN <- function(pars,cache){
+  priorFUN <- function(pars,cache){
       if(any(!(par.names %in% names(pars)))) stop(paste("Missing parameters: ", paste(par.names[!(par.names %in% names(pars))],collapse=" ")))
       pars.o <- pars[match(par.names,names(pars))]
       pars.o <- pars.o[!is.na(names(pars.o))]
@@ -163,36 +152,36 @@ make.prior <- function(tree, dists=list(), param=list(), fixed=list(), plot.prio
       names(densities) <- par.names
       lnprior <- sum(unlist(densities,F,F))
       return(lnprior)
-    }
   }
-  if(type=="emap"){
-    priorFUN <- function(pars,cache,emap){
-      pars$sb <- which(emap$sh==1)
-      pars$loc <- emap$r1[pars$sb]
-      if(any(!(par.names %in% names(pars)))) stop(paste("Missing parameters: ", paste(par.names[!(par.names %in% names(pars))],collapse=" ")))
-      pars.o <- pars[match(par.names,names(pars))]
-      pars.o <- pars.o[!is.na(names(pars.o))]
-      densities <- sapply(1:length(pars.o),function(x) prior.fx[[x]](pars.o[[x]]))
-      names(densities) <- par.names
-      lnprior <- sum(unlist(densities,F,F))
-      return(lnprior)
-    }
-  }
-  if(type=="simmap"){
-    priorFUN <- function(pars,cache){
-      pars$sb <- rep(1:length(cache$edge.length),sapply(cache$maps,length)-1)
-      pars$loc <- sapply(pars$sb,function(x) cache$maps[[x]][-1])
-      pars$t2 <- names(pars$loc)
-      pars$loc <- unname(pars$loc)
-      if(any(!(par.names %in% names(pars)))) stop(paste("Missing parameters: ", paste(par.names[!(par.names %in% names(pars))],collapse=" ")))
-      pars.o <- pars[match(par.names,names(pars))]
-      pars.o <- pars.o[!is.na(names(pars.o))]
-      densities <- sapply(1:length(pars.o),function(x) prior.fx[[x]](pars.o[[x]]))
-      names(densities) <- par.names
-      lnprior <- sum(unlist(densities,F,F))
-      return(lnprior)
-    }
-  }
+
+#  if(type=="emap"){
+#    priorFUN <- function(pars,cache,emap){
+#      pars$sb <- which(emap$sh==1)
+#      pars$loc <- emap$r1[pars$sb]
+#      if(any(!(par.names %in% names(pars)))) stop(paste("Missing parameters: ", paste(par.names[!(par.names %in% names(pars))],collapse=" ")))
+#      pars.o <- pars[match(par.names,names(pars))]
+#      pars.o <- pars.o[!is.na(names(pars.o))]
+#      densities <- sapply(1:length(pars.o),function(x) prior.fx[[x]](pars.o[[x]]))
+#      names(densities) <- par.names
+#      lnprior <- sum(unlist(densities,F,F))
+#      return(lnprior)
+#    }
+#  }
+#  if(type=="simmap"){
+#    priorFUN <- function(pars,cache){
+#      pars$sb <- rep(1:length(cache$edge.length),sapply(cache$maps,length)-1)
+#      pars$loc <- sapply(pars$sb,function(x) cache$maps[[x]][-1])
+#      pars$t2 <- names(pars$loc)
+#      pars$loc <- unname(pars$loc)
+#      if(any(!(par.names %in% names(pars)))) stop(paste("Missing parameters: ", paste(par.names[!(par.names %in% names(pars))],collapse=" ")))
+#      pars.o <- pars[match(par.names,names(pars))]
+#      pars.o <- pars.o[!is.na(names(pars.o))]
+#      densities <- sapply(1:length(pars.o),function(x) prior.fx[[x]](pars.o[[x]]))
+#      names(densities) <- par.names
+#      lnprior <- sum(unlist(densities,F,F))
+#      return(lnprior)
+#    }
+#  }
   if(length(remove)>0){
     if("sb" %in% fixed.param){
       prior.param$dsb$bmax <- rep(0, nrow(tree$edge))

@@ -1,3 +1,4 @@
+setwd("~/repos/bayou/bayou_1.0/")
 require(devtools)
 require(roxygen2)
 require(testthat)
@@ -17,7 +18,7 @@ dat <- chelonia.simmap$dat
 emap <- chelonia.simmap$emap
 #tree <- sim.bdtree(n=1000,stop="taxa")
 #tree <- reorder.phylo(tree,"postorder")
-prior <- make.prior(tree,model="OU",dists=list(dk="dnbinom"),param=list(dk=list(size=1,prob=0.002),dsb=list(bmax=c(0,0,0,0,0,rep(1,444),0),prob=1)),type="pars",plot.prior=TRUE)
+prior <- make.prior(tree,model="OU",dists=list(dk="dnbinom"),param=list(dk=list(size=1,prob=0.05),dsb=list(bmax=Inf, prob=tree$edge.length)),type="pars",plot.prior=TRUE)
 startpar <- priorSim(prior,tree,plot=TRUE,nsim=1,exclude.branches=NULL, ftype="off",pts=F)$pars[[1]]
 mapped.tree <- pars2simmap(startpar,tree,theta=startpar$theta,root.theta=startpar$theta[1])
 plotSimmap(mapped.tree$tree,col=mapped.tree$col,ftype="off",pts=F)

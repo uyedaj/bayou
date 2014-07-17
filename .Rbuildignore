@@ -9,4 +9,6 @@
 ^R/deprecated\.R
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^figure/
+^tutorial\.md
 

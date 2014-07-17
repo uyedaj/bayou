@@ -20,7 +20,8 @@ Imports:
     RcppArmadillo,
     MASS,
     mnormt,
-    fitdistrplus
+    fitdistrplus,
+    denstrip
 Suggests:
     doMC,
     foreach
@@ -39,3 +40,4 @@ Collate:
     'bayou-plotting.R'
     'bayou-simulation.r'
     'bayou-steppingstone.R'
+    'bayou-package.R'

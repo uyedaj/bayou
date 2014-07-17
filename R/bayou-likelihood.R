@@ -3,7 +3,13 @@
 #' \code{.fix.root.bm} is an internal function and not generally called by the user
 #' 
 #' This is an internal function from geiger.
-.fix.root.bm <- geiger:::.fix.root.bm
+.fix.root.bm <- function (root, cache) {
+  rtidx = cache$root
+  cache$y["m", rtidx] = root
+  attr(cache$y, "given")[rtidx] = as.integer(TRUE)
+  cache
+}
+#geiger:::.fix.root.bm
 
 #' bayOU internal function. 
 #' 
@@ -137,7 +143,7 @@
           s = r.cache$y["s", ]
           g = attr(r.cache$y, "given")
           nn = r.cache$nn
-          r.cache$y = geiger:::.cache.y.nodes(m, s, g, nn, r.cache$phy, 
+          r.cache$y = .cache.y.nodes(m, s, g, nn, r.cache$phy, 
                                      nodes = nodes)
         }
         r.cache
@@ -174,7 +180,7 @@
   return(likfx)
 }
 
-#' Function for calculating likelihood of an OU model in bayou using the threepoint algorithm
+#' Function for calculating likelihood of an OU model in bayou using pruning algorithm or matrix inversion
 #' 
 #' @param pars A list of parameters to calculate the likelihood
 #' @param tree A phylogenetic tree of class 'phylo'
@@ -184,8 +190,9 @@
 #' @param invert A logical indicating whether the likelihood should be solved by matrix inversion, rather than
 #' the pruning algorithm. This is primarily present to test that calculation of the likelihood is correct. 
 #' 
-#' @details This function will likely be deprecated in the near future, and replaced by bayou.lik. Currently,
-#' it is included because it is capable of handling standard errors.
+#' @details This function can be used for calculating single likelihoods using previously implemented methods. It is
+#' likely to become deprecated and replaced by \code{bayou.lik} in the future, which is based on \code{phylolm}'s threepoint
+#' algorithm, which works on non-ultrametric trees and is substantially faster.
 #' 
 #' @return A list returning the log likelihood ("loglik"), the weight matrix ("W"), the optima ("theta"),
 #' the residuals ("resid") and the expected values ("Exp").
@@ -213,11 +220,11 @@ OU.lik <- function(pars,tree,X,SE=0,model="OU", invert=FALSE){
   if(invert){
     n <- cache$n
     V <- vcv(cache$phy)*pars$sig2
-    ouV <- ouMatrix(V, pars$alpha)
+    ouV <- .ouMatrix(V, pars$alpha)
     diag(ouV) <- diag(ouV)+cache$SE^2
     detV <- determinant(ouV, logarithm=TRUE)
     loglik <- -0.5*(n*log(2*pi)+detV$modulus+t(X.c)%*%solve(ouV)%*%(X.c))[1,1]
-    return(list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th, ouV=ouV, detV =detV$modulus))
+    return(list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th))
   } else {
     lnL.fx<-.fastbm.lik(cache,X.c,SE=TRUE,model="OU")
   #lnL.fx<-bm.lik(cache$phy,X.c,SE=NA,model="OU")
@@ -226,8 +233,6 @@ OU.lik <- function(pars,tree,X,SE=0,model="OU", invert=FALSE){
   }
 }
 
-#' 
-#' 
 .OU.lik <- function(pars,cache,X,SE=0,model="OU"){
   if(model=="QG"){
     pars$alpha <- QG.alpha(pars)
@@ -254,13 +259,12 @@ OU.lik <- function(pars,tree,X,SE=0,model="OU", invert=FALSE){
 #' @param pars A list of parameters to calculate the likelihood
 #' @param cache A bayou cache object generated using .prepare.ou.univariate
 #' @param X A named vector giving the tip data
-#' @param SE A named vector or single number giving the standard errors of the data (currently ignored)
 #' @param model Parameterization of the OU model. Either "OU", "QG" or "OUrepar".
 #' 
 #' @details This function implements the algorithm of Ho and Ane (2014) implemented in the package
-#' phylolm for the "OUfixedRoot" model. It is faster than the equivalent pruning algorithm in geiger,
+#' \code{phylolm} for the \code{OUfixedRoot} model. It is faster than the equivalent pruning algorithm in geiger,
 #' and can be used on non-ultrametric trees (unlike OU.lik, which is based on the pruning algorithm in
-#' geiger). However, currently, the standard error argument is ignored.
+#' geiger). 
 #' @export
 bayou.lik <- function(pars, cache, X, model="OU"){
   if(model=="QG"){

@@ -1,0 +1,49 @@
+\name{OUphenogram}
+\alias{OUphenogram}
+\title{Experimental phenogram plotting function for set of model of model parameters}
+\usage{
+  OUphenogram(pars, tree, dat, SE = 0, regime.col = NULL,
+    ...)
+}
+\arguments{
+  \item{pars}{A bayou formatted parameter list}
+
+  \item{tree}{A tree of class 'phylo'}
+
+  \item{dat}{A named vector of tip data}
+
+  \item{regime.col}{A named vector of colors equal in
+  length to the number of regimes}
+
+  \item{SE}{Standard error of the tip states}
+
+  \item{...}{Optional arguments passed to
+  \code{phenogram()}}
+}
+\description{
+  Experimental phenogram plotting function for set of model
+  of model parameters
+}
+\details{
+  This is an experimental plotting utility that can plot a
+  phenogram with a given regime painting from a parameter
+  list. Note that it uses optimization of internal node
+  states using matrix inversion, which is very slow for
+  large trees. However, what is returned is the maximum
+  likelihood estimate of the internal node states given the
+  model, data and the parameter values.
+}
+\examples{
+\dontrun{
+tree <- sim.bdtree(n=50)
+tree$edge.length <- tree$edge.length/max(branching.times(tree))
+prior <- make.prior(tree, dists=list(dk="cdpois", dsig2="dnorm", dtheta="dnorm"),
+             param=list(dk=list(lambda=5, kmax=10), dsig2=list(mean=1, sd=0.01),
+                   dtheta=list(mean=0, sd=3)), plot.prior=FALSE)
+pars <- priorSim(prior, tree, plot=FALSE, nsim=1)$pars[[1]]
+pars$alpha <- 4
+dat <- dataSim(pars, model="OU", phenogram=FALSE, tree)$dat
+OUphenogram(pars, tree, dat, ftype="off")
+}
+}
+

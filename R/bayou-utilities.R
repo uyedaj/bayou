@@ -52,12 +52,11 @@
 #' 
 #' This is an internal function modified from geiger's function .prepare.bm.univariate for use with OU models.
 ##Merging .prepare.ou.phylolm and .prepare.ou.univariate
-
 ##Clean this up to make sure I actually need all this!!
 .prepare.ou.univariate <- function(tree,X, SE=0, ...){
   ntips <- length(tree$tip.label)
   rownames(tree$edge) <- 1:(length(tree$edge[,1]))
-  cache <- bayou:::.prepare.bm.univariate(tree, X, SE=SE)#, ...)
+  cache <- .prepare.bm.univariate(tree, X, SE=SE)#, ...)
   ind <- as.numeric(rownames(cache$edge))
   cache$n <- ntips
   cache$N <- nrow(cache$phy$edge)
@@ -70,7 +69,7 @@
   cache$ntips <- length(X)
   cache$ind <- ind
   cache$ordering <- "postorder"
-  cache$ht <- geiger:::.heights.cache(cache)
+  cache$ht <- .heights.cache(cache)
   cache$edge <- unname(cache$edge)
   plook <- function(x){mapply(paste,x[2:length(x)],x[1:(length(x)-1)],sep=",")}
   tB <- cache$desc$anc[1:ntips]
@@ -105,16 +104,209 @@
   return(cache)
 }
 
-
-
-
-
 #' bayOU internal function. 
 #' 
 #' \code{.prepare.bm.univariate} is an internal function and not generally called by the user
 #' 
 #' This is an internal function modified from geiger's function .prepare.bm.univariate for use with OU models.
-.prepare.bm.univariate <- geiger:::.prepare.bm.univariate
+.prepare.bm.univariate <- function (phy, dat, nodes = NULL, SE = NA, control = list(binary = TRUE, ultrametric = FALSE)) {
+  ct = list(binary = TRUE, ultrametric = FALSE)
+  ct[names(control)] = control
+  td = treedata(phy, dat, sort = TRUE, warnings = FALSE)
+  phy = reorder(td$phy, "postorder")
+  if (ct$binary) 
+    if (!is.binary.tree(phy)) 
+      stop("'phy' should be a binary tree")
+  if (ct$ultrametric) 
+    if (!is.ultrametric(phy)) 
+      stop("'phy' should be an ultrametric tree")
+  if (is.null(phy$edge.length)) 
+    stop("'phy' must include branch lengths in units of time")
+  if (ncol(td$data) > 1) 
+    stop("'dat' should be univariate")
+  dat = td$data[, 1]
+  seTMP = structure(rep(NA, length(dat)), names = names(dat))
+  if (is.null(SE)) 
+    SE = NA
+  if (length(SE) > 1) {
+    if (is.null(names(SE))) 
+      stop("'SE' should be a named vector")
+    if (!all(names(dat) %in% names(SE))) 
+      stop("names in 'SE' must all occur in names of 'dat'")
+    seTMP[names(SE[names(dat)])] = SE[names(dat)]
+    SE = seTMP
+  }
+  else {
+    if (is.numeric(SE)) {
+      seTMP[] = SE
+      SE = seTMP
+    }
+    else {
+      SE = seTMP
+    }
+  }
+  if (!all(is.na(SE) | SE >= 0)) 
+    stop("'SE' values should be positive (including 0) or NA")
+  cache = .cache.tree(phy)
+  N = cache$n.tip
+  n = cache$n.node
+  m <- s <- g <- numeric(N + n)
+  g[1:N] = 1
+  m[] = NA
+  m[1:N] = dat
+  s[1:N] = SE
+  if (!is.null(nodes)) {
+    nn = (N + 1):(N + n)
+    vec = .cache.y.nodes(m, s, g, nn, phy, nodes = nodes)
+  }
+  else {
+    vec = rbind(m = m, s = s)
+    attr(vec, "given") = g
+    attr(vec, "adjse") = as.numeric(is.na(s))[1:N]
+  }
+  cache$SE = SE
+  cache$dat = dat[match(phy$tip.label, names(dat))]
+  cache$phy = phy
+  cache$y = vec
+  return(cache)
+}
+
+#' Internal function from geiger
+.heights.cache <- function (cache) {
+  if (is.null(cache$ordering) || cache$ordering != "postorder") {
+    stop("'cache' should be postordered")
+  }
+  n <- cache$n.tip
+  n.node <- cache$n.node
+  xx <- numeric(n + n.node)
+  for (i in nrow(cache$edge):1) xx[cache$edge[i, 2]] <- xx[cache$edge[i, 
+                                                                      1]] + cache$edge.length[i]
+  root = ifelse(is.null(cache$root.edge), 0, cache$root.edge)
+  depth = max(xx)
+  tt = depth - xx
+  idx = 1:length(tt)
+  dd = cache$edge.length[idx]
+  mm = match(1:length(tt), c(cache$edge[, 2], n + 1))
+  dd = c(cache$edge.length, root)[mm]
+  ss = tt + dd
+  res = cbind(ss, tt)
+  rownames(res) = idx
+  colnames(res) = c("start", "end")
+  res = data.frame(res)
+  res
+}
+
+#' Internal function from geiger
+.cache.tree <- function (phy) {
+  ordxx = function(children, is.tip, root) {
+    todo <- list(root)
+    i <- root
+    repeat {
+      kids <- children[i, ]
+      i <- kids[!is.tip[kids]]
+      if (length(i) > 0) 
+        todo <- c(todo, list(i))
+      else break
+    }
+    as.vector(unlist(rev(todo)))
+  }
+  edge <- phy$edge
+  edge.length <- phy$edge.length
+  idx <- seq_len(max(edge))
+  n.tip <- Ntip(phy)
+  tips <- seq_len(n.tip)
+  root <- n.tip + 1
+  is.tip <- idx <= n.tip
+  desc = .cache.descendants(phy)
+  children <- desc$fdesc
+  if (!max(sapply(children, length) == 2)) {
+    children = NULL
+    order = NULL
+    binary = FALSE
+  }
+  else {
+    children <- rbind(matrix(NA, n.tip, 2), t(matrix(unlist(children), 
+                                                     nrow = 2)))
+    order <- ordxx(children, is.tip, root)
+    binary = TRUE
+  }
+  len <- edge.length[mm <- match(idx, edge[, 2])]
+  ans <- list(tip.label = phy$tip.label, node.label = phy$node.label, 
+              len = len, children = children, order = order, root = root, 
+              n.tip = n.tip, n.node = phy$Nnode, tips = tips, edge = edge, 
+              edge.length = edge.length, nodes = phy$edge[, 2], binary = binary, 
+              desc = desc)
+  ans
+}
+
+#' Internal function from geiger
+.cache.descendants <- function (phy) {
+  N = as.integer(Ntip(phy))
+  n = as.integer(Nnode(phy))
+  phy = reorder(phy, "postorder")
+  zz = list(N = N, MAXNODE = N + n, ANC = as.integer(phy$edge[, 
+                                                              1]), DES = as.integer(phy$edge[, 2]))
+  res = .Call("cache_descendants", phy = zz, package = "geiger")
+  return(res)
+}
+
+#' Internal function from geiger
+.cache.y.nodes <- function (m, s, g, nn, phy, nodes) {
+  if (is.numeric(nodes) & is.vector(nodes)) {
+    if (!all(names(nodes) %in% nn)) 
+      stop("'nodes' must have (integer) names corresponding to the internal nodes of 'phy'")
+    nodes = data.frame(cbind(node = as.integer(names(nodes)), 
+                             mean = nodes, SE = 0), stringsAsFactors = FALSE)
+  }
+  else {
+    if (!all(c("taxon1", "taxon2", "mean", "SE") %in% colnames(nodes))) {
+      flag = FALSE
+      if (!all(c("mean", "SE") %in% colnames(nodes)) | 
+            is.null(rownames(nodes))) {
+        flag = TRUE
+      }
+      else if (!all(rr <- as.integer(rownames(nodes)) %in% 
+                      nn)) {
+        flag = TRUE
+      }
+      if (flag) 
+        stop("'nodes' must minimally have column names: 'taxon1', 'taxon2', 'mean', and 'SE'")
+      nodes = as.data.frame(nodes)
+      nodes$node = as.integer(rownames(nodes))
+    }
+    else {
+      nodes = as.data.frame(nodes)
+      if (!is.numeric(nodes$mean) | !is.numeric(nodes$SE)) {
+        stop("'nodes' must have numeric vectors for 'mean' and 'SE'")
+      }
+      if (!all(zz <- unique(c(as.character(nodes$taxon1), 
+                              as.character(nodes$taxon2))) %in% phy$tip.label)) {
+        stop(paste("Some taxa appear missing from 'phy':\n\t", 
+                   paste(zz[!zz %in% phy$tip.label], collapse = "\n\t", 
+                         sep = ""), sep = ""))
+      }
+      nodes$node = apply(nodes[, c("taxon1", "taxon2")], 
+                         1, .mrca, phy = phy)
+    }
+    if (!length(unique(nodes$node)) == nrow(nodes)) {
+      stop("Some nodes multiply constrained:\n\t", paste(nodes$node[duplicated(nodes$node)], 
+                                                         collapse = "\n\t", sep = ""), sep = "")
+    }
+  }
+  nidx = nodes$node
+  if (any(zz <- g[nidx] == 1)) 
+    stop("Some nodes already constrained:\n\t", paste(nidx[which(zz)], 
+                                                      collapse = "\n\t", sep = ""), sep = "")
+  m[nidx] = as.numeric(nodes$mean)
+  s[nidx] = as.numeric(nodes$SE)
+  g[nidx] = 1
+  vec = rbind(m = m, s = s)
+  attr(vec, "given") = g
+  attr(vec, "adjse") = as.numeric(is.na(s))
+  vec
+}
+
+#geiger:::.prepare.bm.univariate
 
 #' bayOU internal function. 
 #' 
@@ -158,6 +350,12 @@
   res
 }
 
+#' S3 method for printing priorFn objects
+#' 
+#' @param x A function of class 'priorFn' produced by \code{make.prior}
+#' @param ... Additional arguments passed to \code{print}
+#' 
+#' @method print priorFn
 print.priorFn <- function(x, ...){
   cat("prior function for bayou\n")
   cat(paste("expecting ", attributes(x)$model, " model\n", sep=""))
@@ -167,9 +365,15 @@ print.priorFn <- function(x, ...){
   cat("\n")
   cat("definition:\n")
   attributes(x) <- NULL
-  print(x)
+  print(x, ...)
 }
 
+#' S3 method for printing refFn objects
+#' 
+#' @param x A function of class 'refFn' produced by make.refFn
+#' @param ... Additional arguments passed to \code{print}
+#' 
+#' @method print refFn
 print.refFn <- function(x, ...){
   cat("reference function for bayou\n")
   cat(paste("expecting ", attributes(x)$model, " model\n", sep=""))
@@ -179,7 +383,7 @@ print.refFn <- function(x, ...){
   cat("\n")
   cat("definition:\n")
   attributes(x) <- NULL
-  print(x)
+  print(x, ...)
 }
 
 #' bayOU internal function. 
@@ -188,14 +392,15 @@ print.refFn <- function(x, ...){
 #' 
 #' This function calculates the change in optima at each shift point on the tree
 .D.from.theta <- function(pars, cache, sort=TRUE){
-  map <- bayou:::.pars2map(pars, cache)
+  map <- .pars2map(pars, cache)
   reg.shifts <- cbind(map$theta[which(duplicated(names(map$theta)))-1], map$theta[which(duplicated(names(map$theta)))])
   D <- pars$theta[reg.shifts[,2]] - pars$theta[reg.shifts[,1]]
   D <- D[order(reg.shifts[,2])]
   return(list(D=D, map=reg.shifts))
 }
 
-ouMatrix <- function(vcvMatrix, alpha)
+# Transforms a BM variance-covariance matrix into an OU VCV with a alpha parameter
+.ouMatrix <- function(vcvMatrix, alpha)
 {  vcvDiag<-diag(vcvMatrix)
    diagi<-matrix(vcvDiag, nrow=length(vcvDiag), ncol=length(vcvDiag))
    diagj<-matrix(vcvDiag, nrow=length(vcvDiag), ncol=length(vcvDiag), byrow=T)
@@ -206,10 +411,21 @@ ouMatrix <- function(vcvMatrix, alpha)
 
 #' Identify shifts on branches of a phylogenetic tree
 #' 
-#' \code{identify.branches} opens an interactive phylogeny plot that allows the user to specify the location
+#' \code{identifyBranches} opens an interactive phylogeny plot that allows the user to specify the location
 #' of shifts in a phylogenetic tree.
+#' @param tree An object of class 'phylo'
+#' @param n The number of shifts to map interactively onto the phylogeny
+#' @param fixed.loc A logical indicating whether the exact location on the branch should be returned, or the shift will be free to move along the branch
+#' @param plot.simmap A logical indicating whether the resulting painting of regimes should be plotted following the selection shift location.
+#' 
+#' @description This is a convenience function for mapping regimes interactively on the phylogeny. The method locates the nearest branch to where the
+#' cursor is clicked on the plot and records the branch number and the location selected on the branch.
+#' 
+#' @return Returns a list with elements "sb" which contains the branch numbers of all selected branches with length "n". If "fixed.loc=TRUE", then the list also
+#' contains a vector "loc" which contains the location of the selected shifts along the branch. 
+#' 
 #' @export
-identify.branches <- function(tree, n, fixed.loc=TRUE, plot.simmap=TRUE){
+identifyBranches <- function(tree, n, fixed.loc=TRUE, plot.simmap=TRUE){
   mar.old <- par('mar')
   par(mfrow=c(1,1), mar=c(0.1,0.1,0.1,0.1))
   tree <- reorder(tree,"postorder")
@@ -246,3 +462,9 @@ identify.branches <- function(tree, n, fixed.loc=TRUE, plot.simmap=TRUE){
   if(fixed.loc) out$loc <- loc
   return(out)
 }
+
+#' Internal function taken from phytools
+.whichorder <- function (x, y){ 
+  sapply(x, function(x, y) which(x == y), y = y)
+}
+

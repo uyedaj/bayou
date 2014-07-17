@@ -1,15 +1,7 @@
-\name{.steppingstone.mcmc}
-\alias{.steppingstone.mcmc}
+\name{steppingstone}
 \alias{steppingstone}
-\title{Run an mcmc for a particular power posterior \code{k}}
+\title{Stepping stone estimation of the marginal likelihood for a bayou model}
 \usage{
-  .steppingstone.mcmc(k, Bk, powerposteriorFn, tree, dat,
-    SE = 0, prior, ngen = 10000, samp = 10, chunk = 100,
-    control = NULL, tuning = NULL, new.dir = FALSE,
-    plot.freq = 500, outname = "bayou", ticker.freq = 1000,
-    tuning.int = c(0.1, 0.2, 0.3), startpar = NULL,
-    moves = NULL, control.weights = NULL)
-
   steppingstone(Bk, chain, tree, dat, SE = 0, prior,
     startpar = NULL, burnin = 0.3, ngen = 10000,
     powerposteriorFn = NULL, cores = 1, ...)
@@ -54,9 +46,6 @@
   stepping stone mcmc's in parallel using the packages
   \code{foreach} and \code{doMC}.}
 
-  \item{plot}{A logical indicating whether or not the
-  results of the stepping stone mcmc's should be plotted}
-
   \item{...}{Other parameters passed to the mcmc algorithm,
   see \code{bayou.mcmc()}.}
 }
@@ -74,8 +63,6 @@
   frequency at which samples are saved in the mcmc chain.
 }
 \description{
-  Run an mcmc for a particular power posterior \code{k}
-
   Estimates the marginal likelihood of a bayou model by
   generating mcmc chains for power posteriors for a series
   of steps from 0 to 1, progressing from a reference

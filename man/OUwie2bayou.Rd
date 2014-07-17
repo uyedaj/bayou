@@ -10,8 +10,11 @@
 
   \item{trait}{A data frame in OUwie format}
 }
+\value{
+  A bayou formatted parameter list
+}
 \description{
-  \code{OUwie2bayou} calculates the probability density of
-  a value
+  \code{OUwie2bayou} Converts OUwie formatted data into a
+  bayou formatted parameter list
 }
 

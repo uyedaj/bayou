@@ -1,0 +1,19 @@
+\name{QG.alpha}
+\alias{QG.alpha}
+\title{Calculates the alpha parameter from a QG model}
+\usage{
+  QG.alpha(pars)
+}
+\arguments{
+  \item{pars}{A bayou formatted parameter list with
+  parameters h2 (heritability), P (phenotypic variance) and
+  w2 (width of adaptive landscape)}
+}
+\value{
+  An alpha value according to the equation \code{alpha =
+  h2*P/(P+w2+P)}.
+}
+\description{
+  Calculates the alpha parameter from a QG model
+}
+

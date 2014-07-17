@@ -1,0 +1,18 @@
+\name{makeTransparent}
+\alias{makeTransparent}
+\title{Make a color transparent (Taken from an answer on StackOverflow by Nick Sabbe)}
+\usage{
+  makeTransparent(someColor, alpha = 100)
+}
+\arguments{
+  \item{someColor}{A color, either a number, string or
+  hexidecimal code}
+
+  \item{alpha}{The alpha transparency. The maxColorValue is
+  set to 255.}
+}
+\description{
+  Make a color transparent (Taken from an answer on
+  StackOverflow by Nick Sabbe)
+}
+

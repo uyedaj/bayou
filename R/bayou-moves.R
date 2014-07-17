@@ -10,7 +10,7 @@
 }
 
 
-addshift2map <- function(x,maps=maps,sb=sb,loc=loc,t2=t2){
+.addshift2map <- function(x,maps=maps,sb=sb,loc=loc,t2=t2){
   m <- maps[[sb[x]]]
   cs.m <- cumsum(m)
   o <- min(which(cs.m>loc[x]))

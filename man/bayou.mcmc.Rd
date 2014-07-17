@@ -48,7 +48,8 @@
 
   \item{new.dir}{If TRUE, then results are stored in a new
   temporary directory. If FALSE, results are written to the
-  current working directory.}
+  current working directory. If a character string, then
+  results are written to that working directory.}
 
   \item{plot.freq}{How often plots should be made during
   the mcmc. If NULL, then plots are not produced}
@@ -75,6 +76,9 @@
   \item{control.weights}{A named vector providing the
   relative frequency each proposal mechanism is to be used
   during the mcmc}
+
+  \item{lik.fn}{Likelihood function to be evaluated.
+  Defaults to \code{bayou.lik}.}
 }
 \description{
   Runs a reversible-jump Markov chain Monte Carlo on

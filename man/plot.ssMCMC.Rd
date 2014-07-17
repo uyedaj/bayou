@@ -2,9 +2,22 @@
 \alias{plot.ssMCMC}
 \title{S3 method for plotting ssMCMC objects}
 \usage{
-  \method{plot}{ssMCMC} (out, ...)
+  \method{plot}{ssMCMC} (x, ...)
+}
+\arguments{
+  \item{x}{An 'ssMCMC' object}
+
+  \item{...}{Additional arguments passed to \code{plot}}
 }
 \description{
   S3 method for plotting ssMCMC objects
+}
+\details{
+  Produces 4 plots. The first 3 plot the prior, reference
+  function and likelihood. Different colors indicate
+  different power posteriors for each. These chains should
+  appear to be well mixed. The final plot shows the sum of
+  the marginal likelihood across each of the steps in the
+  stepping stone algorithm.
 }
 

@@ -20,7 +20,6 @@
 #' given the reference distribution. If \code{plot=TRUE}, a plot is produced showing the density of variable parameters
 #' and the fitted distribution from the reference function (in red).
 make.refFn <- function(chain, prior, burnin=0.3, plot=TRUE){
-  require("fitdistrplus")
   model <- attributes(prior)$model
   contdists <- c("norm", "cauchy", "logis")
   poscontdists <- c("lnorm", "exp", "gamma", "weibull")
@@ -35,6 +34,7 @@ make.refFn <- function(chain, prior, burnin=0.3, plot=TRUE){
   refNames <- list()
   dists <- list()
   parameters <- list()
+  x <- NULL
   for(i in 1:length(varDists)){
     parname <- gsub('^[a-zA-Z]',"",names(varDists)[i])
     xx <- unlist(chain[[parname]][postburn])
@@ -100,7 +100,7 @@ make.refFn <- function(chain, prior, burnin=0.3, plot=TRUE){
       plot(density(unlist(chain[[pars2plot[i]]][postburn])), main=pars2plot[i])
       if(pars2plot[i]=="k"){
         points(seq(ceiling(par('usr')[1]),floor(par('usr')[2]),1), refFx[[pars2plot[i]]](seq(ceiling(par('usr')[1]),floor(par('usr')[2]),1),log=FALSE),pch=21,bg="red")
-      } else {curve(refFx[[pars2plot[i]]](x,log=FALSE), add=TRUE, col="red")}
+      } else {x <- NULL; curve(refFx[[pars2plot[i]]](x,log=FALSE), add=TRUE, col="red")}
     }
   }
   refFUN <- function(pars,cache){
@@ -149,9 +149,6 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
   return(powerposteriorFn)
 }
 
-#' Run an mcmc for a particular power posterior \code{k}
-#' 
-#' @rdname steppingstone
 .steppingstone.mcmc <- function(k, Bk, powerposteriorFn, tree, dat, SE=0, prior, ngen=10000, samp=10, chunk=100, control=NULL, tuning=NULL, new.dir=FALSE, plot.freq=500, outname="bayou", ticker.freq=1000, tuning.int=c(0.1,0.2,0.3), startpar=NULL, moves=NULL, control.weights=NULL){
   model <- attributes(prior)$model
   fixed <- gsub('^[a-zA-Z]',"",names(attributes(prior)$distributions)[which(attributes(prior)$distributions=="fixed")])
@@ -268,7 +265,7 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
         Ref <- c(Ref,pB.new$ref)
       }
     }
-    store <- store.bayOU(i, oldpar, oll, pr1, store, samp, chunk, parorder, files)
+    store <- .store.bayou(i, oldpar, oll, pr1, store, samp, chunk, parorder, files)
     if(!is.null(plot.freq)){
       if(i %% plot.freq==0){
         tr <- .toSimmap(.pars2map(oldpar, cache),cache)
@@ -321,7 +318,6 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
 #' @param ngen The number of mcmc generations to be run for each step of the stepping stone alogrithm. 
 #' @param powerposteriorFn The power posterior function to be used. If \code{NULL}, this is generated from the provided mcmc chain.
 #' @param cores The number of cores to be used to run stepping stone mcmc's in parallel using the packages \code{foreach} and \code{doMC}.
-#' @param plot A logical indicating whether or not the results of the stepping stone mcmc's should be plotted
 #' @param ... Other parameters passed to the mcmc algorithm, see \code{bayou.mcmc()}.
 #' 
 #' @details This function estimates the marginal likelihood of a bayou model by using stepping stone estimation from a reference distribution to the posterior 
@@ -349,6 +345,7 @@ steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burn
     ppost <- make.powerposteriorFn(1, Bk=seq(0,1,length.out=10), prior, ref)
   } else {ppost <- powerposteriorFn}
   cat("Running mcmc chains...\n")
+  k <- NULL; i <- NULL
   ssfits <- foreach(k = 1:length(Bk)) %dopar% {
     .steppingstone.mcmc(k=k, Bk=Bk, tree=tree, dat=dat, SE=SE, prior=prior, powerposteriorFn=ppost, startpar=startpar, plot.freq=NULL, ngen=ngen,  ...)
   }
@@ -358,56 +355,66 @@ steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burn
   }
   Kchains <- lapply(1:length(Kchains), function(x){Kchains[[x]]$ref <- ssfits[[x]]$ref; Kchains[[x]]})
   postburn <- round(burnin*length(Kchains[[1]][[1]]),0):length(Kchains[[1]][[1]])
-  lnr <- computelnr(Kchains, ssfits, Bk, postburn)
+  lnr <- .computelnr(Kchains, ssfits, Bk, postburn)
   out <- list(lnr= lnr$lnr, lnrk = lnr$lnrk, Bk=Bk, chains=Kchains, fits=ssfits)
   class(out) <- c("ssMCMC", "list")
   return(out)
 }
 
 #' S3 method for printing ssMCMC objects
-#' @export
+#' 
+#' @param x An ssMCMC object
+#' @param ... Optional arguments passed to print
+#' 
 #' @method print ssMCMC
-print.ssMCMC <- function(out, ...){
+print.ssMCMC <- function(x, ...){
   cat("Stepping stone estimation of marginal likelihood\n")
   cat("Marginal Likelihood:\n")
-  print(out$lnr)
-  cat(paste("A total of ", length(out$Bk), " power posteriors were run along the sequence: ",paste(round(out$Bk,5), collapse="\t\t"), "\n", sep=""))
-  cat("lnr_k", round(unlist(out$lnrk),2))  
+  print(x$lnr, ...)
+  cat(paste("A total of ", length(x$Bk), " power posteriors were run along the sequence: ",paste(round(x$Bk,5), collapse="\t\t"), "\n", sep=""))
+  cat("lnr_k", round(unlist(x$lnrk),2))  
 }
 #' S3 method for plotting ssMCMC objects
-#' @export
+#' 
+#' @param x An 'ssMCMC' object
+#' @param ... Additional arguments passed to \code{plot}
+#' 
+#' @details Produces 4 plots. The first 3 plot the prior, reference function and likelihood. Different colors
+#' indicate different power posteriors for each. These chains should appear to be well mixed. The final plot
+#' shows the sum of the marginal likelihood across each of the steps in the stepping stone algorithm. 
+#' 
 #' @method plot ssMCMC
-plot.ssMCMC <- function(out, ...){
+plot.ssMCMC <- function(x, ...){
   par(mfrow=c(2,2))
-  if(is.null(attributes(out)$burnin)){
+  if(is.null(attributes(x)$burnin)){
     start <- 1
   } else {
-    start <- round(attributes(out)$burnin*length(out$chains[[1]][[1]]),0)
+    start <- round(attributes(x)$burnin*length(x$chains[[1]][[1]]),0)
   }
-  postburn <- start:length(out$chains[[1]][[1]])
-  lnL <- lapply(out$chains, function(x) x$lnL[postburn])
+  postburn <- start:length(x$chains[[1]][[1]])
+  lnL <- lapply(x$chains, function(x) x$lnL[postburn])
   rangelnL <- c(min(unlist(lnL))-2, max(unlist(lnL))+2)
-  plot(0,0,type="n", xlim=c(0,length(unlist(lnL))), ylim=rangelnL,xaxt="n",xlab="",ylab="lnL", main="lnL")
+  plot(0,0,type="n", xlim=c(0,length(unlist(lnL))), ylim=rangelnL,xaxt="n",xlab="",ylab="lnL", main="lnL",...)
   xindex <- lapply(1:length(lnL), function(x) (x-1)*length(lnL[[1]]) + 1:length(lnL[[1]]))
   sapply(1:length(lnL), function(x) lines(xindex[[x]], lnL[[x]], col=x))
   abline(v=seq(0,length(unlist(lnL)), length.out=length(lnL)+1),lty=2)
   
-  pr <- lapply(out$chains, function(x) x$prior[postburn])
+  pr <- lapply(x$chains, function(x) x$prior[postburn])
   rangepr <- c(min(unlist(pr))-2, max(unlist(pr))+2)
-  plot(0,0,type="n", xlim=c(0,length(unlist(pr))), ylim=rangepr,xaxt="n",xlab="",ylab="Ln prior", main="ln prior")
+  plot(0,0,type="n", xlim=c(0,length(unlist(pr))), ylim=rangepr,xaxt="n",xlab="",ylab="Ln prior", main="ln prior",...)
   xindex <- lapply(1:length(pr), function(x) (x-1)*length(pr[[1]]) + 1:length(pr[[1]]))
   sapply(1:length(pr), function(x) lines(xindex[[x]], pr[[x]], col=x))
   abline(v=seq(0,length(unlist(pr)), length.out=length(pr)+1),lty=2)
   
-  ref <- lapply(out$chains, function(x) x$ref[postburn])
+  ref <- lapply(x$chains, function(x) x$ref[postburn])
   rangeref <- c(min(unlist(ref))-2, max(unlist(ref))+2)
-  plot(0,0,type="n", xlim=c(0,length(unlist(ref))), ylim=rangeref,xaxt="n",xlab="",ylab="Ln ref", main="ln ref")
+  plot(0,0,type="n", xlim=c(0,length(unlist(ref))), ylim=rangeref,xaxt="n",xlab="",ylab="Ln ref", main="ln ref",...)
   xindex <- lapply(1:length(ref), function(x) (x-1)*length(ref[[1]]) + 1:length(ref[[1]]))
   sapply(1:length(ref), function(x) lines(xindex[[x]], ref[[x]], col=x))
   abline(v=seq(0,length(unlist(ref)), length.out=length(ref)+1),lty=2)
   
-  plot(out$Bk, c(0, cumsum(out$lnrk)), ylab="ln r", xlab="power posterior",pch=21, bg=1:length(ref),cex=1.5)
-  lines(out$Bk, c(0,cumsum(out$lnrk)))
+  plot(x$Bk, c(0, cumsum(x$lnrk)), ylab="ln r", xlab="power posterior",pch=21, bg=1:length(ref),cex=1.5, ...)
+  lines(x$Bk, c(0,cumsum(x$lnrk)))
 }
 
 .pull.rsample <- function(samp, chain, fit, refFn){
@@ -423,8 +430,7 @@ plot.ssMCMC <- function(out, ...){
 #' 
 #' \code{computelnr} computes the marginal likelihood of a set of chains estimated via stepping stone
 #' sampling and produced by the function \code{steppingstone}
-#' @export
-computelnr <- function(Kchains,ssfits,Bk,samp){
+.computelnr <- function(Kchains,ssfits,Bk,samp){
   lnr <- list()
   for(i in 1:(length(Bk)-1)){
     Lk <- .pull.rsample(samp, Kchains[[i]],ssfits[[i]])

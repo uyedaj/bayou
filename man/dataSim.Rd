@@ -2,10 +2,37 @@
 \alias{dataSim}
 \title{Simulates data from bayou models}
 \usage{
-  dataSim(pars, model, tree, map.type = "pars",
-    emap = NULL, SE = 0, phenogram = TRUE, ...)
+  dataSim(pars, model, tree, map.type = "pars", SE = 0,
+    phenogram = TRUE, ...)
+}
+\arguments{
+  \item{pars}{A bayou formated parameter list}
+
+  \item{model}{The type of model specified by the parameter
+  list (either "OU", "OUrepar" or "QG").}
+
+  \item{tree}{A tree of class 'phylo'}
+
+  \item{map.type}{Either "pars" if the regimes are taken
+  from the parameter list, or "simmap" if taken from the
+  stored simmap in the tree}
+
+  \item{SE}{A single value or vector equal to the number of
+  tips specifying the measurement error that should be
+  simulated at the tips}
+
+  \item{phenogram}{A logical indicating whether or not the
+  simulated data should be plotted as a phenogram}
+
+  \item{...}{Optional parameters passed to
+  \code{phenogram(...)}.}
 }
 \description{
-  \code{priorSim} Simulates data for a given bayou model
+  This function simulates data for a given set of parameter
+  values.
+}
+\details{
+  \code{dataSim} Simulates data for a given bayou model and
+  parameter set
 }
 
