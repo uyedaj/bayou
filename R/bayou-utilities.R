@@ -306,6 +306,41 @@
   vec
 }
 
+#' Internal function from geiger
+.mrca <- function (labels, phy)  {
+mm = labels
+if (all(is.character(labels))) {
+  ll = c(phy$tip.label, phy$node.label)
+  mm = match(labels, ll)
+  if (any(is.na(mm))) 
+    stop("Some 'labels' not encountered in 'phy'")
+}
+if (!all(is.numeric(mm))) 
+  stop("Supply 'labels' as a character or integer vector")
+if (length(u <- unique(mm)) == 1) 
+  return(u)
+aa = unlist(lapply(mm, function(x) .get.ancestors.of.node(x, 
+                                                          phy)))
+tt = table(aa)
+max(as.integer(names(tt[tt == length(labels)])))
+}
+
+.get.ancestor.of.node <- function (node, phy) {
+  return(phy$edge[which(phy$edge[, 2] == node), 1])
+}
+
+.get.ancestors.of.node <- function (node, phy) {
+  a = c()
+  if (node == (root <- Ntip(phy) + 1)) 
+    return(NULL)
+  f = .get.ancestor.of.node(node, phy)
+  a = c(a, f)
+  if (f > root) 
+    a = c(a, .get.ancestors.of.node(f, phy))
+  return(a)
+}
+
+
 #geiger:::.prepare.bm.univariate
 
 #' bayOU internal function. 
