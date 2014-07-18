@@ -1,4 +1,4 @@
-## This is the development version of the R package bayou. ``` bayou ``` fits Bayesian reversible-jump multi-optima OU models to phylogenetic comparative data.
+## This is the development version of the R package _bayou_. _bayou_ fits Bayesian reversible-jump multi-optima OU models to phylogenetic comparative data.
 
 Please report any bugs or issues, as this package is currently under development.
 
