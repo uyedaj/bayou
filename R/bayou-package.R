@@ -6,7 +6,7 @@
 #' estimation of multi-optima Ornstein-Uhlenbeck models.
 #' @author Josef C Uyeda
 #' @useDynLib bayou
-#' @import ape geiger phytools coda Rcpp RcppArmadillo MASS mnormt fitdistrplus denstrip
+#' @import ape geiger phytools coda Rcpp MASS mnormt fitdistrplus denstrip
 NULL
 # @importFrom denstrip densregion 
 # @importFrom MASS mvrnorm
