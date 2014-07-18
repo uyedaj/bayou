@@ -17,7 +17,6 @@ Depends:
     coda
 Imports:
     Rcpp (>= 0.10.3),
-    RcppArmadillo,
     MASS,
     mnormt,
     fitdistrplus,

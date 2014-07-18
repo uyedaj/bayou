@@ -11,4 +11,4 @@
 ^\.Rproj\.user$
 ^figure/
 ^tutorial\.md
-
+^\.travis\.yml
