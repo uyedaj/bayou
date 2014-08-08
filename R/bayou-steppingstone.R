@@ -149,7 +149,7 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
   return(powerposteriorFn)
 }
 
-.steppingstone.mcmc <- function(k, Bk, powerposteriorFn, tree, dat, SE=0, prior, ngen=10000, samp=10, chunk=100, control=NULL, tuning=NULL, new.dir=FALSE, plot.freq=500, outname="bayou", ticker.freq=1000, tuning.int=c(0.1,0.2,0.3), startpar=NULL, moves=NULL, control.weights=NULL){
+.steppingstone.mcmc <- function(k, Bk, powerposteriorFn, tree, dat, SE=0, prior, ngen=10000, samp=10, chunk=100, control=NULL, tuning=NULL, new.dir=TRUE, plot.freq=500, outname="bayou", ticker.freq=1000, tuning.int=c(0.1,0.2,0.3), startpar=NULL, moves=NULL, control.weights=NULL){
   model <- attributes(prior)$model
   fixed <- gsub('^[a-zA-Z]',"",names(attributes(prior)$distributions)[which(attributes(prior)$distributions=="fixed")])
   if("loc" %in% fixed){
@@ -333,22 +333,22 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
 #' Note that this object may become quite large if a number of chains are run for many generations. To reduce the number of samples taken, increase the parameter \code{samp} (default = 10)
 #' which sets the frequency at which samples are saved in the mcmc chain. 
 steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burnin=0.3, ngen=10000, powerposteriorFn=NULL, cores=1, ...){
-  model <- attributes(prior)$model
-  if(cores >= 1){
-    require(foreach)
-    require(doMC)
-    registerDoMC(cores=cores)
-  }
-  if(is.null(powerposteriorFn)){
-    cat("Making power posterior function from provided mcmc chain...\n")
-    ref <- suppressWarnings(make.refFn(chain, prior, plot=TRUE))
-    ppost <- make.powerposteriorFn(1, Bk=seq(0,1,length.out=10), prior, ref)
-  } else {ppost <- powerposteriorFn}
-  cat("Running mcmc chains...\n")
-  k <- NULL; i <- NULL
-  ssfits <- foreach(k = 1:length(Bk)) %dopar% {
-    .steppingstone.mcmc(k=k, Bk=Bk, tree=tree, dat=dat, SE=SE, prior=prior, powerposteriorFn=ppost, startpar=startpar, plot.freq=NULL, ngen=ngen,  ...)
-  }
+    model <- attributes(prior)$model
+    if(cores >= 1){
+      require(foreach)
+      require(doMC)
+      registerDoMC(cores=cores)
+    }
+    if(is.null(powerposteriorFn)){
+      cat("Making power posterior function from provided mcmc chain...\n")
+      ref <- suppressWarnings(make.refFn(chain, prior, plot=TRUE))
+      ppost <- make.powerposteriorFn(1, Bk=seq(0,1,length.out=10), prior, ref)
+    } else {ppost <- powerposteriorFn}
+    cat("Running mcmc chains...\n")
+    k <- NULL; i <- NULL
+    ssfits <- foreach(k = 1:length(Bk)) %dopar% {
+      .steppingstone.mcmc(k=k, Bk=Bk, tree=tree, dat=dat, SE=SE, prior=prior, powerposteriorFn=ppost, startpar=startpar, plot.freq=NULL, ngen=ngen,  ...)
+    }
   cat("Loading mcmc chains...\n")
   Kchains <- foreach(i = 1:length(Bk)) %dopar% {
     load.bayou(ssfits[[i]], save.Rdata=FALSE, cleanup=FALSE)

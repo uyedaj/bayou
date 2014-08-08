@@ -267,7 +267,13 @@ combine.chains <- function(chain1,chain2,burnin.prop=0){
   return(chains)
 }
 
-.buildControl <- function(pars, prior, move.weights=list("alpha"=4,"sig2"=2,"theta"=4, "slide"=2,"k"=10)){
+.buildControl <- function(pars, prior, move.weights=NULL){
+  model <- attributes(prior)$model
+  if(is.null(move.weights)){
+   move.weights <- switch(model, "OU"=list("alpha"=4,"sig2"=2,"theta"=4, "slide"=2,"k"=10),
+                                 "OUrepar" = list("halflife"=4, "Vy"=2, "theta"=4, "slide"=2, "k"=10),
+                                 "QG" = list("h2"=2, "P"=2, "w2"=3, "Ne"=3, "theta"=4, "slide"=2, "k"=10))
+  }
   ct <- unlist(move.weights)
   total.weight <- sum(ct)
   ct <- ct/sum(ct)
@@ -446,4 +452,33 @@ summary.bayouMCMC <- function(object, ...){
   out <- list(statistics=statistics, branch.posteriors=Lpost)
   invisible(out)
 }
-  
+
+#' Generate an overparameterized starting point for the MCMC
+#' 
+#' This function takes a prior function and generates a starting point that can be entered for \code{startpar} 
+#' in the function \code{bayou.mcmc}
+#' 
+#' @param prior A prior function
+#' @param tree A phylogenetic tree of class 'phylo'
+#' @param dat A named data vector
+#' 
+#' @details This function creates an "overparameterized" starting point for running the mcmc. It gives n-1 tips a unique
+#' optimum close to the actual data value. This is useful if you expect steep likelihood peaks that may be hard to find, 
+#' as these often will be easier to access from this overparameterized model. Generally, the overparameterization will have 
+#' a very high likelihood and a very low prior.
+overparameterize.startingPoint <- function(prior, tree, dat){
+  tree <- reorder(tree, "postorder")
+  dat <- dat[tree$tip.label]
+  model <- attributes(prior)$model
+  ntips <- length(tree$tip.label)
+  startpar <- priorSim(prior, tree, plot=FALSE, nsim=1)[[1]][[1]]
+  theta <- rnorm(ntips, dat, 1e-5)
+  startpar$theta <- theta
+  startpar$k <- ntips-1
+  startpar$sb <- which(tree$edge[,2] < ntips)
+  startpar$loc <- rep(0, startpar$k)
+  startpar$t2 <- 2:ntips
+  startpar$ntheta <- startpar$k+1
+  plotBayoupars(startpar, tree, col=setNames(rainbow(startpar$ntheta), 1:startpar$ntheta))
+  return(startpar)  
+}

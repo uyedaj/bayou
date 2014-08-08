@@ -128,7 +128,12 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
     hr <- prop$hr
     new <- lik.fn(new.pars, cache, dat, model=model)
     nll <- new$loglik
-    if (runif(1) < exp(nll-oll+pr2-pr1+hr)){
+    ar <- exp(nll-oll+pr2-pr1+hr)
+    if(is.na(ar)){
+      ar <- -Inf
+      #return(list(prop=prop, new.pars=new.pars, nll=nll, oll=oll, pr2=pr2, pr1=pr1, hr=hr, pars=oldpar))
+    }
+    if (runif(1) < ar){
       oldpar <- new.pars
       pr1 <- pr2
       oll <- nll
