@@ -22,7 +22,7 @@ Imports:
     fitdistrplus,
     denstrip
 Suggests:
-    doMC,
+    doParallel,
     foreach
 LinkingTo: Rcpp, RcppArmadillo
 Collate:
