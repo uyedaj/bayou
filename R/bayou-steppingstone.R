@@ -317,13 +317,14 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
 #' @param burnin The initial proportion of the provided mcmc chain to be discarded when generating the reference function
 #' @param ngen The number of mcmc generations to be run for each step of the stepping stone alogrithm. 
 #' @param powerposteriorFn The power posterior function to be used. If \code{NULL}, this is generated from the provided mcmc chain.
-#' @param cores The number of cores to be used to run stepping stone mcmc's in parallel using the packages \code{foreach} and \code{doMC}.
+#' @param parallel A logical indicating whether or not the chains should be run in parallel. 
 #' @param ... Other parameters passed to the mcmc algorithm, see \code{bayou.mcmc()}.
 #' 
 #' @details This function estimates the marginal likelihood of a bayou model by using stepping stone estimation from a reference distribution to the posterior 
 #' distribution using the method of Fan et al. (2011). The vector \code{Bk} provides a sequence from 0 to 1. The length of this sequence determines the number
 #' of mcmc chains that will be run, and the values are used as the exponents of the power posterior function, stepping from purely the reference distribution (k=0)
-#' to purely the posterior distribution (k=1). These chains can be run in parallel if \code{cores} is set >1. Note that when run in parallel, progress within each
+#' to purely the posterior distribution (k=1). These chains can be run in parallel if \code{parallel} is set to \code{TRUE}. The number of cores available is determined
+#' by a call to \code{detectCores}, and can be set by .... Note that when run in parallel, progress within each
 #' of the individual mcmc chains will not be reported, and if \code{ngen} is high, it may take a considerable amount of time to run. Furthermore, if many samples 
 #' are saved from each mcmc run, and a number of steps along \code{Bk} is large, the returned object may require a substantial amount of memory. 
 #' 
@@ -332,12 +333,12 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
 #' a list of the mcmc chains used for importance sampling to estimating the marginal likelihood at each step \code{chains}, and mcmc fit data from each of the runs \code{fits}.
 #' Note that this object may become quite large if a number of chains are run for many generations. To reduce the number of samples taken, increase the parameter \code{samp} (default = 10)
 #' which sets the frequency at which samples are saved in the mcmc chain. 
-steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burnin=0.3, ngen=10000, powerposteriorFn=NULL, cores=1, ...){
+steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burnin=0.3, ngen=10000, powerposteriorFn=NULL, parallel=FALSE, ...){
     model <- attributes(prior)$model
-    if(cores >= 1){
+    if(parallel){
       require(foreach)
-      require(doMC)
-      registerDoMC(cores=cores)
+      #require(doMC)
+      #registerDoMC(cores=cores)
     }
     if(is.null(powerposteriorFn)){
       cat("Making power posterior function from provided mcmc chain...\n")
@@ -345,13 +346,27 @@ steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burn
       ppost <- make.powerposteriorFn(1, Bk=seq(0,1,length.out=10), prior, ref)
     } else {ppost <- powerposteriorFn}
     cat("Running mcmc chains...\n")
-    k <- NULL; i <- NULL
-    ssfits <- foreach(k = 1:length(Bk)) %dopar% {
-      .steppingstone.mcmc(k=k, Bk=Bk, tree=tree, dat=dat, SE=SE, prior=prior, powerposteriorFn=ppost, startpar=startpar, plot.freq=NULL, ngen=ngen,  ...)
+    if(parallel==TRUE){
+      k <- NULL; i <- NULL
+      ssfits <- foreach(k = 1:length(Bk)) %dopar% {
+        .steppingstone.mcmc(k=k, Bk=Bk, tree=tree, dat=dat, SE=SE, prior=prior, powerposteriorFn=ppost, startpar=startpar, plot.freq=NULL, ngen=ngen,  ...)
+      }
+    } else {
+      k <- NULL; i <- NULL; ssfits <- list()
+      for(k in 1:length(Bk)){
+        ssfits[[k]] <- .steppingstone.mcmc(k=k, Bk=Bk, tree=tree, dat=dat, SE=SE, prior=prior, powerposteriorFn=ppost, startpar=startpar, plot.freq=NULL, ngen=ngen,  ...)
+      }
     }
   cat("Loading mcmc chains...\n")
-  Kchains <- foreach(i = 1:length(Bk)) %dopar% {
-    load.bayou(ssfits[[i]], save.Rdata=FALSE, cleanup=FALSE)
+  if(parallel){
+    Kchains <- foreach(i = 1:length(Bk)) %dopar% {
+      load.bayou(ssfits[[i]], save.Rdata=FALSE, cleanup=FALSE)
+    }
+  } else {
+    Kchains <- list()
+    for (i in 1:length(Bk)){
+      Kchains[[i]] <- load.bayou(ssfits[[i]], save.Rdata=FALSE, cleanup=FALSE)
+    }
   }
   Kchains <- lapply(1:length(Kchains), function(x){Kchains[[x]]$ref <- ssfits[[x]]$ref; Kchains[[x]]})
   postburn <- round(burnin*length(Kchains[[1]][[1]]),0):length(Kchains[[1]][[1]])

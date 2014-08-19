@@ -4,7 +4,8 @@
 \title{Stepping stone estimation of the marginal likelihood for a bayou model}
 \usage{
 steppingstone(Bk, chain, tree, dat, SE = 0, prior, startpar = NULL,
-  burnin = 0.3, ngen = 10000, powerposteriorFn = NULL, cores = 1, ...)
+  burnin = 0.3, ngen = 10000, powerposteriorFn = NULL, parallel = FALSE,
+  ...)
 }
 \arguments{
 \item{Bk}{A vector sequence from 0 to 1 that gives the exponents of the power posterior distribution to take from the reference distribution
@@ -29,7 +30,7 @@ drawn from the prior distribution.}
 
 \item{powerposteriorFn}{The power posterior function to be used. If \code{NULL}, this is generated from the provided mcmc chain.}
 
-\item{cores}{The number of cores to be used to run stepping stone mcmc's in parallel using the packages \code{foreach} and \code{doMC}.}
+\item{parallel}{A logical indicating whether or not the chains should be run in parallel.}
 
 \item{...}{Other parameters passed to the mcmc algorithm, see \code{bayou.mcmc()}.}
 }
@@ -47,7 +48,8 @@ progressing from a reference distribution to the posterior distribution.
 This function estimates the marginal likelihood of a bayou model by using stepping stone estimation from a reference distribution to the posterior
 distribution using the method of Fan et al. (2011). The vector \code{Bk} provides a sequence from 0 to 1. The length of this sequence determines the number
 of mcmc chains that will be run, and the values are used as the exponents of the power posterior function, stepping from purely the reference distribution (k=0)
-to purely the posterior distribution (k=1). These chains can be run in parallel if \code{cores} is set >1. Note that when run in parallel, progress within each
+to purely the posterior distribution (k=1). These chains can be run in parallel if \code{parallel} is set to \code{TRUE}. The number of cores available is determined
+by a call to \code{detectCores}, and can be set by .... Note that when run in parallel, progress within each
 of the individual mcmc chains will not be reported, and if \code{ngen} is high, it may take a considerable amount of time to run. Furthermore, if many samples
 are saved from each mcmc run, and a number of steps along \code{Bk} is large, the returned object may require a substantial amount of memory.
 }
