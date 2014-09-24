@@ -262,5 +262,50 @@ parmap.W <- function(tree, pars){
   return(W)
 }
 
+#' Calculate the weight matrix for an auteur bm-jumps model
+#'  
+#'  Example: 
+#pars <- list(sig2 = 1, sig2jump = 2, k=2, ntheta=3, sb= c(447, 436), t2= c(2, 3), loc= c(0,0))
+.auteur.W <- function(cache, pars){
+  nbranch <- length(cache$edge.length)
+  nshifts <- table(pars$sb)
+  shifts <- rep(0, nbranch)
+  shifts[as.numeric(attributes(nshifts)$dimnames[[1]])] <- nshifts
+  irow <- rep(1:nbranch, shifts + 1)
+  #segs <- c(cache$edge.length, pars$loc)
+  t2b <- rep(1, nbranch+pars$k)
+  tmp.o <- c(1:nbranch, pars$sb)
+  names(t2b) <- tmp.o
+  add.o <- order(tmp.o, t2b)
+  t2b <- t2b[add.o]
+  ind <- names(t2b)
+  t2index <- add.o[which(add.o > nbranch)]
+  t2b[match(t2index, add.o) + 1] <- pars$t2[t2index - nbranch]
+  loc.o <- order(pars$loc, decreasing = TRUE)
+  sandwiches <- loc.o[duplicated(pars$sb[loc.o])]
+  if (length(sandwiches) > 0) {
+    sb.down <- pars$sb[-sandwiches]
+    t2.down <- pars$t2[-sandwiches]
+  } else {
+    sb.down <- pars$sb
+    t2.down <- pars$t2
+  }
+  sb.o <- order(sb.down)
+  sb.down <- sb.down[sb.o]
+  t2.down <- t2.down[sb.o]
+  sb.desc <- cache$bdesc[sb.down]
+  desc.length <- unlist(lapply(sb.desc, length), F, F)
+  sb.desc <- sb.desc[desc.length > 0]
+  #names(t2b) <- names(segs)
+  sb.desc2 <- unlist(sb.desc, F, F)
+  sb.dup <- duplicated(sb.desc2)
+  sb.desc3 <- sb.desc2[!sb.dup]
+  t2.names <- rep(t2.down[desc.length > 0], unlist(lapply(sb.desc, 
+                                                          length), F, F))
+  t2.names <- t2.names[!sb.dup]
+  t2b[as.character(unlist(sb.desc3, F, F))] <- t2.names
+  return(t2b)
+}
+#.auteur.W(cache, pars) %*% 
 
 
