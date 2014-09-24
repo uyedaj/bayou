@@ -1,5 +1,11 @@
 context("Medusa likelihoods can be calculated")
 test_that("Medusa likelihoods can be calculated and match Medusa", {
+  require(devtools)
+  require(geiger)
+  require(testthat)
+  #Make sure you're in the bayou package working directory
+  #setwd("~/repos/bayou/bayou_1.0/")
+  load_all()
   dat <- get(data(chelonia))
   phy <- dat$phy
   phy <- reorder(phy, "cladewise")
@@ -7,7 +13,7 @@ test_that("Medusa likelihoods can be calculated and match Medusa", {
   richness <- geiger:::.check.richness(phy = phy, richness = richness);
   
   ##Try lowering the threshold to 1, it breaks:
-  resMedusa <- medusa(phy, richness, cut="node", threshold = 1, ncores = 1)
+  resMedusa <- medusa(phy, richness, cut="node", threshold = 3, ncores = 1)
   #newo <- c(2,1,3)
   K <- length(resMedusa$summary$Shift.Node)-1
   ##Shuffling doesn't work...
