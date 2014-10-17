@@ -25,18 +25,3 @@ Suggests:
     doParallel,
     foreach
 LinkingTo: Rcpp, RcppArmadillo
-Collate:
-    'RcppExports.R'
-    'bayou-utilities.R'
-    'probability.R'
-    'bayou-weight_matrix.R'
-    'bayou-moves.R'
-    'bayou-likelihood.R'
-    'bayou-prior.R'
-    'conversion-utilities.R'
-    'bayou-mcmc-utilities.R'
-    'bayou-mcmc.R'
-    'bayou-plotting.R'
-    'bayou-simulation.r'
-    'bayou-steppingstone.R'
-    'bayou-package.R'
