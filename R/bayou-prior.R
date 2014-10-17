@@ -189,7 +189,7 @@ make.prior <- function(tree, dists=list(), param=list(), fixed=list(), plot.prio
       prior.param$dsb$prob <- prior.param$dsb$bmax
     }
   }
-  attributes(priorFUN) <- list("model"=model,"parnames"=par.names,"distributions"=dists,"parameters"=prior.param,"fixed"=fixed, "functions"=prior.fx)
+  attributes(priorFUN) <- list("model"=model,"parnames"=par.names,"distributions"=dists,"parameters"=prior.param,"fixed"=fixed, "functions"=prior.fx, "splitmergepars"="theta")
   class(priorFUN) <- c("priorFn","function")
   return(priorFUN)
 }

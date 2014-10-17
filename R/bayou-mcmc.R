@@ -34,7 +34,9 @@
 #' and the number of shifts is adjusted by splitting and merging, as well as sliding the shifts both within and between branches. Allowed shift locations are specified by the 
 #' prior function (see make.prior()). 
 
-bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, chunk=100, control=NULL, tuning=NULL, new.dir=FALSE, plot.freq=500, outname="bayou", ticker.freq=1000, tuning.int=c(0.1,0.2,0.3), startpar=NULL, moves=NULL, control.weights=NULL, lik.fn=NULL){
+#model="bd"; tree <- phy; SE=0; ngen=1000; samp=10; chunk=100; control=NULL;tuning=NULL; new.dir=TRUE;plot.freq=100; outname="bayou";ticker.freq=1000; tuning.int=c(0.1,0.2,0.3); startpar=pars; moves=NULL; control.weights=NULL; lik.fn <- bdSplit.lik; plot.fn <- plotSimmap
+
+bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, chunk=100, control=NULL, tuning=NULL, new.dir=FALSE, plot.freq=500, outname="bayou", plot.fn=phenogram, ticker.freq=1000, tuning.int=c(0.1,0.2,0.3), startpar=NULL, moves=NULL, control.weights=NULL, lik.fn=NULL){
   fixed <- gsub('^[a-zA-Z]',"",names(attributes(prior)$distributions)[which(attributes(prior)$distributions=="fixed")])
   if("loc" %in% fixed){
     fixed <- c(fixed,"slide")
@@ -42,7 +44,8 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
   if(is.null(moves)){
     moves <- switch(model,"QG"=list(h2=".multiplierProposal",P=".multiplierProposal",w2=".multiplierProposal",Ne=".multiplierProposal",k=".splitmerge",theta=".adjustTheta",slide=".slide"),
                           "OU"=list(alpha=".multiplierProposal",sig2=".multiplierProposal",k=".splitmerge",theta=".adjustTheta",slide=".slide"),
-                          "OUrepar"=list(halflife=".multiplierProposal",Vy=".multiplierProposal",k=".splitmerge",theta=".adjustTheta",slide=".slide")) #,"OUcpp"=list(alpha=".multiplierProposal",sig2=".multiplierProposal",sig2jump=".multiplierProposal",k=".splitmergeSimmap",theta=".adjustTheta",slide=".slideCPP"), "QGcpp"=list(h2=".multiplierProposal",P=".multiplierProposal",w2=".multiplierProposal",Ne=".multiplierProposal",sig2jump=".multiplierProposal",k=".splitmergeSimmap",theta=".adjustTheta",slide=".slideCPP"),"OUreparcpp"=list(halflife=".multiplierProposal",Vy=".multiplierProposal",sig2jump=".multiplierProposal",k=".splitmergeSimmap",theta=".adjustTheta",slide=".slideCPP"))
+                          "OUrepar"=list(halflife=".multiplierProposal",Vy=".multiplierProposal",k=".splitmerge",theta=".adjustTheta",slide=".slide"),
+                          "bd"=list(r=".vectorMultiplier", eps=".vectorMultiplier", k=".splitmergebd")) #,"OUcpp"=list(alpha=".multiplierProposal",sig2=".multiplierProposal",sig2jump=".multiplierProposal",k=".splitmergeSimmap",theta=".adjustTheta",slide=".slideCPP"), "QGcpp"=list(h2=".multiplierProposal",P=".multiplierProposal",w2=".multiplierProposal",Ne=".multiplierProposal",sig2jump=".multiplierProposal",k=".splitmergeSimmap",theta=".adjustTheta",slide=".slideCPP"),"OUreparcpp"=list(halflife=".multiplierProposal",Vy=".multiplierProposal",sig2jump=".multiplierProposal",k=".splitmergeSimmap",theta=".adjustTheta",slide=".slideCPP"))
     moves <- moves[which(!(names(moves) %in% fixed))]
   }
   
@@ -60,17 +63,18 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
     }
   } 
   if(length(fixed)==0 & is.null(control.weights)){
-      ct <- .buildControl(startpar, prior)
+      control.weights <- switch(model,"OU"=list("alpha"=4,"sig2"=2,"theta"=4,"slide"=2,"k"=10),"QG"=list("h2"=5,"P"=2,"w2"=5,"Ne"=5,"theta"=5,"slide"=3,"k"=20),"OUrepar"=list("halflife"=5,"Vy"=3,"theta"=5,"slide"=3,"k"=20), "bd"=list("r"=2, "eps"=1, "k"=5, slide=0))
+      ct <- .buildControl(startpar, prior, control.weights)
     } else {
       if(is.null(control.weights)){
-        control.weights <- switch(model,"OU"=list("alpha"=4,"sig2"=2,"theta"=4,"slide"=2,"k"=10),"QG"=list("h2"=5,"P"=2,"w2"=5,"Ne"=5,"theta"=5,"slide"=3,"k"=20),"OUrepar"=list("halflife"=5,"Vy"=3,"theta"=5,"slide"=3,"k"=20))
+        control.weights <- switch(model,"OU"=list("alpha"=4,"sig2"=2,"theta"=4,"slide"=2,"k"=10),"QG"=list("h2"=5,"P"=2,"w2"=5,"Ne"=5,"theta"=5,"slide"=3,"k"=20),"OUrepar"=list("halflife"=5,"Vy"=3,"theta"=5,"slide"=3,"k"=20), "bd"=list("r"=2, "eps"=1, "k"=5, slide=0))
         #"OUcpp"=list("alpha"=3,"sig2"=3,"sig2jump"=3,"theta"=3,"slide"=5,"k"=10),"QGcpp"=list("h2"=1,"P"=1,"w2"=2,"Ne"=2,"sig2jump"=3,"theta"=3,"slide"=5,"k"=10),"OUreparcpp"=list("halflife"=3,"Vy"=3,"sig2jump"=3,"theta"=3,"slide"=5,"k"=10)
         control.weights[fixed[fixed %in% names(control.weights)]] <- 0
       } else {control.weights <- control.weights}
       ct <- .buildControl(startpar, prior, move.weights=control.weights)
     }
   if(is.null(tuning)){
-    D <- switch(model, "OU"=list(alpha=1, sig2= 1, k = 4,theta=2,slide=1), "QG"=list(h2=1, P=1, w2=1, Ne=1, k = 4, theta=2, slide=1), "OUrepar"=list(halflife=1, Vy=1, k=4, theta=2, slide=1))#,"OUcpp"=list(alpha=1, sig2= 1,sig2jump=2, k = 4,theta=2,slide=1),"QGcpp"=list(h2=1,P=1,w2=1,Ne=1,sig2jump=2,k=4,theta=2,slide=1),"OUreparcpp"=list(halflife=1,Vy=1,sig2jump=2,k=4,theta=2,slide=1))
+    D <- switch(model, "OU"=list(alpha=1, sig2= 1, k = 4,theta=2,slide=1), "QG"=list(h2=1, P=1, w2=1, Ne=1, k = 4, theta=2, slide=1), "OUrepar"=list(halflife=1, Vy=1, k=4, theta=2, slide=1), "bd"=list(r=1, eps=1, k=4))#,"OUcpp"=list(alpha=1, sig2= 1,sig2jump=2, k = 4,theta=2,slide=1),"QGcpp"=list(h2=1,P=1,w2=1,Ne=1,sig2jump=2,k=4,theta=2,slide=1),"OUreparcpp"=list(halflife=1,Vy=1,sig2jump=2,k=4,theta=2,slide=1))
   } else {D <- tuning}
   if(is.logical(new.dir)){
     if(new.dir){
@@ -105,15 +109,15 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
   if(is.null(lik.fn)) lik.fn <- bayou.lik #.OU.lik
   oll  <- lik.fn(oldpar, cache, dat, model=model)$loglik
   pr1 <- prior(oldpar,cache)
-  parorder <- switch(model,"QG"=c("h2","P","w2","Ne","k","ntheta","theta"), "OU"=c("alpha","sig2","k","ntheta","theta"),"OUrepar"=c("halflife","Vy","k","ntheta","theta"),"OUcpp"=c("alpha","sig2","sig2jump","k","ntheta","theta"))#,"QGcpp"=c("h2","P","w2","Ne","sig2jump","k","ntheta","theta"),"OUreparcpp"=c("halflife","Vy","sig2jump","k","ntheta","theta"))
+  parorder <- switch(model,"QG"=c("h2","P","w2","Ne","k","ntheta","theta"), "OU"=c("alpha","sig2","k","ntheta","theta"),"OUrepar"=c("halflife","Vy","k","ntheta","theta"),"OUcpp"=c("alpha","sig2","sig2jump","k","ntheta","theta"), "bd"=c("r", "eps", "k", "ntheta"))#,"QGcpp"=c("h2","P","w2","Ne","sig2jump","k","ntheta","theta"),"OUreparcpp"=c("halflife","Vy","sig2jump","k","ntheta","theta"))
   
   accept.type <- NULL
   accept <- NULL
   if(!is.null(plot.freq)){
     tr <- .toSimmap(.pars2map(oldpar, cache),cache)
-    tcols <- makeTransparent(rainbow(oldpar$ntheta),alpha=100)
+    tcols <- makeTransparent(rainbow(oldpar$ntheta),alpha=200)
     names(tcols)<- 1:oldpar$ntheta
-    phenogram(tr,dat,colors=tcols,ftype="off")
+    plot.fn(tr,dat,colors=tcols,ftype="off")
     plot.dim <- list(par('usr')[1:2],par('usr')[3:4])
   }
   #tuning.int <- round(tuning.int*ngen,0)
@@ -128,12 +132,8 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
     hr <- prop$hr
     new <- lik.fn(new.pars, cache, dat, model=model)
     nll <- new$loglik
-    ar <- exp(nll-oll+pr2-pr1+hr)
-    if(is.na(ar)){
-      ar <- -Inf
-      #return(list(prop=prop, new.pars=new.pars, nll=nll, oll=oll, pr2=pr2, pr1=pr1, hr=hr, pars=oldpar))
-    }
-    if (runif(1) < ar){
+    nll <- ifelse(is.na(nll), -Inf, nll)
+    if (runif(1) < exp(nll-oll+pr2-pr1+hr)){
       oldpar <- new.pars
       pr1 <- pr2
       oll <- nll
@@ -145,24 +145,30 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
     if(!is.null(plot.freq)){
       if(i %% plot.freq==0){
         tr <- .toSimmap(.pars2map(oldpar, cache),cache)
-        tcols <- makeTransparent(rainbow(oldpar$ntheta),alpha=100)
+        tcols <- makeTransparent(rainbow(oldpar$ntheta),alpha=200)
         names(tcols)<- 1:oldpar$ntheta
         plot(plot.dim[[1]],plot.dim[[2]],type="n",xlab="time",ylab="phenotype")
         mtext(paste("gens = ",i," lnL = ",round(oll,2)),3)
         #regime.plot probably doesn't work for simmaps
         #try(regime.plot(oldpar,tr$tree,tcols,type="density",model=model),silent=TRUE)
-        phenogram(tr,dat,colors=tcols,ftype="off",add=TRUE)
+        plot.fn(tr,dat,colors=tcols,ftype="off",add=TRUE)
       }
     }
     #if(i %in% tuning.int){
     #  D <- tune.D(D,accept,accept.type)$D
     #}
     if(i%%ticker.freq==0){
-      alpha <- switch(model,"QG"=QG.alpha(oldpar),"OU"=oldpar$alpha,"OUrepar"=OU.repar(oldpar)$alpha,"OUcpp"=oldpar$alpha,"QGcpp"=QG.alpha(oldpar),"OUrepar"=OU.repar(oldpar)$alpha)
-      sig2 <- switch(model,"QG"=QG.sig2(oldpar),"OU"=oldpar$sig2,"OUrepar"=OU.repar(oldpar)$sig2,"OUcpp"=oldpar$sig2,"QGcpp"=QG.sig2(oldpar),"OUrepar"=OU.repar(oldpar)$sig2)
-      tick <- c(i,oll,pr1,log(2)/alpha,sig2/(2*alpha),oldpar$k,tapply(accept,accept.type,mean))
-      tick[-1] <- round(tick[-1],2)
-      names(tick)[1:6] <- c('gen','lnL','prior','half.life','Vy','K')
+      alpha <- switch(model,"QG"=QG.alpha(oldpar),"OU"=oldpar$alpha,"OUrepar"=OU.repar(oldpar)$alpha,"OUcpp"=oldpar$alpha,"QGcpp"=QG.alpha(oldpar),"OUrepar"=OU.repar(oldpar)$alpha, "bd"=oldpar$r)
+      sig2 <- switch(model,"QG"=QG.sig2(oldpar),"OU"=oldpar$sig2,"OUrepar"=OU.repar(oldpar)$sig2,"OUcpp"=oldpar$sig2,"QGcpp"=QG.sig2(oldpar),"OUrepar"=OU.repar(oldpar)$sig2, "bd"=oldpar$eps)
+      if(model=="bd"){
+        tick <- c(i,oll,pr1,median(alpha),median(sig2),oldpar$k,tapply(accept,accept.type,mean))
+        tick[-1] <- round(tick[-1],2)
+        names(tick)[1:6] <- c('gen','lnL','prior','r','eps','K')
+      } else {
+        tick <- c(i,oll,pr1,log(2)/alpha,sig2/(2*alpha),oldpar$k,tapply(accept,accept.type,mean))
+        tick[-1] <- round(tick[-1],2)
+        names(tick)[1:6] <- c('gen','lnL','prior','half.life','Vy','K')
+      }
       if(i==ticker.freq){
         cat(c(names(tick),'\n'),sep='\t\t\t')
       }

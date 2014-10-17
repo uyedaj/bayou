@@ -61,6 +61,18 @@
   }
 }
 
+##Adjust a randomly selected theta parameter
+.vectorMultiplier <- function(cache, pars, d, move,ct=NULL){
+  j <- sample(1:pars$ntheta,1)
+  ##Generate multiplier proposal
+  m <- exp(d*(runif(1)-0.5))
+  prop <- pars[[move]][j]*m
+  lnHastingsRatio <- log(m)
+  pars.new <- pars
+  pars.new[[move]][j] <- prop
+  #pr <- .prior(pars.new,emap,cache)-.prior(pars,emap,cache)
+  return(list("pars" = pars.new, "hr"=lnHastingsRatio, "theta" = j))
+}
 
 #' MCMC move for sliding a shift up or down to neighboring branches, or within a branch
 .slidespace <- function(j, pars, cache, ct, map){
@@ -237,3 +249,69 @@
 #    }
  # return(list(segs=new.segs, theta=new.theta))
 #}
+
+#' MCMC move for splitting or collapsing a shift on phylogeny
+.splitmergebd <- function(pars, cache, d, ct, move=NULL){
+  splitmergepars <- attributes(ct)$splitmergepars
+  nbranch <- length(cache$edge.length)
+  TH <- sum(cache$edge.length)
+  v <- runif(1)
+  sb.max <- ct$sb$bmax
+  sb.taken <- rep(0,2*cache$ntips-2)
+  sb.table <- table(pars$sb)
+  sb.taken[as.numeric(names(sb.table))] <- sb.table
+  sb.prob <- ct$sb$prob
+  sb.prob[sb.max <= sb.taken] <- 0
+  if(v < ct$bk[pars$ntheta]/(ct$bk[pars$ntheta]+ct$dk[pars$ntheta])){
+    decision <- "birth"
+    sb.j <- sample(1:(2*cache$ntips-2),1,prob=sb.prob)
+    loc.j <- runif(1,min=0,max=cache$edge.length[sb.j])
+    t2.j <- pars$ntheta+1
+    pars.new <- pars
+    pars.new$sb <- c(pars$sb, sb.j)
+    pars.new$loc <- c(pars$loc, loc.j)
+    pars.new$t2 <- c(pars$t2, t2.j)
+    map.new <- .pars2map(pars.new, cache)
+    t1 <- map.new$theta[max(which(map.new$theta==t2.j))-1]
+    t2W <- sum(map.new$segs[map.new$theta==t2.j])
+    t1W <- sum(map.new$segs[map.new$theta==t1])
+    r <- t2W/(t1W+t2W)
+    for(i in 1:length(splitmergepars)){
+      u <- runif(1,-0.5,0.5)*d
+      pars.new[[splitmergepars[i]]][t1] <- pars[[splitmergepars[i]]][t1]-u*r
+      pars.new[[splitmergepars[i]]][t2.j] <- pars[[splitmergepars[i]]][t1]+u*(1-r)
+    }
+    pars.new$k <- pars$k+1
+    pars.new$ntheta <- pars$ntheta + 1
+    pars.new$sb <- c(pars$sb,sb.j)
+    pars.new$loc <- c(pars$loc,loc.j)
+    pars.new$t2 <- c(pars$t2,t2.j)
+    hr <- log(ct$dk[pars.new$ntheta]*1/pars.new$k*d)-log(ct$bk[pars$ntheta]*sb.prob[sb.j]/sum(sb.prob))
+  } else {
+    decision <- "death"
+    j <- sample(1:pars$k,1)
+    pars.new <- pars
+    pars.new$k <- pars$k-1
+    pars.new$ntheta <- pars$ntheta-1
+    pars.new$sb <- pars$sb[-j]
+    pars.new$loc <- pars$loc[-j]
+    pars.new$t2 <- pars$t2[-pars$k]
+    for(i in 1:length(splitmergepars)){
+      pars.new[[splitmergepars[i]]] <- pars[[splitmergepars[i]]][-(j+1)]
+    }
+    map <- .pars2map(pars, cache)
+    t2.j <- pars$t2[j]
+    sb.j <- pars$sb[j]
+    t1 <- map$theta[max(which(map$theta==t2.j))-1]
+    t2W <- sum(map$segs[map$theta==t2.j])
+    t1W <- sum(map$segs[map$theta==t1])
+    r <- t2W/(t1W+t2W)
+    for(i in 1:length(splitmergepars)){
+      pars.new[[splitmergepars[i]]][t1-(t1>t2.j)] <- pars[[splitmergepars[i]]][t1]*(1-r)+pars[[splitmergepars[i]]][t2.j]*r
+    }
+    sb.prob[sb.j] <- ct$sb$prob[sb.j]
+    hr <- log(ct$bk[pars.new$ntheta]*sb.prob[sb.j]/sum(sb.prob))-log(ct$dk[pars$ntheta]*1/pars$k*d)
+  }
+  return(list(pars=pars.new, hr=hr, decision=decision, sb.prob=sb.prob))
+}
+
