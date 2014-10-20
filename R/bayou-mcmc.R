@@ -326,6 +326,32 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
   gbg <- lapply(files, close)
   #tuning.int <- round(tuning.int*ngen,0)
   mcmc.loop <- function(ngen){
+    .lastpar <- function(files){
+      fL <- min(sapply(files, function(x) countL(summary(x)$description)))
+      if(fL==1){skipL <- 0} else {skipL=fL-1}
+      res <- lapply(1:length(files), function(x) read.table(summary(files[[x]])$description, skip=skipL))
+      pars <- list()
+      rjpars <- switch(model, "OU"= "theta", "OUrepar"="theta", "QG"="theta", "bd"=c("r", "eps"), "ffancova"="theta")
+      npars <- length(res[[4]])
+      k <- (npars-length(parorder)-3)/length(rjpars)
+      j=4
+      for(i in 1:length(parorder)){
+        if(parorder[i] %in% rjpars){
+          pars[[parorder[[i]]]] <- unlist(res[[4]][,j:(j+k)],F,F)
+          j <- j+k
+        } else {
+          pars[[parorder[i]]] <- unlist(res[[4]][,j],F,F)
+          j <- j+1
+        }
+      }
+      pars$sb <- unlist(res[[1]], F, F)
+      pars$loc <- unlist(res[[2]], F, F)
+      pars$t2 <- unlist(res[[3]], F, F)
+      i <- unlist(res[[4]][1], F, F)
+      oll <- unlist(res[[4]][2],F,F)
+      pr1 <- unlist(res[[4]][3], F,F)
+      return(list(pars=pars, i=i, oll=oll, pr1=pr1))
+    }
     startinf <- .lastpar(files)
     oldpar <- startinf$pars
     i <- startinf$i
@@ -405,32 +431,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
   return(out)
 }
 
-.lastpar <- function(files){
-  fL <- min(sapply(files, function(x) countL(summary(x)$description)))
-  if(fL==1){skipL <- 0} else {skipL=fL-1}
-  res <- lapply(1:length(files), function(x) read.table(summary(files[[x]])$description, skip=skipL))
-  pars <- list()
-  rjpars <- switch(model, "OU"= "theta", "OUrepar"="theta", "QG"="theta", "bd"=c("r", "eps"), "ffancova"="theta")
-  npars <- length(res[[4]])
-  k <- (npars-length(parorder)-3)/length(rjpars)
-  j=4
-  for(i in 1:length(parorder)){
-    if(parorder[i] %in% rjpars){
-      pars[[parorder[[i]]]] <- unlist(res[[4]][,j:(j+k)],F,F)
-      j <- j+k
-    } else {
-      pars[[parorder[i]]] <- unlist(res[[4]][,j],F,F)
-      j <- j+1
-    }
-  }
-  pars$sb <- unlist(res[[1]], F, F)
-  pars$loc <- unlist(res[[2]], F, F)
-  pars$t2 <- unlist(res[[3]], F, F)
-  i <- unlist(res[[4]][1], F, F)
-  oll <- unlist(res[[4]][2],F,F)
-  pr1 <- unlist(res[[4]][3], F,F)
-  return(list(pars=pars, i=i, oll=oll, pr1=pr1))
-}
+
 countL <- function (file, chunkSize = 5e+07, ...) {
   if (inherits(file, "connection")) {
     con <- file
