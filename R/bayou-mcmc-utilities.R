@@ -53,6 +53,20 @@ load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE){#dir
     chain$loc <- mapsr2
     chain$t2 <- mapst2
   }
+  if(model=="ffancova"){
+    chain$gen <- sapply(pars.out,function(x) x[1])
+    chain$lnL <- sapply(pars.out,function(x) x[2])
+    chain$prior <- sapply(pars.out,function(x) x[3])
+    chain$alpha <- sapply(pars.out,function(x) x[4])
+    chain$sig2 <- sapply(pars.out,function(x) x[5])
+    chain$beta1 <- sapply(pars.out,function(x) x[6])
+    chain$k <- sapply(pars.out,function(x) x[7])
+    chain$ntheta <- sapply(pars.out,function(x) x[8])
+    chain$theta <- lapply(pars.out,function(x) x[-(1:8)])
+    chain$sb <- mapsb
+    chain$loc <- mapsr2
+    chain$t2 <- mapst2
+  }
   if(model=="QG"){
     chain$gen <- sapply(pars.out,function(x) x[1])
     chain$lnL <- sapply(pars.out,function(x) x[2])
@@ -446,12 +460,15 @@ summary.bayouMCMC <- function(object, ...){
   cat(length(object$gen), "samples, first", eval(start), "samples discarded as burnin\n")
   postburn <- start:length(object$gen)
   object <- lapply(object,function(x) x[postburn])
-  parorder <- switch(model,"QG"=c("lnL","prior", "h2","P","w2","Ne","k","ntheta"), "OU"=c("lnL","prior","alpha","sig2","k","ntheta"),"OUrepar"=c("lnL","prior","halflife","Vy","k","ntheta"))
+  parorder <- switch(model,"QG"=c("lnL","prior", "h2","P","w2","Ne","k","ntheta"), 
+                     "OU"=c("lnL","prior","alpha","sig2","k","ntheta"),
+                     "OUrepar"=c("lnL","prior","halflife","Vy","k","ntheta"),
+                     "ffancova"=c("lnL","prior","alpha","sig2","beta1", "k","ntheta"))
   summat <- matrix(unlist(object[parorder]),ncol=length(parorder))
   colnames(summat) <- parorder
   summat <- cbind(summat, "root"=sapply(object$theta,function(x) x[1]))
-  sum.1vars <- summary(mcmc(summat))
-  sum.theta <- summary(mcmc(unlist(object$theta)))
+  sum.1vars <- summary(coda::mcmc(summat))
+  sum.theta <- summary(coda::mcmc(unlist(object$theta)))
   statistics <- rbind(cbind(sum.1vars$statistics, "Effective Size" = effectiveSize(summat)),"all theta"=c(sum.theta$statistics[1:2],rep(NA,3)))
   cat("\n\nSummary statistics for parameters:\n")
   print(statistics, ...)

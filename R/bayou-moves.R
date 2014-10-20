@@ -63,7 +63,7 @@
 
 ##Adjust a randomly selected theta parameter
 .vectorMultiplier <- function(cache, pars, d, move,ct=NULL){
-  j <- sample(1:pars$ntheta,1)
+  j <- sample(1:length(pars[[move]]),1)
   ##Generate multiplier proposal
   m <- exp(d*(runif(1)-0.5))
   prop <- pars[[move]][j]*m
@@ -72,6 +72,16 @@
   pars.new[[move]][j] <- prop
   #pr <- .prior(pars.new,emap,cache)-.prior(pars,emap,cache)
   return(list("pars" = pars.new, "hr"=lnHastingsRatio, "theta" = j))
+}
+
+.vectorSlidingWindow <- function(cache, pars, d, move,ct=NULL){
+  j <- sample(1:length(pars[[move]]),1)
+  prop <- d*(runif(1)-0.5)+pars[[move]][j]
+  lnHastingsRatio <- 0
+  pars.new <- pars
+  pars.new[[move]][j] <- prop
+  #pr <- .prior(pars.new,emap,cache)-.prior(pars,emap,cache)
+  return(list("pars" = pars.new, "hr"=lnHastingsRatio, "j" = j))
 }
 
 #' MCMC move for sliding a shift up or down to neighboring branches, or within a branch

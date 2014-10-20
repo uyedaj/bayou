@@ -277,7 +277,11 @@ bayou.lik <- function(pars, cache, X, model="OU"){
     pars$sig2 <- repar$sig2
   }
   n <- cache$n
-  X <- cache$dat
+  if(model=="ffancova"){
+    X <- cache$dat
+    X = X - apply(cache$pred, 1, function(x) sum(pars$beta1*x))
+    cache$dat <- X
+  }
   #W <- C_weightmatrix(cache,pars)$W
   #if(pars$ntheta>1){
   #  E.th=W%*%pars$theta
@@ -326,3 +330,4 @@ bayou.lik <- function(pars, cache, X, model="OU"){
   names(xx) <- if (is.null(phy$node.label)) 1:(n + phy$Nnode) else phy$node.label
   return(xx)
 }
+

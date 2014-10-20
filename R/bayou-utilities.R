@@ -53,7 +53,7 @@
 #' This is an internal function modified from geiger's function .prepare.bm.univariate for use with OU models.
 ##Merging .prepare.ou.phylolm and .prepare.ou.univariate
 ##Clean this up to make sure I actually need all this!!
-.prepare.ou.univariate <- function(tree,X, SE=0, ...){
+.prepare.ou.univariate <- function(tree,X, SE=0, pred=NULL, ...){
   ntips <- length(tree$tip.label)
   rownames(tree$edge) <- 1:(length(tree$edge[,1]))
   cache <- .prepare.bm.univariate(tree, X, SE=SE)#, ...)
@@ -61,6 +61,11 @@
   cache$n <- ntips
   cache$N <- nrow(cache$phy$edge)
   cache$nH <- phytools::nodeHeights(tree)[ind,1]
+  if(is.null(pred)){
+    pred <- rep(0, ntips)
+  }
+  pred <- matrix(pred, ncol=length(pred)/ntips)
+  cache$pred <- cbind(pred[ind[ind <= ntips],])
   cache$maps <- tree$maps[ind]
   cache$mapped.edge <- tree$mapped.edge[ind,]
   cache$height <- max(phytools::nodeHeights(tree))
