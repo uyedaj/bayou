@@ -62,10 +62,9 @@
   cache$N <- nrow(cache$phy$edge)
   cache$nH <- phytools::nodeHeights(tree)[ind,1]
   if(is.null(pred)){
-    pred <- rep(0, ntips)
+    pred <- cbind(rep(0, ntips))
+    rownames(pred) <-  cache$tip.label
   }
-  pred <- matrix(pred, ncol=length(pred)/ntips)
-  cache$pred <- cbind(pred[ind[ind <= ntips],])
   cache$maps <- tree$maps[ind]
   cache$mapped.edge <- tree$mapped.edge[ind,]
   cache$height <- max(phytools::nodeHeights(tree))
@@ -76,6 +75,8 @@
   cache$ordering <- "postorder"
   cache$ht <- .heights.cache(cache)
   cache$edge <- unname(cache$edge)
+  o <- match(tree$tip.label, cache$tip.label)
+  cache$pred <- cbind(pred[o,])
   plook <- function(x){mapply(paste,x[2:length(x)],x[1:(length(x)-1)],sep=",")}
   tB <- cache$desc$anc[1:ntips]
   tB <- mapply(c,1:ntips,tB, SIMPLIFY=FALSE)
