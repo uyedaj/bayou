@@ -287,7 +287,7 @@
     t1W <- sum(map.new$segs[map.new$theta==t1])
     r <- t2W/(t1W+t2W)
     for(i in 1:length(splitmergepars)){
-      u <- runif(1,-0.5,0.5)*d
+      u <- runif(1,-0.5,0.5)*d[i]
       pars.new[[splitmergepars[i]]][t1] <- pars[[splitmergepars[i]]][t1]-u*r
       pars.new[[splitmergepars[i]]][t2.j] <- pars[[splitmergepars[i]]][t1]+u*(1-r)
     }
@@ -296,7 +296,7 @@
     pars.new$sb <- c(pars$sb,sb.j)
     pars.new$loc <- c(pars$loc,loc.j)
     pars.new$t2 <- c(pars$t2,t2.j)
-    hr <- log(ct$dk[pars.new$ntheta]*1/pars.new$k*d)-log(ct$bk[pars$ntheta]*sb.prob[sb.j]/sum(sb.prob))
+    hr <- log(ct$dk[pars.new$ntheta]*1/pars.new$k*prod(d))-log(ct$bk[pars$ntheta]*sb.prob[sb.j]/sum(sb.prob))
   } else {
     decision <- "death"
     j <- sample(1:pars$k,1)
@@ -320,7 +320,7 @@
       pars.new[[splitmergepars[i]]][t1-(t1>t2.j)] <- pars[[splitmergepars[i]]][t1]*(1-r)+pars[[splitmergepars[i]]][t2.j]*r
     }
     sb.prob[sb.j] <- ct$sb$prob[sb.j]
-    hr <- log(ct$bk[pars.new$ntheta]*sb.prob[sb.j]/sum(sb.prob))-log(ct$dk[pars$ntheta]*1/pars$k*d)
+    hr <- log(ct$bk[pars.new$ntheta]*sb.prob[sb.j]/sum(sb.prob))-log(ct$dk[pars$ntheta]*1/pars$k*prod(d))
   }
   return(list(pars=pars.new, hr=hr, decision=decision, sb.prob=sb.prob))
 }

@@ -514,6 +514,7 @@ identifyBranches <- function(tree, n, fixed.loc=TRUE, plot.simmap=TRUE){
 
 #' Internal function to determine tip regimes:
 .tipregime <- function(pars, tree){
+  ntips <- length(tree$tip.label)
   tree <- reorder(tree, "postorder")
   tr <- pars2simmap(pars, tree)
   tip.reg <- as.numeric(sapply(tr$tree$map, function(x) names(x)[length(x)]))

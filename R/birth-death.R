@@ -113,14 +113,3 @@ medusa2bayou <- function(phy, splitNode, r, eps, index,...){
   return(pars)
 }
 
-bdSplit.lik <- function(pars, cache, X=NULL, model="bd"){
-  splitBranch <- pars$sb
-  splitNode <- cache$edge[splitBranch,2]
-  r <- exp(pars$r)
-  eps <- exp(pars$eps)
-  r2 <- c(0, pars$t2-1)
-  loglik <- getSplitLikelihood(cache$phy, splitNode, r, eps, r2)
-  return(list(loglik=loglik))
-}
-
-	

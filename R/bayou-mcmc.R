@@ -1,5 +1,6 @@
-#SE=0; model="OU"; ngen=10000; samp=10; chunk=100; control=NULL; tuning=NULL; new.dir=TRUE; plot.freq=500; outname="bayou"; ticker.freq=1000; tuning.int=c(0.1,0.2,0.3); moves=NULL; control.weights=NULL; startpar=NULL; lik.fn=bayou.lik; plot.fn=plotSimmap
-
+#SE=0; model="ffancova"; ngen=10000; samp=10; chunk=100; control=NULL; tuning=NULL; new.dir=TRUE; plot.freq=500; outname="bayou"; ticker.freq=1000; tuning.int=c(0.1,0.2,0.3); moves=NULL; control.weights=NULL; startpar=NULL; lik.fn=bayou.lik; plot.fn=plotSimmap
+#startpar <- list(alpha=0.1, sig2=3, beta1=c(0.66, 0.75), k=1, ntheta=2, theta=c(4,4), sb=200, loc=0, t2=2); model <- model.BetaBMR; plot.fn <- BMRplot
+#startpar=list(alpha=0.1, sig2=3, beta1=1, k=1, ntheta=2, theta=c(4,4), sb=200, loc=0, t2=2)
 #' Bayesian sampling of multi-optima OU models 
 #' 
 #' @description Runs a reversible-jump Markov chain Monte Carlo on continuous phenotypic data on a phylogeny, sampling possible shift locations and 
@@ -224,12 +225,14 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
   if("loc" %in% fixed){
     fixed <- c(fixed,"slide")
   }
+  if(is.character(model)){
+    model.pars <- switch(model, "OU"=model.OU, "QG"=model.QG, "OUrepar"=model.OUrepar, "bd"=model.bd, "ffancova"=model.ffancova)
+  } else {
+    model.pars <- model
+    model <- "Custom"
+  }
   if(is.null(moves)){
-    moves <- switch(model,"QG"=list(h2=".multiplierProposal",P=".multiplierProposal",w2=".multiplierProposal",Ne=".multiplierProposal",k=".splitmerge",theta=".adjustTheta",slide=".slide"),
-                    "OU"=list(alpha=".multiplierProposal",sig2=".multiplierProposal",k=".splitmerge",theta=".adjustTheta",slide=".slide"),
-                    "OUrepar"=list(halflife=".multiplierProposal",Vy=".multiplierProposal",k=".splitmerge",theta=".adjustTheta",slide=".slide"),
-                    "ffancova"=list(alpha=".multiplierProposal", sig2=".multiplierProposal", beta1=".vectorMultiplier", k=".splitmerge", "theta"=".adjustTheta", slide=".slide"),
-                    "bd"=list(r=".vectorMultiplier", eps=".vectorMultiplier", k=".splitmergebd")) #,"OUcpp"=list(alpha=".multiplierProposal",sig2=".multiplierProposal",sig2jump=".multiplierProposal",k=".splitmergeSimmap",theta=".adjustTheta",slide=".slideCPP"), "QGcpp"=list(h2=".multiplierProposal",P=".multiplierProposal",w2=".multiplierProposal",Ne=".multiplierProposal",sig2jump=".multiplierProposal",k=".splitmergeSimmap",theta=".adjustTheta",slide=".slideCPP"),"OUreparcpp"=list(halflife=".multiplierProposal",Vy=".multiplierProposal",sig2jump=".multiplierProposal",k=".splitmergeSimmap",theta=".adjustTheta",slide=".slideCPP"))
+    moves <- model.pars$moves
     moves <- moves[which(!(names(moves) %in% fixed))]
   }
   
@@ -240,37 +243,24 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
       stop(paste("Parameters '", paste(fixed[fixed %in% c("h2", "P", "w2", "Ne", "halflife", "Vy", "beta1")], collapse=" "), "' are set to be fixed but no starting values are supplied. 
                  Please specify starting parameter values",sep=""))
     }
-    startpar <- priorSim(prior,cache$phy,model,nsim=1,plot=FALSE, exclude.branches=NULL)$pars[[1]]
-    if(length(fixed)>0){
-      assumed <- sapply(fixed, function(x) switch(x, slide="", sb="sb=numeric(0)", beta1="beta1=1", k= "k=0", alpha="alpha=0", sig2="sig2=0", loc="0.5*edge.length"))
+    startpar <- priorSim(prior, cache$phy, model, nsim=1, plot=FALSE, exclude.branches=NULL)$pars[[1]]
+    if(length(fixed) > 0){
+      assumed <- sapply(fixed, function(x) switch(x, slide="", sb="sb=numeric(0)", k= "k=0", alpha="alpha=0", sig2="sig2=0", loc="0.5*edge.length"))
       print(paste("Warning: Fixed parameters '", paste(fixed,collapse=", "), "' not specified, assuming values: ", paste(assumed,collapse=", "),sep="" ))
     }
     } 
   if(length(fixed)==0 & is.null(control.weights)){
-    control.weights <- switch(model,"OU"=list("alpha"=4,"sig2"=2,"theta"=4,"slide"=2,"k"=10),
-                              "QG"=list("h2"=5,"P"=2,"w2"=5,"Ne"=5,"theta"=5,"slide"=3,"k"=20),
-                              "OUrepar"=list("halflife"=5,"Vy"=3,"theta"=5,"slide"=3,"k"=20), 
-                              "ffancova"=list("alpha"=4,"sig2"=2,"beta1"=4, "theta"=4,"slide"=2,"k"=10),
-                              "bd"=list("r"=2, "eps"=1, "k"=5, slide=0))
+    control.weights <- model.pars$control.weights
     ct <- .buildControl(startpar, prior, control.weights)
   } else {
     if(is.null(control.weights)){
-      control.weights <- switch(model,"OU"=list("alpha"=4,"sig2"=2,"theta"=4,"slide"=2,"k"=10),
-                                "QG"=list("h2"=5,"P"=2,"w2"=5,"Ne"=5,"theta"=5,"slide"=3,"k"=20),
-                                "OUrepar"=list("halflife"=5,"Vy"=3,"theta"=5,"slide"=3,"k"=20), 
-                                "ffancova"=list("alpha"=4,"sig2"=2,"beta1"=4, "theta"=4,"slide"=2,"k"=10),
-                                "bd"=list("r"=2, "eps"=1, "k"=5, slide=0))
-      #"OUcpp"=list("alpha"=3,"sig2"=3,"sig2jump"=3,"theta"=3,"slide"=5,"k"=10),"QGcpp"=list("h2"=1,"P"=1,"w2"=2,"Ne"=2,"sig2jump"=3,"theta"=3,"slide"=5,"k"=10),"OUreparcpp"=list("halflife"=3,"Vy"=3,"sig2jump"=3,"theta"=3,"slide"=5,"k"=10)
+      control.weights <-model.pars$control.weights
       control.weights[fixed[fixed %in% names(control.weights)]] <- 0
     } else {control.weights <- control.weights}
     ct <- .buildControl(startpar, prior, move.weights=control.weights)
   }
   if(is.null(tuning)){
-    D <- switch(model, "OU"=list(alpha=1, sig2= 1, k = 4,theta=2,slide=1), 
-                "QG"=list(h2=1, P=1, w2=1, Ne=1, k = 4, theta=2, slide=1), 
-                "OUrepar"=list(halflife=1, Vy=1, k=4, theta=2, slide=1), 
-                "ffancova"=list(alpha=1, sig2= 1, beta1=1, k = 4,theta=2,slide=1),
-                "bd"=list(r=1, eps=1, k=4))#,"OUcpp"=list(alpha=1, sig2= 1,sig2jump=2, k = 4,theta=2,slide=1),"QGcpp"=list(h2=1,P=1,w2=1,Ne=1,sig2jump=2,k=4,theta=2,slide=1),"OUreparcpp"=list(halflife=1,Vy=1,sig2jump=2,k=4,theta=2,slide=1))
+    D <- model.pars$D
   } else {D <- tuning}
   if(is.logical(new.dir)){
     if(new.dir){
@@ -288,33 +278,31 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
       #dir.create(dir)
     }
   } 
-  files <- list(mapsb=file(paste(dir, outname,".sb",sep=""),open="a"), 
-                mapsloc=file(paste(dir, outname,".loc",sep=""),open="a"),
-                mapst2=file(paste(dir, outname,".t2",sep=""),open="a"),
-                pars.output=file(paste(dir, outname,".pars",sep=""),open="a"))  
   filenames <- list(mapsb=paste(dir, outname,".sb",sep=""), 
                     mapsloc=paste(dir, outname,".loc",sep=""),
                     mapst2=paste(dir, outname,".t2",sep=""),
-                    pars.output=paste(dir, outname,".pars",sep=""))
-  #mapsb <<- file(paste(dir, outname,".sb",sep=""),open="w")
-  #mapsloc <<- file(paste(dir, outname,".loc",sep=""),open="w")
-  #mapst2 <<- file(paste(dir, outname,".t2",sep=""),open="w")
-  #pars.output <<- file(paste(dir, outname,".pars",sep=""),open="w")
+                    pars.output=paste(dir, outname,".pars",sep=""),
+                    rjpars=paste(dir, outname,".rjpars", sep=""))
+  files <- list(mapsb=file(filenames$mapsb,open="a"), 
+                mapsloc=file(filenames$mapsloc,open="a"),
+                mapst2=file(filenames$mapst2,open="a"),
+                pars.output=file(filenames$pars.output,open="a"),
+                rjpars=file(filenames$rjpars, open="a"))  
+
   oldpar <- startpar
-  store <- list("out"=list(), "sb"=list(), "loc"=list(), "t2"=list())
-  if(is.null(lik.fn)) lik.fn <- bayou.lik #.OU.lik
+  store <- list("out"=list(), "rjpars"=list(), "sb"=list(), "loc"=list(), "t2"=list())
+  if(is.null(lik.fn)) lik.fn <- model.pars$lik.fn #.OU.lik
   oll  <- lik.fn(oldpar, cache, dat, model=model)$loglik
   pr1 <- prior(oldpar,cache)
-  parorder <- switch(model,"QG"=c("h2","P","w2","Ne","k","ntheta","theta"), 
-                     "OU"=c("alpha","sig2","k","ntheta","theta"),
-                     "OUrepar"=c("halflife","Vy","k","ntheta","theta"),
-                     "ffancova"=c("alpha", "sig2", "beta1", "k", "ntheta", "theta"),
-                     "OUcpp"=c("alpha","sig2","sig2jump","k","ntheta","theta"), 
-                     "bd"=c("r", "eps", "k", "ntheta"))#,"QGcpp"=c("h2","P","w2","Ne","sig2jump","k","ntheta","theta"),"OUreparcpp"=c("halflife","Vy","sig2jump","k","ntheta","theta"))
-  
+  parorder <- model.pars$parorder
+  rjpars <- model.pars$rjpars
+  outpars <- parorder[which(!(parorder %in% rjpars))]
+  attributes(ct)$splitmergepars <- rjpars
   accept.type <- NULL
   accept <- NULL
   if(!is.null(plot.freq)){
+    environment(plot.fn) <- new.env()
+    set.runpars(plot.fn, runpars=list(oldpar=oldpar, cache=cache, i=0))
     tr <- .toSimmap(.pars2map(oldpar, cache),cache)
     tcols <- makeTransparent(rainbow(oldpar$ntheta),alpha=200)
     names(tcols)<- 1:oldpar$ntheta
@@ -322,7 +310,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     plot.dim <- list(par('usr')[1:2],par('usr')[3:4])
   }
   store <- list()
-  store <- .store.bayou(1, oldpar, oll, pr1, store, 1, 1, parorder, files)
+  store <- .store.bayou2(1, oldpar, outpars, rjpars, oll, pr1, store, 1, 1, parorder, files)
   gbg <- lapply(files, close)
   #tuning.int <- round(tuning.int*ngen,0)
   mcmc.loop <- function(ngen){
@@ -331,17 +319,19 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
       if(fL==1){skipL <- 0} else {skipL=fL-1}
       res <- lapply(1:length(files), function(x) read.table(summary(files[[x]])$description, skip=skipL))
       pars <- list()
-      rjpars <- switch(model, "OU"= "theta", "OUrepar"="theta", "QG"="theta", "bd"=c("r", "eps"), "ffancova"="theta")
       npars <- length(res[[4]])
-      k <- (npars-length(parorder)-3)/length(rjpars)
       j=4
-      for(i in 1:length(parorder)){
-        if(parorder[i] %in% rjpars){
-          pars[[parorder[[i]]]] <- unlist(res[[4]][,j:(j+k)],F,F)
-          j <- j+k
-        } else {
-          pars[[parorder[i]]] <- unlist(res[[4]][,j],F,F)
-          j <- j+1
+      if(length(outpars) > 0){
+        for(i in 1:length(outpars)){
+           pars[[outpars[i]]] <- unlist(res[[4]][,j],F,F)
+           j <- j+1
+        }
+      }
+      if(length(rjpars >0)){
+        j <- 1
+        for(i in 1:length(rjpars)){
+           pars[[rjpars[i]]] <- unlist((res[[5]][j:(j+pars$ntheta-1)]),F,F)
+           j <- j+pars$ntheta
         }
       }
       pars$sb <- unlist(res[[1]], F, F)
@@ -378,9 +368,10 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
       } else {
         accept <- c(accept,0)
       }
-      store <- .store.bayou(i, oldpar, oll, pr1, store, samp, chunk, parorder,files)
+      store <- .store.bayou2(1, oldpar, outpars, rjpars, oll, pr1, store, 1, 1, parorder, files)
       if(!is.null(plot.freq)){
         if(i %% plot.freq==0){
+          set.runpars(plot.fn, runpars=list(oldpar=oldpar, cache=cache, i=i))
           tr <- .toSimmap(.pars2map(oldpar, cache),cache)
           tcols <- makeTransparent(rainbow(oldpar$ntheta),alpha=200)
           names(tcols)<- 1:oldpar$ntheta
@@ -413,16 +404,16 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
       }
     }
   }
-  run.mcmc <- function(ngen, filenames=filenames){
-    files <- list(mapsb=file(paste(dir, outname,".sb",sep=""),open="a"), 
-                  mapsloc=file(paste(dir, outname,".loc",sep=""),open="a"),
-                  mapst2=file(paste(dir, outname,".t2",sep=""),open="a"),
-                  pars.output=file(paste(dir, outname,".pars",sep=""),open="a"))  
-    
+  run.mcmc <- function(ngen){
+    files <- list(mapsb=file(filenames$mapsb,open="a"), 
+                  mapsloc=file(filenames$mapsloc,open="a"),
+                  mapst2=file(filenames$mapst2,open="a"),
+                  pars.output=file(filenames$pars.output,open="a"),
+                  rjpars=file(filenames$rjpars, open="a"))  
     tryCatch(mcmc.loop(ngen))
     gbg <- lapply(files, close)
   }
-  out <- list('run' = run.mcmc, 'model'=model, 'dir.name'=dir.name,'dir'=dir, 'outname'=outname, 'tree'=tree, 'dat'=dat, 'tmpdir'=ifelse(new.dir==TRUE, TRUE, FALSE))
+  out <- list('run' = run.mcmc, 'model'=model, 'model.pars'=model.pars, 'dir.name'=dir.name,'dir'=dir, 'outname'=outname, 'tree'=tree, 'dat'=dat, 'tmpdir'=ifelse(new.dir==TRUE, TRUE, FALSE))
   mcmc.load <- function(save.Rdata=FALSE, file=NULL, cleanup=FALSE){
     load.bayou(out, save.Rdata, file, cleanup)
   }
@@ -486,8 +477,8 @@ countL <- function (file, chunkSize = 5e+07, ...) {
   }
   nbrOfLines
 }
-set.runpars <- function(mcmc, runpars = list()){
-  env <- environment(mcmc$run)
+set.runpars <- function(fun, runpars = list()){
+  env <- environment(fun)
   for(i in 1:length(runpars)){
     env[[names(runpars)[i]]] <- runpars[[i]]
   }

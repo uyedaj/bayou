@@ -27,7 +27,10 @@ load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE){#dir
   dat <- bayouFit$dat
   outname <- bayouFit$outname
   model <- bayouFit$model
+  model.pars <- bayouFit$model.pars
   dir <- bayouFit$dir
+  outpars <- model.pars$parorder[!(model.pars$parorder %in% model.pars$rjpars)]
+  rjpars <- model.pars$rjpars
   #mapsr2 <- read.table(file="mapsr2.dta",header=FALSE)
   #mapsb <- read.table(file="mapsb.dta",header=FALSE)
   #mapst2 <- read.table(file="mapst2.dta",header=FALSE)
@@ -35,81 +38,34 @@ load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE){#dir
   mapsb <- scan(file=paste(dir,outname,".sb",sep=""),what="",sep="\n",quiet=TRUE,blank.lines.skip=FALSE)
   mapst2 <- scan(file=paste(dir,outname,".t2",sep=""),what="",sep="\n",quiet=TRUE,blank.lines.skip=FALSE)
   pars.out <- scan(file=paste(dir,outname,".pars",sep=""),what="",sep="\n",quiet=TRUE,blank.lines.skip=FALSE)
+  rjpars.out <- scan(file=paste(dir,outname,".rjpars",sep=""),what="",sep="\n",quiet=TRUE,blank.lines.skip=FALSE)
+  rjpars.out <- lapply(strsplit(rjpars.out,"[[:space:]]+"),as.numeric)
   pars.out <- lapply(strsplit(pars.out,"[[:space:]]+"),as.numeric)
   mapsr2 <- lapply(strsplit(mapsr2,"[[:space:]]+"),as.numeric)
   mapsb <- lapply(strsplit(mapsb,"[[:space:]]+"),as.numeric)
   mapst2 <- lapply(strsplit(mapst2,"[[:space:]]+"),as.numeric)
   chain <- list()
-  if(model=="OU"){
-    chain$gen <- sapply(pars.out,function(x) x[1])
-    chain$lnL <- sapply(pars.out,function(x) x[2])
-    chain$prior <- sapply(pars.out,function(x) x[3])
-    chain$alpha <- sapply(pars.out,function(x) x[4])
-    chain$sig2 <- sapply(pars.out,function(x) x[5])
-    chain$k <- sapply(pars.out,function(x) x[6])
-    chain$ntheta <- sapply(pars.out,function(x) x[7])
-    chain$theta <- lapply(pars.out,function(x) x[-(1:7)])
-    chain$sb <- mapsb
-    chain$loc <- mapsr2
-    chain$t2 <- mapst2
+  chain$gen <- sapply(pars.out,function(x) x[1])
+  chain$lnL <- sapply(pars.out,function(x) x[2])
+  chain$prior <- sapply(pars.out,function(x) x[3])
+  chain$sb <- mapsb
+  chain$loc <- mapsr2
+  chain$t2 <- mapst2
+  j=4
+  if(length(outpars) > 0){
+    for(i in 1:length(outpars)){
+      chain[[outpars[i]]] <- sapply(pars.out, function(x) x[j])
+      j <- j+1
+    }
   }
-  if(model=="ffancova"){
-    chain$gen <- sapply(pars.out,function(x) x[1])
-    chain$lnL <- sapply(pars.out,function(x) x[2])
-    chain$prior <- sapply(pars.out,function(x) x[3])
-    chain$alpha <- sapply(pars.out,function(x) x[4])
-    chain$sig2 <- sapply(pars.out,function(x) x[5])
-    chain$beta1 <- sapply(pars.out,function(x) x[6])
-    chain$k <- sapply(pars.out,function(x) x[7])
-    chain$ntheta <- sapply(pars.out,function(x) x[8])
-    chain$theta <- lapply(pars.out,function(x) x[-(1:8)])
-    chain$sb <- mapsb
-    chain$loc <- mapsr2
-    chain$t2 <- mapst2
+  if(length(rjpars >0)){
+    nrjpars <- length(rjpars)
+    for(i in 1:length(rjpars)){
+      chain[[rjpars[i]]] <- lapply(rjpars.out, function(x) unlist((x[(1+length(x)/nrjpars*(i-1)):(1+i*length(x)/nrjpars-1)]),F,F))
+    }
   }
-  if(model=="QG"){
-    chain$gen <- sapply(pars.out,function(x) x[1])
-    chain$lnL <- sapply(pars.out,function(x) x[2])
-    chain$prior <- sapply(pars.out,function(x) x[3])
-    chain$h2 <- sapply(pars.out,function(x) x[4])
-    chain$P <- sapply(pars.out,function(x) x[5])
-    chain$w2 <- sapply(pars.out,function(x) x[6])
-    chain$Ne <- sapply(pars.out,function(x) x[7])
-    chain$k <- sapply(pars.out,function(x) x[8])
-    chain$ntheta <- sapply(pars.out,function(x) x[9])
-    chain$theta <- lapply(pars.out,function(x) x[-(1:9)])
-    chain$sb <- mapsb
-    chain$loc <- mapsr2
-    chain$t2 <- mapst2
-  }
-  if(model=="OUrepar"){
-    chain$gen <- sapply(pars.out,function(x) x[1])
-    chain$lnL <- sapply(pars.out,function(x) x[2])
-    chain$prior <- sapply(pars.out,function(x) x[3])
-    chain$halflife <- sapply(pars.out,function(x) x[4])
-    chain$Vy <- sapply(pars.out,function(x) x[5])
-    chain$k <- sapply(pars.out,function(x) x[6])
-    chain$ntheta <- sapply(pars.out,function(x) x[7])
-    chain$theta <- lapply(pars.out,function(x) x[-(1:7)])
-    chain$sb <- mapsb
-    chain$loc <- mapsr2
-    chain$t2 <- mapst2
-  }
-  if(model=="bd"){
-    len <- sapply(pars.out, length)
-    ngen <- length(len)
-    chain$gen <- sapply(pars.out,function(x) x[1])
-    chain$lnL <- sapply(pars.out,function(x) x[2])
-    chain$prior <- sapply(pars.out,function(x) x[3])
-    chain$k <- sapply(1:ngen,function(x) pars.out[[x]][len[x]-1])
-    chain$ntheta <- sapply(1:ngen,function(x) pars.out[[x]][len[x]])
-    chain$r <- sapply(1:ngen,function(x) pars.out[[x]][4:(4+chain$ntheta[x])])
-    chain$eps <- sapply(1:ngen,function(x) pars.out[[x]][(4+chain$ntheta[x]):(4+2*chain$ntheta[x])])
-    chain$sb <- mapsb
-    chain$loc <- mapsr2
-    chain$t2 <- mapst2
-  }
-  attributes(chain)$model <- bayouFit$model
+  attributes(chain)$model <- model
+  attributes(chain)$model.pars <- model.pars
   attributes(chain)$tree <- tree
   attributes(chain)$dat <- dat
   class(chain) <- c("bayouMCMC", "list")
@@ -137,6 +93,7 @@ load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE){#dir
       file.remove(paste(dir, outname, ".t2", sep=""))
       file.remove(paste(dir, outname, ".sb", sep=""))
       file.remove(paste(dir, outname, ".pars", sep=""))
+      file.remove(paste(dir, outname, ".rjpars", sep=""))
     }
     }
   return(chain)
@@ -268,7 +225,13 @@ Lposterior <- function(chain,tree,burnin=0, simpar=NULL,mag=TRUE){
 #' }
 #' @export
 pull.pars <- function(i,chain,model="OU"){
-  parorder <- switch(model,"QG"=c("h2","P","w2","Ne","k","ntheta","theta", "sb", "loc", "t2"), "OU"=c("alpha","sig2","k","ntheta","theta", "sb", "loc", "t2"),"OUrepar"=c("halflife","Vy","k","ntheta","theta", "sb", "loc", "t2"))
+  if(is.character(model)){
+    model.pars <- switch(model, "OU"=model.OU, "QG"=model.QG, "OUrepar"=model.OUrepar, "bd"=model.bd, "ffancova"=model.ffancova)
+  } else {
+    model.pars <- model
+    model <- "Custom"
+  }
+  parorder <- c(model.pars$parorder, model.pars$shiftpars)
   pars <- lapply(parorder,function(x) chain[[x]][[i]])
   names(pars) <- parorder
   return(pars)
@@ -479,4 +442,34 @@ summary.bayouMCMC <- function(object, ...){
   out <- list(statistics=statistics, branch.posteriors=Lpost)
   invisible(out)
 }
-  
+
+#' Stores a flat file
+#' 
+
+.store.bayou2 <- function(i, pars, outpars, rjpars, ll, pr, store, samp, chunk, parorder, files){
+  if(i%%samp==0){
+    j <- (i/samp)%%chunk
+    if(j!=0 & i>0){
+      store$sb[[j]] <- pars$sb
+      store$t2[[j]] <- pars$t2
+      store$loc[[j]] <- pars$loc
+      parline <- unlist(pars[outpars])
+      store$out[[j]] <- c("gen"=i, "lik"=ll, "prior"=pr, parline)
+      store$rjpars[[j]] <- unlist(pars[rjpars])
+    } else {
+      store$sb[[chunk]] <- pars$sb
+      store$t2[[chunk]] <- pars$t2
+      store$loc[[chunk]] <- pars$loc
+      parline <- unlist(pars[outpars])
+      store$out[[chunk]] <- c("gen"=i, "lik"=ll, "prior"=pr, parline)
+      store$rjpars[[chunk]] <- unlist(pars[rjpars])
+      lapply(store$out,function(x) cat(c(x,"\n"), file=files$pars.output,append=TRUE))
+      lapply(store$rjpars,function(x) cat(c(x,"\n"),file=files$rjpars,append=TRUE))
+      lapply(store$sb,function(x) cat(c(x,"\n"),file=files$mapsb,append=TRUE))
+      lapply(store$t2,function(x) cat(c(x,"\n"),file=files$mapst2,append=TRUE))
+      lapply(store$loc,function(x) cat(c(x,"\n"),file=files$mapsloc,append=TRUE))
+      store <- list()
+    }
+  }
+  return(store)
+}
