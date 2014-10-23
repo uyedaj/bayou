@@ -414,6 +414,7 @@ set.burnin <- function(chain, burnin=0.3){
 summary.bayouMCMC <- function(object, ...){
   tree <- attributes(object)$tree
   model <- attributes(object)$model
+  model.pars <- attributes(object)$model.pars
   if(is.null(attributes(object)$burnin)){
     start <- 1
   } else {
@@ -423,16 +424,23 @@ summary.bayouMCMC <- function(object, ...){
   cat(length(object$gen), "samples, first", eval(start), "samples discarded as burnin\n")
   postburn <- start:length(object$gen)
   object <- lapply(object,function(x) x[postburn])
-  parorder <- switch(model,"QG"=c("lnL","prior", "h2","P","w2","Ne","k","ntheta"), 
-                     "OU"=c("lnL","prior","alpha","sig2","k","ntheta"),
-                     "OUrepar"=c("lnL","prior","halflife","Vy","k","ntheta"),
-                     "ffancova"=c("lnL","prior","alpha","sig2","beta1", "k","ntheta"))
-  summat <- matrix(unlist(object[parorder]),ncol=length(parorder))
-  colnames(summat) <- parorder
-  summat <- cbind(summat, "root"=sapply(object$theta,function(x) x[1]))
+  parorder <- c("lnL", "prior", model.pars$parorder)
+  outpars <- parorder[!(parorder %in% model.pars$rjpars)]
+  summat <- matrix(unlist(object[outpars]),ncol=length(outpars))
+  colnames(summat) <- outpars
+  for(i in model.pars$rjpars){
+    summat <- cbind(summat, sapply(object[[i]],function(x) x[1]))
+    colnames(summat)[ncol(summat)] <- paste("root.",i,sep="")
+  }
+  #summat <- cbind(summat, "root"=sapply(object$theta,function(x) x[1]))
   sum.1vars <- summary(coda::mcmc(summat))
-  sum.theta <- summary(coda::mcmc(unlist(object$theta)))
-  statistics <- rbind(cbind(sum.1vars$statistics, "Effective Size" = effectiveSize(summat)),"all theta"=c(sum.theta$statistics[1:2],rep(NA,3)))
+  sum.rjpars <- lapply(model.pars$rjpars, function(x) summary(coda::mcmc(unlist(object[[x]]))))
+  statistics <- rbind(cbind(sum.1vars$statistics, "Effective Size" = effectiveSize(summat)))
+  for(i in 1:length(model.pars$rjpars)){
+    statistics <- rbind(statistics,c(sum.rjpars[[i]]$statistics[1:2],rep(NA,3)))
+    rownames(statistics)[nrow(statistics)] <- paste("all", model.pars$rjpars[i],sep=" ")
+  }
+  
   cat("\n\nSummary statistics for parameters:\n")
   print(statistics, ...)
   Lpost <- Lposterior(object, tree)
