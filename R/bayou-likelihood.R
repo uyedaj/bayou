@@ -355,6 +355,17 @@ model.OU <- list(moves = list(alpha=".multiplierProposal",sig2=".multiplierPropo
                  fixedpars = c(),
                  rjpars = "theta",
                  shiftpars = c("sb", "loc", "t2"),
+                 monitor.fn = function(i, lik, pr, pars){
+                   names <- c("gen", "lnL", "prior", "alpha", "sig2", "k")
+                   string <- "%-8i%-8.2f%-8.2f%-8.2f%-8.2f%-8i"
+                   acceptratios <- tapply(accept, accept.type, mean)
+                   names <- c(names, names(acceptratios))
+                   if(i %% 100*ticker.freq == 0 | i == 1){
+                   cat(sprintf("%-7s", names))
+                     
+                   }
+                   cat(sprintf(string, i, lnL, pr, pars$alpha, pars$sig2, pars$k), sprintf("%-8.2f", acceptratios), sep="")
+                 },
                  lik.fn = bayou.lik)
 
 model.QG <- list(moves = list(h2=".multiplierProposal",P=".multiplierProposal",w2=".multiplierProposal",Ne=".multiplierProposal",k=".splitmerge",theta=".adjustTheta",slide=".slide"),
@@ -364,6 +375,17 @@ model.QG <- list(moves = list(h2=".multiplierProposal",P=".multiplierProposal",w
                  fixedpars = c(),
                  rjpars = "theta",
                  shiftpars = c("sb", "loc", "t2"),
+                 monitor.fn = function(i, lik, pr, pars){
+                   names <- c("gen", "lnL", "prior", "alpha", "sig2", "k")
+                   string <- "%-8i%-8.2f%-8.2f%-8.2f%-8.2f%-8i"
+                   acceptratios <- tapply(accept, accept.type, mean)
+                   names <- c(names, names(acceptratios))
+                   if(i %% 100*ticker.freq == 0 | i == 1){
+                     cat(sprintf("%-7s", names))
+                     
+                   }
+                   cat(sprintf(string, i, lnL, pr, QG.alpha(pars),QG.sig2(pars), pars$k), sprintf("%-8.2f", acceptratios), sep="")
+                 },
                  lik.fn = bayou.lik)
 
 model.OUrepar <- list(moves = list(halflife=".multiplierProposal",Vy=".multiplierProposal",k=".splitmerge",theta=".adjustTheta",slide=".slide"),
@@ -373,6 +395,17 @@ model.OUrepar <- list(moves = list(halflife=".multiplierProposal",Vy=".multiplie
                       fixedpars = c(),
                       rjpars = "theta",
                       shiftpars = c("sb", "loc", "t2"),
+                      monitor.fn = function(i, lik, pr, pars){
+                        names <- c("gen", "lnL", "prior", "alpha", "sig2", "k")
+                        string <- "%-8i%-8.2f%-8.2f%-8.2f%-8.2f%-8i"
+                        acceptratios <- tapply(accept, accept.type, mean)
+                        names <- c(names, names(acceptratios))
+                        if(i %% 100*ticker.freq == 0 | i == 1){
+                          cat(sprintf("%-7s", names))
+                          
+                        }
+                        cat(sprintf(string, i, lnL, pr, OU.repar(pars)$alpha, OU.repar(pars)$sig2, pars$k), sprintf("%-8.2f", acceptratios), sep="")
+                      },
                       lik.fn = bayou.lik)
 
 model.bd <- list(moves = list(r=".vectorMultiplier", eps=".vectorMultiplier", k=".splitmergebd"),
@@ -381,6 +414,16 @@ model.bd <- list(moves = list(r=".vectorMultiplier", eps=".vectorMultiplier", k=
                  parorder = c("r", "eps", "k", "ntheta"),
                  rjpars = c("r", "eps"),
                  shiftpars = c("sb", "loc", "t2"),
+                 monitor.fn = function(i, lik, pr, pars){
+                   names <- c("gen", "lnL", "prior", "r", "eps", "k")
+                   string <- "%-8i%-8.2f%-8.2f%-8.2f%-8.2f%-8i"
+                   acceptratios <- tapply(accept, accept.type, mean)
+                   names <- c(names, names(acceptratios))
+                   if(i %% 100*ticker.freq == 0 | i == 1){
+                     cat(sprintf("%-7s", names))                     
+                   }
+                    cat(sprintf(string, i, lnL, pr, pars$r, pars$eps, pars$k), sprintf("%-8.2f", acceptratios), sep="")
+                 },
                  lik.fn = bdSplit.lik)
 
 model.ffancova <- list(moves = list(alpha=".multiplierProposal", sig2=".multiplierProposal", beta1=".vectorMultiplier", k=".splitmerge", "theta"=".adjustTheta", slide=".slide"),
@@ -389,6 +432,17 @@ model.ffancova <- list(moves = list(alpha=".multiplierProposal", sig2=".multipli
                        parorder = c("alpha", "sig2", "beta1", "k", "ntheta", "theta"),
                        rjpars = "theta",
                        shiftpars = c("sb", "loc", "t2"),
+                       monitor.fn = function(i, lik, pr, pars){
+                         names <- c("gen", "lnL", "prior", "alpha", "beta1","sig2", "k")
+                         string <- "%-8i%-8.2f%-8.2f%-8.2f%-8.2f%-8.2f%-8i"
+                         acceptratios <- tapply(accept, accept.type, mean)
+                         names <- c(names, names(acceptratios))
+                         if(i %% 100*ticker.freq == 0 | i == 1){
+                           cat(sprintf("%-7s", names))
+                           
+                         }
+                         cat(sprintf(string, i, lnL, pr, pars$alpha, pars$sig2, pars$beta1, pars$k), sprintf("%-8.2f", acceptratios), sep="")
+                       },
                        lik.fn = bayou.lik)
 
 

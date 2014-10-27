@@ -298,6 +298,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
   rjpars <- model.pars$rjpars
   outpars <- parorder[which(!(parorder %in% rjpars))]
   attributes(ct)$splitmergepars <- rjpars
+  header <- 0
   accept.type <- NULL
   accept <- NULL
   if(!is.null(plot.freq)){
@@ -368,7 +369,9 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
       } else {
         accept <- c(accept,0)
       }
-      store <- .store.bayou2(1, oldpar, outpars, rjpars, oll, pr1, store, 1, 1, parorder, files)
+      if(i %% samp == 0){
+        store <- .store.bayou2(i, oldpar, outpars, rjpars, oll, pr1, store, 1, 1, parorder, files)
+      }
       if(!is.null(plot.freq)){
         if(i %% plot.freq==0){
           set.runpars(plot.fn, runpars=list(oldpar=oldpar, cache=cache, i=i))
@@ -386,21 +389,23 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
       #   D <- tune.D(D,accept,accept.type)$D
       #}
       if(i%%ticker.freq==0){
-        alpha <- switch(model,"QG"=QG.alpha(oldpar),"OU"=oldpar$alpha,"OUrepar"=OU.repar(oldpar)$alpha,"OUcpp"=oldpar$alpha,"QGcpp"=QG.alpha(oldpar),"OUrepar"=OU.repar(oldpar)$alpha, "bd"=oldpar$r, "ffancova"=oldpar$alpha)
-        sig2 <- switch(model,"QG"=QG.sig2(oldpar),"OU"=oldpar$sig2,"OUrepar"=OU.repar(oldpar)$sig2,"OUcpp"=oldpar$sig2,"QGcpp"=QG.sig2(oldpar),"OUrepar"=OU.repar(oldpar)$sig2, "bd"=oldpar$eps, "ffancova"=oldpar$sig2)
-        if(model=="bd"){
-          tick <- c(i,oll,pr1,median(alpha),median(sig2),oldpar$k,tapply(accept,accept.type,mean))
-          tick[-1] <- round(tick[-1],2)
-          names(tick)[1:6] <- c('gen','lnL','prior','r','eps','K')
-        } else {
-          tick <- c(i,oll,pr1,log(2)/alpha,sig2/(2*alpha),oldpar$k,tapply(accept,accept.type,mean))
-          tick[-1] <- round(tick[-1],2)
-          names(tick)[1:6] <- c('gen','lnL','prior','half.life','Vy','K')
-        }
-        if(i==ticker.freq){
-          cat(c(names(tick),'\n'),sep='\t\t\t')
-        }
-        cat(c(tick,'\n'),sep='\t\t\t')
+        model.pars$monitor.fn(i, oll, pr1, oldpar, accept, accept.type, header)
+        header <- 1
+        #alpha <- switch(model,"QG"=QG.alpha(oldpar),"OU"=oldpar$alpha,"OUrepar"=OU.repar(oldpar)$alpha,"OUcpp"=oldpar$alpha,"QGcpp"=QG.alpha(oldpar),"OUrepar"=OU.repar(oldpar)$alpha, "bd"=oldpar$r, "ffancova"=oldpar$alpha)
+        #sig2 <- switch(model,"QG"=QG.sig2(oldpar),"OU"=oldpar$sig2,"OUrepar"=OU.repar(oldpar)$sig2,"OUcpp"=oldpar$sig2,"QGcpp"=QG.sig2(oldpar),"OUrepar"=OU.repar(oldpar)$sig2, "bd"=oldpar$eps, "ffancova"=oldpar$sig2)
+        #if(model=="bd"){
+        #  tick <- c(i,oll,pr1,median(alpha),median(sig2),oldpar$k,tapply(accept,accept.type,mean))
+        #  tick[-1] <- round(tick[-1],2)
+        #  names(tick)[1:6] <- c('gen','lnL','prior','r','eps','K')
+        #} else {
+        #  tick <- c(i,oll,pr1,log(2)/alpha,sig2/(2*alpha),oldpar$k,tapply(accept,accept.type,mean))
+        #  tick[-1] <- round(tick[-1],2)
+        #  names(tick)[1:6] <- c('gen','lnL','prior','half.life','Vy','K')
+        #}
+        #if(i==ticker.freq){
+        #  cat(c(names(tick),'\n'),sep='\t\t\t')
+        #}
+        #cat(c(tick,'\n'),sep='\t\t\t')
       }
     }
   }
