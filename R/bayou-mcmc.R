@@ -273,7 +273,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     }
   } else {
     if(is.character(new.dir)){
-      #dir.name <- paste(sample(LETTERS,10),collapse="")
+      dir.name <- NULL
       dir <- paste(new.dir,"/",sep="")
       dir.create(new.dir)
     }
