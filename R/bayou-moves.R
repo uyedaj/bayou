@@ -325,3 +325,42 @@
   return(list(pars=pars.new, hr=hr, decision=decision, sb.prob=sb.prob))
 }
 
+.slide2 <- function(pars, cache, d, ct, move=NULL){
+  splitmergepars <- attributes(ct)$splitmergepars
+  map <- .pars2map(pars,cache)
+  j <- sample(1:pars$k,1)
+  t2 <- pars$t2[j]
+  space <- .slidespace(j, pars, cache, ct, map)
+  pars.new <- pars
+  mv <- .sample(1:5,1,prob=space$pp/sum(space$pp))
+  type <- names(space$pp)[mv]
+  l <- runif(1,0,space$pp[type])
+  if(type=="U0"){
+    pars.new$loc[j] <- l + pars$loc[j]
+  } else {
+    if(type=="D0"){
+      pars.new$loc[j] <- pars$loc[j] - l
+    } else {
+      pars.new$sb[j] <- space$sb[mv]
+      if(type %in% c("U1","U2")){
+        pars.new$loc[j] <- l
+      } else {
+        if(type == "D1"){
+          pars.new$loc[j] <- cache$edge.length[space$sb[mv]] - l
+        } else {
+          if (type=="R1"){
+            pars.new$loc[j] <- l
+            for(i in 1:length(splitmergepars)){
+              pars.new[[splitmergepars[i]]][c(1,t2)] <- pars.new[[splitmergepars[i]]][c(t2,1)]
+            }
+            
+          }
+        }
+      }
+    }
+  }
+  map.new <- .pars2map(pars.new, cache)
+  space.new <- .slidespace(j,pars.new, cache, ct, map.new)
+  hr <- log(1/sum(space.new$pp))-log(1/(sum(space$pp)))
+  return(list(pars=pars.new, hr=hr, decision = type))
+}

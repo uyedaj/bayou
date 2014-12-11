@@ -292,10 +292,12 @@ combine.chains <- function(chain1,chain2,burnin.prop=0){
     ct$dk <- (1-bdk)
     ct$sb <- list(bmax=bmax, prob=prob)
   } 
-  if(move.weights$slide > 0 & move.weights$k ==0){
-    bmax <- attributes(prior)$parameters$dsb$bmax
-    prob <- attributes(prior)$parameters$dsb$prob
-    ct$sb <- list(bmax=bmax, prob=prob)
+  if("k" %in% names(move.weights) & "slide" %in% names(move.weights)){
+    if(move.weights$slide > 0 & move.weights$k ==0){
+      bmax <- attributes(prior)$parameters$dsb$bmax
+      prob <- attributes(prior)$parameters$dsb$prob
+      ct$sb <- list(bmax=bmax, prob=prob)
+      }
   }
   attributes(ct)$splitmergepars <- splitmergepars
   return(ct)

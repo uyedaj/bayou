@@ -418,7 +418,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     tryCatch(mcmc.loop(ngen))
     gbg <- lapply(files, close)
   }
-  out <- list('run' = run.mcmc, 'model'=model, 'model.pars'=model.pars, 'dir.name'=dir.name,'dir'=dir, 'outname'=outname, 'tree'=tree, 'dat'=dat, 'pred'=pred, 'tmpdir'=ifelse(new.dir==TRUE, TRUE, FALSE))
+  out <- list('run' = run.mcmc, 'model'=model, 'model.pars'=model.pars, 'dir.name'=dir.name,'dir'=dir, 'outname'=outname, 'tree'=tree, 'dat'=dat, 'pred'=pred, 'SE'=SE, 'tmpdir'=ifelse(new.dir==TRUE, TRUE, FALSE))
   mcmc.load <- function(save.Rdata=FALSE, file=NULL, cleanup=FALSE){
     load.bayou(out, save.Rdata, file, cleanup)
   }

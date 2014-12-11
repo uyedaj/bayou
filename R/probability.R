@@ -160,12 +160,16 @@ rloc <- function(k,min=0,max=1){
 #'@export
 dhalfcauchy <- function(x, scale=25, log=FALSE)
 {
-  x <- as.vector(x); scale <- as.vector(scale)
-  if(any(scale <= 0)) stop("The scale parameter must be positive.")
-  NN <- max(length(x), length(scale))
-  x <- rep(x, len=NN); scale <- rep(scale, len=NN)
-  dens <- log(2*scale) - log(pi*{x*x + scale*scale})
-  if(log == FALSE) dens <- exp(dens)
+  if(all(x > 0)){
+    x <- as.vector(x); scale <- as.vector(scale)
+    if(any(scale <= 0)) stop("The scale parameter must be positive.")
+    NN <- max(length(x), length(scale))
+    x <- rep(x, len=NN); scale <- rep(scale, len=NN)
+    dens <- log(2*scale) - log(pi*{x*x + scale*scale})
+    if(log == FALSE) dens <- exp(dens)
+  } else {
+    if(log == FALSE){ dens <- 0 } else {dens=-Inf}
+  }
   return(dens)
 }
 #' @rdname dhalfcauchy
