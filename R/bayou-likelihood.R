@@ -437,7 +437,7 @@ model.ffancova <- list(moves = list(alpha=".multiplierProposal", sig2=".multipli
                          string <- "%-8i%-8.2f%-8.2f%-8.2f%-8.2f%-8.2f%-8i"
                          acceptratios <- tapply(accept, accept.type, mean)
                          names <- c(names, names(acceptratios))
-                         if(i %% 100*ticker.freq == 0 | i == 1){
+                         if(j==0){
                            cat(sprintf("%-7s", names))
                            
                          }
