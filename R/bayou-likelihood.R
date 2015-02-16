@@ -432,7 +432,7 @@ model.ffancova <- list(moves = list(alpha=".multiplierProposal", sig2=".multipli
                        parorder = c("alpha", "sig2", "beta1", "k", "ntheta", "theta"),
                        rjpars = "theta",
                        shiftpars = c("sb", "loc", "t2"),
-                       monitor.fn = function(i, lik, pr, pars){
+                       monitor.fn = function(i, lik, pr, pars, accept, accept.type, j){
                          names <- c("gen", "lnL", "prior", "alpha", "beta1","sig2", "k")
                          string <- "%-8i%-8.2f%-8.2f%-8.2f%-8.2f%-8.2f%-8i"
                          acceptratios <- tapply(accept, accept.type, mean)
