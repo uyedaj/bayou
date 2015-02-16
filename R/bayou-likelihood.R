@@ -438,10 +438,10 @@ model.ffancova <- list(moves = list(alpha=".multiplierProposal", sig2=".multipli
                          acceptratios <- tapply(accept, accept.type, mean)
                          names <- c(names, names(acceptratios))
                          if(j==0){
-                           cat(sprintf("%-7s", names))
+                           cat(sprintf("%-7.7s", names), "\n", sep=" ") 
                            
                          }
-                         cat(sprintf(string, i, lnL, pr, pars$alpha, pars$sig2, pars$beta1, pars$k), sprintf("%-8.2f", acceptratios), sep="")
+                         cat(sprintf(string, i, lik, pr, pars$alpha, pars$sig2, pars$beta1, pars$k), sprintf("%-8.2f", acceptratios), "\n", sep="")                     
                        },
                        lik.fn = bayou.lik)
 
