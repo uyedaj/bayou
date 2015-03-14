@@ -1,5 +1,5 @@
-#SE=0; model="ffancova"; ngen=10000; samp=10; chunk=100; control=NULL; tuning=NULL; new.dir=TRUE; plot.freq=500; outname="bayou"; ticker.freq=1000; tuning.int=c(0.1,0.2,0.3); moves=NULL; control.weights=NULL; startpar=NULL; lik.fn=bayou.lik; plot.fn=plotSimmap
-#startpar <- list(alpha=0.1, sig2=3, beta1=c(0.66, 0.75), k=1, ntheta=2, theta=c(4,4), sb=200, loc=0, t2=2); model <- model.BetaBMR; plot.fn <- BMRplot
+SE=0; model="ffancova"; ngen=10000; samp=10; chunk=100; control=NULL; tuning=NULL; new.dir=TRUE; plot.freq=500; outname="bayou"; ticker.freq=1000; tuning.int=c(0.1,0.2,0.3); moves=NULL; control.weights=NULL; startpar=NULL; lik.fn=bayou.lik; plot.fn=plotSimmap
+startpar <- start; model <- model.Impute; plot.fn <- NULL
 #startpar=list(alpha=0.1, sig2=3, beta1=1, k=1, ntheta=2, theta=c(4,4), sb=200, loc=0, t2=2)
 #' Bayesian sampling of multi-optima OU models 
 #' 
@@ -180,7 +180,7 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
   }
   mcmc.loop()
   lapply(files, close)
-  out <- list('model'=model, 'dir.name'=dir.name,'dir'=dir, 'outname'=outname, 'accept'=accept,'accept.type'=accept.type, 'tree'=tree, 'dat'=dat, 'tmpdir'=ifelse(new.dir==TRUE, TRUE, FALSE))
+  out <- list('model'=model, 'dir.name'=dir.name,'dir'=dir, 'outname'=outname, 'accept'=accept,'accept.type'=accept.type, 'tree'=tree, 'dat'=dat, 'tmpdir'=ifelse(new.dir==TRUE, TRUE, FALSE), 'startpar'=startpar)
   class(out) <- c("bayouFit", "list")
   return(out)
 }
@@ -320,12 +320,13 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
       if(fL==1){skipL <- 0} else {skipL=fL-1}
       res <- lapply(1:length(files), function(x) read.table(summary(files[[x]])$description, skip=skipL))
       pars <- list()
+      parLs <- lapply(startpar, length)[outpars]
       npars <- length(res[[4]])
       j=4
       if(length(outpars) > 0){
         for(i in 1:length(outpars)){
-           pars[[outpars[i]]] <- unlist(res[[4]][,j],F,F)
-           j <- j+1
+           pars[[outpars[i]]] <- unlist(res[[4]][,j:(j+parLs[[i]]-1)],F,F)
+           j <- j+1+parLs[[i]]-1
         }
       }
       if(length(rjpars >0)){
@@ -418,7 +419,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     tryCatch(mcmc.loop(ngen))
     gbg <- lapply(files, close)
   }
-  out <- list('run' = run.mcmc, 'model'=model, 'model.pars'=model.pars, 'dir.name'=dir.name,'dir'=dir, 'outname'=outname, 'tree'=tree, 'dat'=dat, 'pred'=pred, 'SE'=SE, 'tmpdir'=ifelse(new.dir==TRUE, TRUE, FALSE))
+  out <- list('run' = run.mcmc, 'model'=model, 'model.pars'=model.pars, 'dir.name'=dir.name,'dir'=dir, 'outname'=outname, 'tree'=tree, 'dat'=dat, 'pred'=pred, 'SE'=SE, 'tmpdir'=ifelse(new.dir==TRUE, TRUE, FALSE), 'startpar'=startpar)
   mcmc.load <- function(save.Rdata=FALSE, file=NULL, cleanup=FALSE){
     load.bayou(out, save.Rdata, file, cleanup)
   }

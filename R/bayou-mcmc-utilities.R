@@ -28,6 +28,7 @@ load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE){#dir
   outname <- bayouFit$outname
   model <- bayouFit$model
   model.pars <- bayouFit$model.pars
+  startpar <- bayouFit$startpar
   dir <- bayouFit$dir
   outpars <- model.pars$parorder[!(model.pars$parorder %in% model.pars$rjpars)]
   rjpars <- model.pars$rjpars
@@ -51,13 +52,23 @@ load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE){#dir
   chain$sb <- mapsb
   chain$loc <- mapsr2
   chain$t2 <- mapst2
+  parLs <- lapply(startpar, length)[outpars]
+  npars <- length(res[[4]])
   j=4
   if(length(outpars) > 0){
     for(i in 1:length(outpars)){
-      chain[[outpars[i]]] <- sapply(pars.out, function(x) x[j])
-      j <- j+1
+      chain[[outpars[i]]] <- lapply(pars.out, function(x) as.vector(x[j:(j+parLs[[i]]-1)]))#unlist(res[[4]][,j:(j+parLs[[i]]-1)],F,F)
+      if(parLs[[i]]==1) chain[[outpars[i]]]=unlist(chain[[outpars[i]]])
+      j <- j+1+parLs[[i]]-1
     }
   }
+  #j=4
+  #if(length(outpars) > 0){
+  #  for(i in 1:length(outpars)){
+  #    chain[[outpars[i]]] <- sapply(pars.out, function(x) x[j])
+  #    j <- j+1
+  #  }
+  #}
   if(length(rjpars >0)){
     nrjpars <- length(rjpars)
     for(i in 1:length(rjpars)){

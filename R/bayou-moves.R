@@ -37,6 +37,15 @@
   return(list("pars"=pars.new, "hr"=lnHastingsRatio))
 }
 
+.slidingWindowProposal <- function(cache, pars, d, move, ct=NULL){
+  prop <- d*(runif(1)-0.5)+pars[[move]]
+  lnHastingsRatio <- 0
+  pars.new <- pars
+  pars.new[[move]] <- prop
+  #pr <- .prior(pars.new,emap,cache)-.prior(pars,emap,cache)
+  return(list("pars" = pars.new, "hr"=lnHastingsRatio))
+}
+
 ##Adjust a randomly selected theta parameter
 .adjustTheta <- function(cache, pars, d, type="slidingwindow",move=NULL,ct=NULL){
   j <- sample(1:pars$ntheta,1)
