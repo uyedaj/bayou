@@ -53,7 +53,6 @@ load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE){#dir
   chain$loc <- mapsr2
   chain$t2 <- mapst2
   parLs <- lapply(startpar, length)[outpars]
-  npars <- length(res[[4]])
   j=4
   if(length(outpars) > 0){
     for(i in 1:length(outpars)){

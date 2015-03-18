@@ -1,5 +1,5 @@
-SE=0; model="ffancova"; ngen=10000; samp=10; chunk=100; control=NULL; tuning=NULL; new.dir=TRUE; plot.freq=500; outname="bayou"; ticker.freq=1000; tuning.int=c(0.1,0.2,0.3); moves=NULL; control.weights=NULL; startpar=NULL; lik.fn=bayou.lik; plot.fn=plotSimmap
-startpar <- start; model <- model.Impute; plot.fn <- NULL
+#SE=0; model="ffancova"; ngen=10000; samp=10; chunk=100; control=NULL; tuning=NULL; new.dir=TRUE; plot.freq=500; outname="bayou"; ticker.freq=1000; tuning.int=c(0.1,0.2,0.3); moves=NULL; control.weights=NULL; lik.fn=bayou.lik; plot.fn=plotSimmap
+#model <- model.BetaBMR; plot.fn <- NULL
 #startpar=list(alpha=0.1, sig2=3, beta1=1, k=1, ntheta=2, theta=c(4,4), sb=200, loc=0, t2=2)
 #' Bayesian sampling of multi-optima OU models 
 #' 
