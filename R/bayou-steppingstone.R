@@ -19,27 +19,43 @@
 #' @return Returns a reference function of class "refFn" that takes a parameter list and returns the log density 
 #' given the reference distribution. If \code{plot=TRUE}, a plot is produced showing the density of variable parameters
 #' and the fitted distribution from the reference function (in red).
-make.refFn <- function(chain, prior, burnin=0.3, plot=TRUE){
-  model <- attributes(prior)$model
+make.refFn <- function(chain, model, priorFn, burnin=0.3, plot=TRUE){
+  if(is.character(model)){
+    model.pars <- switch(model, "OU"=model.OU, "QG"=model.QG, "OUrepar"=model.OUrepar, "bd"=model.bd, "ffancova"=model.ffancova)
+  } else {
+    model.pars <- model
+    model <- "Custom"
+  }
   contdists <- c("norm", "cauchy", "logis")
   poscontdists <- c("lnorm", "exp", "gamma", "weibull")
   discdists <- c("nbinom", "pois", "geom")
   bounddists <- c("beta")
-  parorder <- switch(model,"QG"=c("dh2","dP","dw2","dNe","dsb","dk","dtheta","dloc"), "OU"=c("dalpha","dsig2","dsb","dk","dtheta","dloc"),"OUrepar"=c("dhalflife","dVy","dsb","dk","dtheta","dloc"))
-  postburn <- round(burnin*length(chain[[1]]),0):length(chain[[1]])
-  dists <- attributes(prior)$distributions
-  dists <- dists[parorder]
-  varDists <- dists[which(dists!="fixed")]
+  parorder <- model.pars$parorder
+  postburn <- max(c(1,round(burnin*length(chain[[1]]),0))):length(chain[[1]])
+  dists <- attributes(priorFn)$functions
+  dists <- dists[!(names(dists) %in% paste("d", model.pars$shiftpars, sep=""))]
+  distnames <- gsub('^[d]', "", names(dists))
+  
+  ## This code tests each prior for whether it's continuous, positive continuous, bounded or discrete...not perfect; only tests bounded
+  ## distributions between 0 and 1, etc....
+  test.dists <- suppressWarnings(apply(is.finite(sapply(dists, function(x) c(x(-0.5), x(1.5), x(0.5), x(1)))), 2, function(x) paste(as.numeric(x), collapse="")))
+  dist.types <- rep(NA, length(dists))
+  names(dist.types) <- names(dists)
+  dist.types[which(test.dists=="0111")] <- "pcdist"
+  dist.types[which(test.dists=="1111")]  <- "cdist"
+  dist.types[which(test.dists=="0010" |test.dists== "0011")] <- "bdist" 
+  dist.types[which(test.dists=="0001")] <- "ddist" 
   refFx <- list()
   refNames <- list()
   dists <- list()
   parameters <- list()
   x <- NULL
-  for(i in 1:length(varDists)){
-    parname <- gsub('^[a-zA-Z]',"",names(varDists)[i])
+  for(i in 1:length(dist.types)){
+    parname <- gsub('^[a-zA-Z]',"",names(dist.types)[i])
     xx <- unlist(chain[[parname]][postburn])
-    if(parname %in% c("P", "w2", "Ne", "alpha", "sig2", "halflife", "Vy")){
-      tmpFits <- lapply(poscontdists, function(x) suppressWarnings(try(fitdist(xx, x), silent=TRUE)))
+    fitdists <- switch(dist.types[i], "ddist"=discdists, "pcdist"=poscontdists, "bdist"=bounddists, "cdist"=contdists)
+    {
+      tmpFits <- lapply(fitdists, function(x) suppressWarnings(try(fitdist(xx, x), silent=TRUE)))
       tmpFits <- tmpFits[sapply(tmpFits, function(x) !(class(x)=="try-error"))]
       aic <- sapply(tmpFits, function(x) x$aic)
       fit <- tmpFits[[which(aic==min(aic,na.rm=TRUE))]]
@@ -49,72 +65,49 @@ make.refFn <- function(chain, prior, burnin=0.3, plot=TRUE){
       fitfx <- get(paste("d",fitName, sep=""))
       refFx[[i]] <- .set.defaults(fitfx, defaults=fitPars)
     }
-    if(parname %in% c("h2")){
-      tmpFits <- lapply(bounddists, function(x) suppressWarnings(try(fitdist(xx, x), silent=TRUE)))
-      tmpFits <- tmpFits[sapply(tmpFits, function(x) !(class(x)=="try-error"))]
-      aic <- sapply(tmpFits, function(x) x$aic)
-      fit <- tmpFits[[which(aic==min(aic,na.rm=TRUE))]]
-      fitPars <- as.list(fit$estimate)
-      fitPars$log <- TRUE
-      fitName <- fit$distname
-      fitfx <- get(paste("d",fitName, sep=""))
-      refFx[[i]] <- .set.defaults(fitfx, defaults=fitPars)
-    }
-    if(parname %in% c("theta")){
-      tmpFits <- lapply(contdists, function(x) suppressWarnings(try(fitdist(xx, x), silent=TRUE)))
-      tmpFits <- tmpFits[sapply(tmpFits, function(x) !(class(x)=="try-error"))]
-      aic <- sapply(tmpFits, function(x) x$aic)
-      fit <- tmpFits[[which(aic==min(aic,na.rm=TRUE))]]
-      fitPars <- as.list(fit$estimate)
-      fitPars$log <- TRUE
-      fitName <- fit$distname
-      fitfx <- get(paste("d",fitName, sep=""))
-      refFx[[i]] <- .set.defaults(fitfx, defaults=fitPars)
-    }
-    if(parname %in% c("k")){
-      tmpFits <- lapply(discdists, function(x) fitdist(xx, x))
-      aic <- sapply(tmpFits, function(x) x$aic)
-      fit <- tmpFits[[which(aic==min(aic,na.rm=TRUE))]]
-      fitPars <- as.list(fit$estimate)
-      fitPars$log <- TRUE
-      fitName <- fit$distname
-      if(fitName=="nbinom") fitPars$prob=fitPars$size/(fitPars$size+fitPars$mu)
-      fitfx <- get(paste("d",fitName, sep=""))
-      refFx[[i]] <- .set.defaults(fitfx, defaults=fitPars)
-    }
-    if(parname %in% c("loc", "sb")){
-      fitName <- paste("d", parname,sep="")
-      refFx[[i]] <- attributes(prior)$functions[[fitName]]
-    }
-    dists[[i]] <- fitName
-    parameters[[i]] <- fitPars
+
+  dists[[i]] <- fitName
+  parameters[[i]] <- fitPars
   }
-  names(refFx) <- gsub('^[a-zA-Z]',"", names(varDists))
-  par.names <- names(refFx)
-  names(dists) <- par.names
-  names(parameters) <- par.names
-  if(plot){
-    pars2plot <- par.names[(par.names %in% c("h2", "P", "w2", "Ne", "alpha", "halflife","sig2","Vy", "k", "theta"))]
-    par(mfrow=c(ceiling(length(pars2plot)/2),2))
-    for(i in 1:length(pars2plot)){
-      plot(density(unlist(chain[[pars2plot[i]]][postburn])), main=pars2plot[i])
-      if(pars2plot[i]=="k"){
-        points(seq(ceiling(par('usr')[1]),floor(par('usr')[2]),1), refFx[[pars2plot[i]]](seq(ceiling(par('usr')[1]),floor(par('usr')[2]),1),log=FALSE),pch=21,bg="red")
-      } else {x <- NULL; curve(refFx[[pars2plot[i]]](x,log=FALSE), add=TRUE, col="red")}
-    }
+names(refFx) <- gsub('^[a-zA-Z]',"", names(dist.types))
+par.names <- names(refFx)
+names(dists) <- par.names
+names(parameters) <- par.names
+if(attributes(priorFn)$distributions$dsb!="fixed"){
+  dists$dsb <- "dsb"
+  parameters$dsb <- attributes(priorFn)$parameters$dsb
+  refFx$dsb <- attributes(priorFn)$functions$dsb 
+  par.names <- c(par.names, "sb")
+}
+if(attributes(priorFn)$distributions$dloc!="fixed"){
+  dists$dloc = "dloc"
+  parameters$dloc <- attributes(priorFn)$parameters$dloc
+  refFx$dloc <- attributes(priorFn)$functions$dloc
+  par.names <- c(par.names, "loc")
+}
+
+if(plot){
+  pars2plot <- par.names[!(par.names %in% c("sb", "loc"))]
+  par(mfrow=c(ceiling(length(pars2plot)/2),2))
+  for(i in 1:length(pars2plot)){
+    plot(density(unlist(chain[[pars2plot[i]]][postburn])), main=pars2plot[i])
+    if(pars2plot[i]=="k"){
+      points(seq(ceiling(par('usr')[1]),floor(par('usr')[2]),1), refFx[[pars2plot[i]]](seq(ceiling(par('usr')[1]),floor(par('usr')[2]),1),log=FALSE),pch=21,bg="red")
+    } else {x <- NULL; curve(refFx[[pars2plot[i]]](x,log=FALSE), add=TRUE, col="red")}
   }
-  refFUN <- function(pars,cache){
-    if(any(!(par.names %in% names(pars)))) stop(paste("Missing parameters: ", paste(par.names[!(par.names %in% names(pars))],collapse=" ")))
-    pars.o <- pars[match(par.names,names(pars))]
-    pars.o <- pars.o[!is.na(names(pars.o))]
-    densities <- sapply(1:length(pars.o),function(x) refFx[[x]](pars.o[[x]]))
-    names(densities) <- par.names
-    lnprior <- sum(unlist(densities,F,F))
-    return(lnprior)
-  }
-  attributes(refFUN) <- list("model"=model,"parnames"=par.names,"distributions"=dists,"parameters"=parameters,"functions"=refFx)
-  class(refFUN) <- c("refFn","function")
-  return(refFUN)
+}
+refFUN <- function(pars,cache){
+  if(any(!(par.names %in% names(pars)))) stop(paste("Missing parameters: ", paste(par.names[!(par.names %in% names(pars))],collapse=" ")))
+  pars.o <- pars[match(par.names,names(pars))]
+  pars.o <- pars.o[!is.na(names(pars.o))]
+  densities <- sapply(1:length(pars.o),function(x) refFx[[x]](pars.o[[x]]))
+  names(densities) <- par.names
+  lnprior <- sum(unlist(densities,F,F))
+  return(lnprior)
+}
+attributes(refFUN) <- list("model"=model,"parnames"=par.names,"distributions"=dists,"parameters"=parameters,"functions"=refFx)
+class(refFUN) <- c("refFn","function")
+return(refFUN)
 }
 
 
@@ -131,11 +124,18 @@ make.refFn <- function(chain, prior, burnin=0.3, plot=TRUE){
 #' @export
 #' @return A function of class "powerposteriorFn" that returns a list of four values: \code{result} (the log density of the power posterior), 
 #' \code{lik} (the log likelihood), \code{prior} (the log prior), \code{ref} the log reference density. 
-make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
-  model <- attributes(priorFn)$model
-  if(model != attributes(refFn)$model) stop("Error: prior and reference function are not of same type")
-  powerposteriorFn <- function(k, Bk, pars, cache, dat, SE, model){
-    lik <- bayou.lik(pars, cache, dat, model=model)$loglik
+make.powerposteriorFn <- function(Bk, priorFn, refFn, model){
+  #Turn these off for now, need to add back in checks
+  #model <- attributes(priorFn)$model
+  #if(model != attributes(refFn)$model) stop("Error: prior and reference function are not of same type")
+  if(is.character(model)){
+    model.pars <- switch(model, "OU"=model.OU, "QG"=model.QG, "OUrepar"=model.OUrepar, "bd"=model.bd, "ffancova"=model.ffancova)
+  } else {
+    model.pars <- model
+    model <- "Custom"
+  }
+  powerposteriorFn <- function(k, Bk, pars, cache, dat, model=model.pars){
+    lik <- model$lik.fn(pars, cache, dat)$loglik
     prior <- priorFn(pars, cache)
     ref <- refFn(pars, cache)
     coeff <- c(Bk[k],Bk[k],(1-Bk[k]))
@@ -147,6 +147,15 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
   }
   class(powerposteriorFn) <- c("powerposteriorFn", "function")
   return(powerposteriorFn)
+}
+
+powerPosteriorFn <- function(k, Bk, lik, prior, ref){
+  coeff <- c(Bk[k],Bk[k],(1-Bk[k]))
+  result <- c(lik, prior, ref)
+  result[coeff==0] <- 0
+  result <- result*coeff
+  result <- sum(result)
+  return(result)
 }
 
 .steppingstone.mcmc <- function(k, Bk, powerposteriorFn, tree, dat, SE=0, prior, ngen=10000, samp=10, chunk=100, control=NULL, tuning=NULL, new.dir=TRUE, plot.freq=500, outname="bayou", ticker.freq=1000, tuning.int=c(0.1,0.2,0.3), startpar=NULL, moves=NULL, control.weights=NULL){
@@ -435,10 +444,10 @@ plot.ssMCMC <- function(x, ...){
   lines(x$Bk, c(0,cumsum(x$lnrk)))
 }
 
-.pull.rsample <- function(samp, chain, fit, refFn){
+.pull.rsample <- function(samp, chain){
   #pars.list <- lapply(samp,function(y) pull.pars(y,chain,model=model))
   #emap.list <- lapply(samp,function(y) read.emap(chain$branch.shift[[y]],chain$location[[y]],chain$t2[[y]],cache$phy)$emap)
-  L <- chain$lnL[samp]+chain$prior[samp]-fit$ref[samp]
+  L <- chain$lnL[samp]+chain$prior[samp]-chain$ref[samp]
   Lmax <- max(L)
   Lfactored <- L-Lmax
   return(list(Lmax=Lmax,Lfactored=Lfactored))
@@ -448,11 +457,15 @@ plot.ssMCMC <- function(x, ...){
 #' 
 #' \code{computelnr} computes the marginal likelihood of a set of chains estimated via stepping stone
 #' sampling and produced by the function \code{steppingstone}
-.computelnr <- function(Kchains,ssfits,Bk,samp){
+.computelnr <- function(Kchains,Bk,samp){
   lnr <- list()
   for(i in 1:(length(Bk)-1)){
-    Lk <- .pull.rsample(samp, Kchains[[i]],ssfits[[i]])
+    Lk <- .pull.rsample(samp, Kchains[[i]])
     lnr[[i]] <- (Bk[i+1]-Bk[i])*Lk$Lmax+log(1/length(Lk$Lfactored)*sum(exp(Lk$Lfactored)^(Bk[i+1]-Bk[i])))
   }
   return(list("lnr"=sum(unlist(lnr)),"lnrk"=lnr))
 } 
+
+
+
+

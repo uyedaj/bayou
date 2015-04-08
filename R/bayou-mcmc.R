@@ -1,5 +1,5 @@
-#SE=0; model="ffancova"; ngen=10000; samp=10; chunk=100; control=NULL; tuning=NULL; new.dir=TRUE; plot.freq=500; outname="bayou"; ticker.freq=1000; tuning.int=c(0.1,0.2,0.3); moves=NULL; control.weights=NULL; lik.fn=bayou.lik; plot.fn=plotSimmap
-#model <- model.BetaBMR; plot.fn <- NULL
+#SE=0; model="ffancova"; ngen=1000; samp=10; chunk=100; control=NULL; tuning=NULL; new.dir=TRUE; plot.freq=500; outname="bayou"; ticker.freq=1000; tuning.int=c(0.1,0.2,0.3); moves=NULL; control.weights=NULL; lik.fn=NULL; plot.fn=NULL
+#model <- model.Impute; plot.fn <- NULL
 #startpar=list(alpha=0.1, sig2=3, beta1=1, k=1, ntheta=2, theta=c(4,4), sb=200, loc=0, t2=2)
 #' Bayesian sampling of multi-optima OU models 
 #' 
@@ -329,7 +329,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
            j <- j+1+parLs[[i]]-1
         }
       }
-      if(length(rjpars >0)){
+      if(length(rjpars) >0){
         j <- 1
         for(i in 1:length(rjpars)){
            pars[[rjpars[i]]] <- unlist((res[[5]][j:(j+pars$ntheta-1)]),F,F)
@@ -410,6 +410,111 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
       }
     }
   }
+  steppingstone.loop <- function(k, Bk, ngen, ssfiles, ref){
+      .lastpar <- function(files){
+        fL <- min(sapply(files, function(x) countL(summary(x)$description)))
+        if(fL==1){skipL <- 0} else {skipL=fL-1}
+        res <- lapply(1:length(files), function(x) read.table(summary(files[[x]])$description, skip=skipL))
+        pars <- list()
+        parLs <- lapply(startpar, length)[outpars]
+        npars <- length(res[[4]])
+        j=5
+        if(length(outpars) > 0){
+          for(i in 1:length(outpars)){
+            pars[[outpars[i]]] <- unlist(res[[4]][,j:(j+parLs[[i]]-1)],F,F)
+            j <- j+1+parLs[[i]]-1
+          }
+        }
+        if(length(rjpars) > 0){
+          j <- 1
+          for(i in 1:length(rjpars)){
+            pars[[rjpars[i]]] <- unlist((res[[5]][j:(j+pars$ntheta-1)]),F,F)
+            j <- j+pars$ntheta
+          }
+        }
+        pars$sb <- unlist(res[[1]], F, F)
+        pars$loc <- unlist(res[[2]], F, F)
+        pars$t2 <- unlist(res[[3]], F, F)
+        i <- unlist(res[[4]][1], F, F)
+        oll <- unlist(res[[4]][2],F,F)
+        pr1 <- unlist(res[[4]][3], F,F)
+        ref1 <- unlist(res[[4]][4], F,F)
+        return(list(pars=pars, i=i, oll=oll, pr1=pr1, ref1=ref1))
+      }
+      startinf <- .lastpar(ssfiles[[k]])
+      oldpar <- startinf$pars
+      i <- startinf$i
+      oll <- startinf$oll
+      pr1 <- startinf$pr1
+      ref1 <- startinf$ref1
+      pB.old <- powerPosteriorFn(k, Bk, oll, pr1, ref1)
+      iseq <- (i+1):(i+ngen)
+      store <- list("out"=list(), "rjpars"=list(), "sb"=list(), "loc"=list(), "t2"=list())
+      for (i in iseq){
+        ct <- .updateControl(ct, oldpar, fixed)
+        u <- runif(1)
+        prop <- .proposalFn(u,ct,D,moves,cache,oldpar)
+        new.pars <- prop$pars
+        #new.cache <- prop$prop$cache
+        accept.type <- c(accept.type,paste(prop$decision,prop$move,sep="."))
+        pr2 <- prior(new.pars,cache)
+        hr <- prop$hr
+        new <- lik.fn(new.pars, cache, dat, model=model)
+        nll <- new$loglik
+        nll <- ifelse(is.na(nll), -Inf, nll)
+        ref2 <- ref(new.pars, cache)
+        pB.new <- powerPosteriorFn(k, Bk, nll, pr2, ref2)
+        bhr <- ifelse(!is.finite(hr), hr, Bk[k]*hr)
+        if (runif(1) < exp(pB.new-pB.old+bhr)){
+          oldpar <- new.pars
+          pr1 <- pr2
+          oll <- nll
+          ref1 <- ref2
+          pB.old <- powerPosteriorFn(k, Bk, oll, pr1, ref1)
+          accept <- c(accept,1)
+        } else {
+          accept <- c(accept,0)
+        }
+        if(i %% samp == 0){
+          store <- .store.bayou2(i, oldpar, outpars, rjpars, oll, pr1, store, 1, 1, parorder, ssfiles[[k]], ref=ref1)
+        }
+        #if(!is.null(plot.freq)){
+        #  if(i %% plot.freq==0){
+        #    set.runpars(plot.fn, runpars=list(oldpar=oldpar, cache=cache, i=i))
+        #    tr <- .toSimmap(.pars2map(oldpar, cache),cache)
+        #    tcols <- makeTransparent(rainbow(oldpar$ntheta),alpha=200)
+        #   names(tcols)<- 1:oldpar$ntheta
+        #    plot(plot.dim[[1]],plot.dim[[2]],type="n",xlab="time",ylab="phenotype")
+        #    mtext(paste("gens = ",i," lnL = ",round(oll,2)),3)
+        #    #regime.plot probably doesn't work for simmaps
+        #    #try(regime.plot(oldpar,tr$tree,tcols,type="density",model=model),silent=TRUE)
+        #    plot.fn(tr,dat,colors=tcols,ftype="off",add=TRUE)
+        #  }
+        #}
+        if(i%%ticker.freq==0){
+          model.pars$monitor.fn(i, oll, pr1, oldpar, accept, accept.type, header)
+          header <- 1
+          #alpha <- switch(model,"QG"=QG.alpha(oldpar),"OU"=oldpar$alpha,"OUrepar"=OU.repar(oldpar)$alpha,"OUcpp"=oldpar$alpha,"QGcpp"=QG.alpha(oldpar),"OUrepar"=OU.repar(oldpar)$alpha, "bd"=oldpar$r, "ffancova"=oldpar$alpha)
+          #sig2 <- switch(model,"QG"=QG.sig2(oldpar),"OU"=oldpar$sig2,"OUrepar"=OU.repar(oldpar)$sig2,"OUcpp"=oldpar$sig2,"QGcpp"=QG.sig2(oldpar),"OUrepar"=OU.repar(oldpar)$sig2, "bd"=oldpar$eps, "ffancova"=oldpar$sig2)
+          #if(model=="bd"){
+          #  tick <- c(i,oll,pr1,median(alpha),median(sig2),oldpar$k,tapply(accept,accept.type,mean))
+          #  tick[-1] <- round(tick[-1],2)
+          #  names(tick)[1:6] <- c('gen','lnL','prior','r','eps','K')
+          #} else {
+          #  tick <- c(i,oll,pr1,log(2)/alpha,sig2/(2*alpha),oldpar$k,tapply(accept,accept.type,mean))
+          #  tick[-1] <- round(tick[-1],2)
+          #  names(tick)[1:6] <- c('gen','lnL','prior','half.life','Vy','K')
+          #}
+          #if(i==ticker.freq){
+          #  cat(c(names(tick),'\n'),sep='\t\t\t')
+          #}
+          #cat(c(tick,'\n'),sep='\t\t\t')
+        }
+      }
+      out <- list('model'=model, 'dir.name'=dir.name,'dir'=dir, 'outname'=paste(outname, "_ss", k,".", sep=""), 'accept'=accept,'accept.type'=accept.type)
+      class(out) <- c("ssbayouFit", "list")
+      return(out)
+    }
   run.mcmc <- function(ngen){
     files <- list(mapsb=file(filenames$mapsb,open="a"), 
                   mapsloc=file(filenames$mapsloc,open="a"),
@@ -419,7 +524,36 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     tryCatch(mcmc.loop(ngen))
     gbg <- lapply(files, close)
   }
-  out <- list('run' = run.mcmc, 'model'=model, 'model.pars'=model.pars, 'dir.name'=dir.name,'dir'=dir, 'outname'=outname, 'tree'=tree, 'dat'=dat, 'pred'=pred, 'SE'=SE, 'tmpdir'=ifelse(new.dir==TRUE, TRUE, FALSE), 'startpar'=startpar)
+  run.steppingstone <- function(ngen, chain, Bk, burnin=0.3, plot=TRUE){
+    require(foreach)
+    require(fitdistrplus)
+    ssfilenames <- lapply(1:length(Bk), function(y) lapply(filenames, function(x) gsub(paste(outname, ".", sep=""), paste(outname, "_ss", y,".", sep=""), x)))
+    ssfiles <- lapply(1:length(Bk), function(x) 
+                    list(mapsb=file(ssfilenames[[x]]$mapsb,open="a"), 
+                      mapsloc=file(ssfilenames[[x]]$mapsloc,open="a"),
+                      mapst2=file(ssfilenames[[x]]$mapst2,open="a"),
+                      pars.output=file(ssfilenames[[x]]$pars.output,open="a"),
+                      rjpars=file(ssfilenames[[x]]$rjpars, open="a")))
+    postburn <- floor(max(c(1,burnin*length(chain$gen)))):length(chain$gen)
+    ref <- make.refFn(chain, model=model.pars, priorFn=prior, burnin = burnin, plot=TRUE)
+    #ppFn <-make.powerposteriorFn(Bk, priorFn=prior, refFn = ref, model=model.pars)
+    startpars <- lapply(1:length(Bk), function(x) pull.pars(sample(postburn, 1, replace=FALSE), chain, model=model.pars))
+    olls <- sapply(1:length(Bk), function(x) lik.fn(startpars[[x]], cache, dat)$loglik)
+    prs <- sapply(1:length(Bk), function(x) prior(startpars[[x]], cache))
+    refs <- sapply(1:length(Bk), function(x) ref(startpars[[x]], cache))
+    stores <- lapply(1:length(Bk), function(x) list("out"=list(), "rjpars"=list(), "sb"=list(), "loc"=list(), "t2"=list()))
+    stores <- lapply(1:length(Bk), function(x) .store.bayou2(1, startpars[[x]], outpars, rjpars, olls[x], prs[x], stores[[x]], 1, 1, parorder, ssfiles[[x]], ref=refs[[x]]))
+    ssfits <- foreach(j=1:length(Bk)) %dopar% steppingstone.loop(j, Bk, ngen, ssfiles, ref)
+    gbg <- lapply(1:length(Bk), function(x) lapply(ssfiles[[x]], close))
+    outs <- lapply(1:length(Bk), function(x){out$outname <- paste(outname, "_ss", x, sep=""); out})
+    chains <- lapply(1:length(Bk), function(x) load.bayou(outs[[x]], save.Rdata=FALSE, file=NULL, cleanup=FALSE, ref=TRUE))
+    postburn <- floor(max(c(1, burnin*length(chains[[1]]$gen)))):length(chains[[1]]$gen)
+    lnr <- .computelnr(chains, Bk, postburn)   
+    ssres <- list(chains=chains, lnr=lnr$lnr, lnrk=lnr$lnrk, Bk=Bk, fits=ssfits, filenames=ssfilenames, startpars=startpars, refFn=ref, ppFn=ppFn)
+    class(ssres) <- c("ssMCMC", "list")
+    return(ssres)
+  }
+  out <- list('run' = run.mcmc, 'steppingstone'=run.steppingstone, 'model'=model, 'model.pars'=model.pars, 'dir.name'=dir.name,'dir'=dir, 'outname'=outname, 'tree'=tree, 'dat'=dat, 'pred'=pred, 'SE'=SE, 'tmpdir'=ifelse(new.dir==TRUE, TRUE, FALSE), 'startpar'=startpar)
   mcmc.load <- function(save.Rdata=FALSE, file=NULL, cleanup=FALSE){
     load.bayou(out, save.Rdata, file, cleanup)
   }

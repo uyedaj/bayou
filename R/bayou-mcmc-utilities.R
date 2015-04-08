@@ -22,7 +22,7 @@
 #' plot(chain)
 #' }
 #' @export
-load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE){#dir=NULL,outname="bayou",model="OU"){
+load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE, ref=FALSE){
   tree <- bayouFit$tree
   dat <- bayouFit$dat
   outname <- bayouFit$outname
@@ -49,11 +49,14 @@ load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE){#dir
   chain$gen <- sapply(pars.out,function(x) x[1])
   chain$lnL <- sapply(pars.out,function(x) x[2])
   chain$prior <- sapply(pars.out,function(x) x[3])
+  if(ref==TRUE){
+    chain$ref <- sapply(pars.out, function(x) x[4])
+  }
   chain$sb <- mapsb
   chain$loc <- mapsr2
   chain$t2 <- mapst2
   parLs <- lapply(startpar, length)[outpars]
-  j=4
+  j=4+as.numeric(ref)
   if(length(outpars) > 0){
     for(i in 1:length(outpars)){
       chain[[outpars[i]]] <- lapply(pars.out, function(x) as.vector(x[j:(j+parLs[[i]]-1)]))#unlist(res[[4]][,j:(j+parLs[[i]]-1)],F,F)
@@ -466,7 +469,7 @@ summary.bayouMCMC <- function(object, ...){
 #' Stores a flat file
 #' 
 
-.store.bayou2 <- function(i, pars, outpars, rjpars, ll, pr, store, samp, chunk, parorder, files){
+.store.bayou2 <- function(i, pars, outpars, rjpars, ll, pr, store, samp, chunk, parorder, files, ref=numeric(0)){
   if(i%%samp==0){
     j <- (i/samp)%%chunk
     if(j!=0 & i>0){
@@ -474,14 +477,14 @@ summary.bayouMCMC <- function(object, ...){
       store$t2[[j]] <- pars$t2
       store$loc[[j]] <- pars$loc
       parline <- unlist(pars[outpars])
-      store$out[[j]] <- c("gen"=i, "lik"=ll, "prior"=pr, parline)
+      store$out[[j]] <- c("gen"=i, "lik"=ll, "prior"=pr, "ref"=ref, parline)
       store$rjpars[[j]] <- unlist(pars[rjpars])
     } else {
       store$sb[[chunk]] <- pars$sb
       store$t2[[chunk]] <- pars$t2
       store$loc[[chunk]] <- pars$loc
       parline <- unlist(pars[outpars])
-      store$out[[chunk]] <- c("gen"=i, "lik"=ll, "prior"=pr, parline)
+      store$out[[chunk]] <- c("gen"=i, "lik"=ll, "prior"=pr, "ref"=ref, parline)
       store$rjpars[[chunk]] <- unlist(pars[rjpars])
       lapply(store$out,function(x) cat(c(x,"\n"), file=files$pars.output,append=TRUE))
       lapply(store$rjpars,function(x) cat(c(x,"\n"),file=files$rjpars,append=TRUE))
