@@ -549,7 +549,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     chains <- lapply(1:length(Bk), function(x) load.bayou(outs[[x]], save.Rdata=FALSE, file=NULL, cleanup=FALSE, ref=TRUE))
     postburn <- floor(max(c(1, burnin*length(chains[[1]]$gen)))):length(chains[[1]]$gen)
     lnr <- .computelnr(chains, Bk, postburn)   
-    ssres <- list(chains=chains, lnr=lnr$lnr, lnrk=lnr$lnrk, Bk=Bk, fits=ssfits, filenames=ssfilenames, startpars=startpars, refFn=ref, ppFn=ppFn)
+    ssres <- list(chains=chains, lnr=lnr$lnr, lnrk=lnr$lnrk, Bk=Bk, fits=ssfits, filenames=ssfilenames, startpars=startpars, refFn=ref)
     class(ssres) <- c("ssMCMC", "list")
     return(ssres)
   }
