@@ -72,6 +72,7 @@ pars2simmap <- function(pars,tree){
   return(list(tree=new.tree,pars=new.pars,col=col))
 }
 
+## New version of .pars2map is faster, returns 3 elements rather than 2 named elements
 .pars2map <- function(pars, cache){
   nbranch <- length(cache$edge.length)
   nshifts <- table(pars$sb)
@@ -80,15 +81,16 @@ pars2simmap <- function(pars,tree){
   irow <- rep(1:nbranch,shifts+1)
   segs <- c(cache$edge.length, pars$loc)
   tmp.o <- c(1:nbranch, pars$sb)
-  names(segs) <- tmp.o
+  #names(segs) <- tmp.o
   add.o <- order(tmp.o,segs)
   segs <- segs[add.o]
-  ind <- names(segs)
+  ind <- tmp.o[add.o]
+  #ind <- tmp.o
   t2index <- add.o[which(add.o > nbranch)]
   t2b <- c(rep(1,length(segs)))
   t2b[match(t2index,add.o)+1] <- pars$t2[t2index-nbranch]
   loc.o <- order(pars$loc,decreasing=TRUE)
-  sandwiches <- loc.o[duplicated(pars$sb[loc.o])]
+  sandwiches <- loc.o[which(duplicated(pars$sb[loc.o]))]
   if(length(sandwiches)>0){
     sb.down <- pars$sb[-sandwiches]
     t2.down <- pars$t2[-sandwiches]
@@ -98,19 +100,20 @@ pars2simmap <- function(pars,tree){
   t2.down <- t2.down[sb.o]
   sb.desc <- cache$bdesc[sb.down]
   desc.length <- unlist(lapply(sb.desc, length),F,F)
-  sb.desc <- sb.desc[desc.length>0]
-  names(t2b) <- names(segs)
+  sb.desc <- sb.desc[which(desc.length>0)]
+  #names(t2b) <- names(segs)
   sb.desc2 <- unlist(sb.desc,F,F)
   sb.dup <- duplicated(sb.desc2)
-  sb.desc3 <- sb.desc2[!sb.dup]
-  t2.names <- rep(t2.down[desc.length>0], unlist(lapply(sb.desc,length),F,F))
-  t2.names <- t2.names[!sb.dup]
-  t2b[as.character(unlist(sb.desc3,F,F))] <- t2.names
-  base <- duplicated(names(segs))*c(0,segs[1:(length(segs)-1)])
+  sb.desc3 <- sb.desc2[which(!sb.dup)]
+  t2.names <- rep(t2.down[which(desc.length>0)], unlist(lapply(sb.desc,length),F,F))
+  t2.names <- t2.names[which(!sb.dup)]
+  #t2b[as.character(unlist(sb.desc3,F,F))] <- t2.names
+  t2b[match(sb.desc3, ind)] <- t2.names
+  base <- duplicated(ind)*c(0,segs[1:(length(segs)-1)])
   segs <- segs-base
   #maps <- lapply(1:nbranch, function(x) segs[ind==x])
   #maps <- lapply(maps, function(x) if(length(x) >1) {c(x[1],diff(x[1:length(x)]))} else x)
-  return(list(segs=segs,theta=t2b))
+  return(list(segs=segs,theta=t2b, branch=ind))
 }
 
 #' Calculates the alpha parameter from a QG model
@@ -144,7 +147,7 @@ OU.repar <- function(pars){
 }
 
 .toSimmap <- function(map, cache){
-  maps <- lapply(1:length(cache$edge.length), function(x){ y <- map$segs[names(map$segs)==x]; names(y) <- map$theta[names(map$theta)==x]; y })  
+  maps <- lapply(1:length(cache$edge.length), function(x){ y <- map$segs[which(map$branch==x)]; names(y) <- map$theta[which(map$branch==x)]; y })  
   tree <- cache$phy
   tree$maps <- maps
   return(tree)

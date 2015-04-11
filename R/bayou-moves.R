@@ -95,11 +95,14 @@
 
 #' MCMC move for sliding a shift up or down to neighboring branches, or within a branch
 .slidespace <- function(j, pars, cache, ct, map){
+  sb <- rep(NA, 5)
   t2 <- pars$t2[j]
-  map.i <- which(names(map$segs)==(pars$sb[j]))
+  #map.i <- which(names(map$segs)==(pars$sb[j]))
+  map.i <- which(map$branch==pars$sb[j])
   m.sb <- map$segs[map.i]
   m.t2 <- map$theta[map.i]
   m.i <- which(m.t2==t2)
+  sb[1:2] <- map$branch[map.i][1]
   U0 <- m.sb[m.i]
   D0 <- m.sb[m.i-1]
   nodes <- cache$edge[pars$sb[j],]
@@ -107,12 +110,17 @@
   if(m.i-1 == 1){
     if(nodes[1]==cache$ntips+1){
       root.branch <- setdiff(c(2*cache$ntips-3, 2*cache$ntips-2), pars$sb[j])
-      D1 <- map$segs[as.character(root.branch)]
+      #D1 <- map$segs[as.character(root.branch)]
+      ind <- match(root.branch, map$branch)
+      D1 <- map$segs[ind]
+      sb[5] <- map$branch[ind]
       R1 = TRUE
     } else {
       anc <- which(cache$edge[,2] == nodes[1])
-      anc.m <- map$segs[names(map$segs)==anc]
+      ind <- which(map$branch==anc)
+      anc.m <- map$segs[ind]
       D1 <- anc.m[length(anc.m)]
+      sb[5] <- map$branch[ind][1]
     }
   } else {
     D1 <- 0
@@ -120,7 +128,10 @@
   if(m.i == length(map.i)){
     desc <- which(cache$edge[,1] == nodes[2])
     if(length(desc)>0){
-      desc.m <- map$segs[as.character(desc)]
+      #desc.m <- map$segs[as.character(desc)]
+      ind <- match(desc, map$branch)
+      desc.m <- map$segs[match(desc, map$branch)]
+      sb[3:4] <- map$branch[ind]
       U1 <- desc.m[1]
       U2 <- desc.m[2]
     } else {
@@ -130,14 +141,14 @@
       U1 <- U2 <- 0
     }
   pp = c(U0, D0, U1, U2, D1)
-  sb = as.numeric(names(pp))
+ # sb = as.numeric(names(pp))
   if(any(ct$sb$bmax[sb]==0, na.rm=TRUE)){
     pp[sb %in% which(ct$sb$bmax==0)] <- 0
   }
   names(pp) <- c("U0", "D0", "U1", "U2", "D1")
   if(R1) names(pp)[5] <- "R1"
   if(any(ct$sb$bmax!=Inf)){
-    tb.sb <- table(pars$sb[-j])
+    tb.sb <- table(pars$sb[!(pars$sb==pars$sb[j])])
     nm.sb <- as.numeric(names(tb.sb))
     full <- nm.sb[ct$sb$bmax[nm.sb] <= tb.sb]
     if(length(full)>0) pp[sb %in% full] <- 0
