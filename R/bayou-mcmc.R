@@ -1,4 +1,4 @@
-#SE=0; ngen=1000; samp=10; chunk=100; control=NULL; tuning=NULL; new.dir=TRUE; plot.freq=500; outname="bayou"; ticker.freq=1000; tuning.int=c(0.1,0.2,0.3); moves=NULL; control.weights=NULL; lik.fn=NULL; plot.fn=NULL
+SE=0; ngen=1000; samp=10; chunk=100; control=NULL; tuning=NULL; new.dir=TRUE; plot.freq=500; outname="bayou"; ticker.freq=1000; tuning.int=c(0.1,0.2,0.3); moves=NULL; control.weights=NULL; lik.fn=NULL; plot.fn=NULL
 #model <- model.Impute; plot.fn <- NULL
 #startpar=list(alpha=0.1, sig2=3, beta1=1, k=1, ntheta=2, theta=c(4,4), sb=200, loc=0, t2=2)
 #' Bayesian sampling of multi-optima OU models 
@@ -318,7 +318,8 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     .lastpar <- function(files){
       fL <- min(sapply(files, function(x) countL(summary(x)$description)))
       if(fL==1){skipL <- 0} else {skipL=fL-1}
-      res <- lapply(1:length(files), function(x) read.table(summary(files[[x]])$description, skip=skipL))
+      res <- lapply(1:length(files), function(x) try(read.table(summary(files[[x]])$description, skip=skipL), silent=TRUE))
+      res <- lapply(1:length(files), function(x) if(class(res[[x]])=="try-error"){numeric(0)}else{res[[x]]})
       pars <- list()
       parLs <- lapply(startpar, length)[outpars]
       npars <- length(res[[4]])
@@ -414,7 +415,8 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
       .lastpar <- function(files){
         fL <- min(sapply(files, function(x) countL(summary(x)$description)))
         if(fL==1){skipL <- 0} else {skipL=fL-1}
-        res <- lapply(1:length(files), function(x) read.table(summary(files[[x]])$description, skip=skipL))
+        res <- lapply(1:length(files), function(x) try(read.table(summary(files[[x]])$description, skip=skipL), silent=TRUE))
+        res <- lapply(1:length(files), function(x) if(class(res[[x]])=="try-error"){numeric(0)}else{res[[x]]})
         pars <- list()
         parLs <- lapply(startpar, length)[outpars]
         npars <- length(res[[4]])
