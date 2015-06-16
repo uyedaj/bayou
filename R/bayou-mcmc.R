@@ -410,7 +410,12 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
       }
     }
   }
-  steppingstone.loop <- function(k, Bk, ngen, ssfiles, ref){
+  steppingstone.loop <- function(k, Bk, ngen, ssfilenames, ref){
+      ssfiles <- list(mapsb=file(ssfilenames[[k]]$mapsb,open="a"), 
+                         mapsloc=file(ssfilenames[[k]]$mapsloc,open="a"),
+                         mapst2=file(ssfilenames[[k]]$mapst2,open="a"),
+                         pars.output=file(ssfilenames[[k]]$pars.output,open="a"),
+                         rjpars=file(ssfilenames[[k]]$rjpars, open="a"))
       .lastpar <- function(files){
         fL <- min(sapply(files, function(x) countL(summary(x)$description)))
         if(fL==1){skipL <- 0} else {skipL=fL-1}
@@ -442,7 +447,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
         ref1 <- unlist(res[[4]][4], F,F)
         return(list(pars=pars, i=i, oll=oll, pr1=pr1, ref1=ref1))
       }
-      startinf <- .lastpar(ssfiles[[k]])
+      startinf <- .lastpar(ssfiles)
       oldpar <- startinf$pars
       i <- startinf$i
       oll <- startinf$oll
@@ -477,7 +482,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
           accept <- c(accept,0)
         }
         if(i %% samp == 0){
-          store <- .store.bayou2(i, oldpar, outpars, rjpars, oll, pr1, store, 1, 1, parorder, ssfiles[[k]], ref=ref1)
+          store <- .store.bayou2(i, oldpar, outpars, rjpars, oll, pr1, store, 1, 1, parorder, ssfiles, ref=ref1)
         }
         #if(!is.null(plot.freq)){
         #  if(i %% plot.freq==0){
@@ -529,23 +534,26 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     require(foreach)
     require(fitdistrplus)
     ssfilenames <- lapply(1:length(Bk), function(y) lapply(filenames, function(x) gsub(paste(outname, ".", sep=""), paste(outname, "_ss", y,".", sep=""), x)))
-    ssfiles <- lapply(1:length(Bk), function(x) 
-                    list(mapsb=file(ssfilenames[[x]]$mapsb,open="a"), 
-                      mapsloc=file(ssfilenames[[x]]$mapsloc,open="a"),
-                      mapst2=file(ssfilenames[[x]]$mapst2,open="a"),
-                      pars.output=file(ssfilenames[[x]]$pars.output,open="a"),
-                      rjpars=file(ssfilenames[[x]]$rjpars, open="a")))
+    ssfiles <- list(); 
     postburn <- floor(max(c(1,burnin*length(chain$gen)))):length(chain$gen)
     ref <- make.refFn(chain, model=model.pars, priorFn=prior, burnin = burnin, plot=TRUE)
-    #ppFn <-make.powerposteriorFn(Bk, priorFn=prior, refFn = ref, model=model.pars)
-    startpars <- lapply(1:length(Bk), function(x) pull.pars(sample(postburn, 1, replace=FALSE), chain, model=model.pars))
-    olls <- sapply(1:length(Bk), function(x) lik.fn(startpars[[x]], cache, dat)$loglik)
-    prs <- sapply(1:length(Bk), function(x) prior(startpars[[x]], cache))
-    refs <- sapply(1:length(Bk), function(x) ref(startpars[[x]], cache))
-    stores <- lapply(1:length(Bk), function(x) list("out"=list(), "rjpars"=list(), "sb"=list(), "loc"=list(), "t2"=list()))
-    stores <- lapply(1:length(Bk), function(x) .store.bayou2(1, startpars[[x]], outpars, rjpars, olls[x], prs[x], stores[[x]], 1, 1, parorder, ssfiles[[x]], ref=refs[[x]]))
-    ssfits <- foreach(j=1:length(Bk)) %dopar% steppingstone.loop(j, Bk, ngen, ssfiles, ref)
-    gbg <- lapply(1:length(Bk), function(x) lapply(ssfiles[[x]], close))
+    for(x in 1:length(Bk)){
+      ssfiles[[x]] <- list(mapsb=file(ssfilenames[[x]]$mapsb,open="a"), 
+                        mapsloc=file(ssfilenames[[x]]$mapsloc,open="a"),
+                        mapst2=file(ssfilenames[[x]]$mapst2,open="a"),
+                        pars.output=file(ssfilenames[[x]]$pars.output,open="a"),
+                        rjpars=file(ssfilenames[[x]]$rjpars, open="a"))
+      #ppFn <-make.powerposteriorFn(Bk, priorFn=prior, refFn = ref, model=model.pars)
+      startpars <- pull.pars(sample(postburn, 1, replace=FALSE), chain, model=model.pars)
+      olls <- lik.fn(startpars, cache, dat)$loglik
+      prs <- prior(startpars, cache)
+      refs <- ref(startpars, cache)
+      stores <- list("out"=list(), "rjpars"=list(), "sb"=list(), "loc"=list(), "t2"=list())
+      stores <- .store.bayou2(1, startpars, outpars, rjpars, olls, prs, stores, 1, 1, parorder, ssfiles[[x]], ref=refs)
+      gbg <- lapply(ssfiles[[x]], close) #lapply(1:length(Bk), function(x) lapply(ssfiles[[x]], close))
+    }
+    
+    ssfits <- foreach(j=1:length(Bk)) %dopar% steppingstone.loop(j, Bk, ngen, ssfilenames, ref)
     outs <- lapply(1:length(Bk), function(x){out$outname <- paste(outname, "_ss", x, sep=""); out})
     chains <- lapply(1:length(Bk), function(x) load.bayou(outs[[x]], save.Rdata=FALSE, file=NULL, cleanup=FALSE, ref=TRUE))
     postburn <- floor(max(c(1, burnin*length(chains[[1]]$gen)))):length(chains[[1]]$gen)
