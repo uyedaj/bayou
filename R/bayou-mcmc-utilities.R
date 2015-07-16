@@ -295,7 +295,7 @@ combine.chains <- function(chain1,chain2,burnin.prop=0){
       maxK <- ifelse(is.null(maxK), attributes(prior)$parameters$dsb$ntips*2, maxK)
       maxK <- ifelse(!is.finite(maxK), attributes(prior)$parameters$dsb$ntips*2, maxK)
       bdFx <- attributes(prior)$functions$dk
-      bdk <- sqrt(cumsum(c(0,bdFx(0:maxK,log=FALSE))))*0.9
+      bdk <- 1-sqrt(cumsum(c(0,bdFx(0:maxK,log=FALSE))))*0.9
     }
     if(type==1){
       maxK <- nbranch-sum(bmax==0)
