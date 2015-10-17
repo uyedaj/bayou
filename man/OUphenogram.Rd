@@ -32,9 +32,10 @@ given the model, data and the parameter values.
 \dontrun{
 tree <- sim.bdtree(n=50)
 tree$edge.length <- tree$edge.length/max(branching.times(tree))
-prior <- make.prior(tree, dists=list(dk="cdpois", dsig2="dnorm", dtheta="dnorm"),
-             param=list(dk=list(lambda=5, kmax=10), dsig2=list(mean=1, sd=0.01),
-                   dtheta=list(mean=0, sd=3)), plot.prior=FALSE)
+prior <- make.prior(tree, dists=list(dk="cdpois", dsig2="dnorm",
+           dtheta="dnorm"), param=list(dk=list(lambda=5, kmax=10),
+             dsig2=list(mean=1, sd=0.01), dtheta=list(mean=0, sd=3)),
+               plot.prior=FALSE)
 pars <- priorSim(prior, tree, plot=FALSE, nsim=1)$pars[[1]]
 pars$alpha <- 4
 dat <- dataSim(pars, model="OU", phenogram=FALSE, tree)$dat

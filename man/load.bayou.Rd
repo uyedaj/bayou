@@ -29,7 +29,8 @@ data(chelonia)
 tree <- chelonia$phy
 dat <- chelonia$dat
 prior <- make.prior(tree)
-fit <- bayou.mcmc(tree, dat, model="OU", prior=prior, new.dir=TRUE, ngen=5000)
+fit <- bayou.mcmc(tree, dat, model="OU", prior=prior,
+                                 new.dir=TRUE, ngen=5000)
 chain <- load.bayou(fit, save.Rdata=FALSE, cleanup=TRUE)
 plot(chain)
 }

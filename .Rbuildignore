@@ -12,3 +12,5 @@
 ^figure/
 ^tutorial\.md
 ^\.travis\.yml
+^README\.html
+

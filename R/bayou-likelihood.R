@@ -124,13 +124,13 @@
     }
     cache$attb = attb
     lik <- function(pars, ...) {
-      recache = function(nodes = NULL, root = ROOT.MAX, 
+      recache = function(nodes = NULL, root = 6, #ROOT.MAX=6
                          cache) {
         r.cache = cache
-        if (root == ROOT.MAX) {
+        if (root == 6) { #ROOT.MAX=6
           rtmx = TRUE
         }
-        else if (root %in% c(ROOT.OBS, ROOT.GIVEN)) {
+        else if (root %in% c(3,4)) {#ROOT.OBS=3; ROOT.GIVEN=4
           rtmx = FALSE
           r.cache$attb = c(cache$attb, "z0")
         }
@@ -228,7 +228,7 @@ OU.lik <- function(pars,tree,X,SE=0,model="OU", invert=FALSE){
   } else {
     lnL.fx<-.fastbm.lik(cache,X.c,SE=TRUE,model="OU")
   #lnL.fx<-bm.lik(cache$phy,X.c,SE=NA,model="OU")
-    loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=ROOT.GIVEN)
+    loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=4)#ROOT.GIVEN=4
     return(list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th))
   }
 }
@@ -249,7 +249,7 @@ OU.lik <- function(pars,tree,X,SE=0,model="OU", invert=FALSE){
   } else {E.th=W*pars$theta}
   X.c<-X-as.vector(E.th)
   lnL.fx<-.fastbm.lik(cache,X.c,SE=TRUE,model="OU")
-  loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=ROOT.GIVEN)
+  loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=4)#ROOT.GIVEN=4
   list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th)
 }
 
@@ -261,10 +261,11 @@ OU.lik <- function(pars,tree,X,SE=0,model="OU", invert=FALSE){
 #' @param X A named vector giving the tip data
 #' @param model Parameterization of the OU model. Either "OU", "QG" or "OUrepar".
 #' 
-#' @details This function implements the algorithm of Ho and Ane (2014) implemented in the package
-#' \code{phylolm} for the \code{OUfixedRoot} model. It is faster than the equivalent pruning algorithm in geiger,
-#' and can be used on non-ultrametric trees (unlike OU.lik, which is based on the pruning algorithm in
-#' geiger). 
+#' @details This function implements the algorithm of Ho and Ane (2014) implemented
+#'  in the package \code{phylolm} for the \code{OUfixedRoot} model. It is faster 
+#'  than the equivalent pruning algorithm in geiger, and can be used on non-
+#'  ultrametric trees (unlike OU.lik, which is based on the pruning algorithm in
+#'  geiger). 
 #' @export
 bayou.lik <- function(pars, cache, X, model="OU"){
   if(model=="QG"){

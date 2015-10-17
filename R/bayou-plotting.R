@@ -31,25 +31,29 @@ makeTransparent <- function(someColor, alpha=100)
 #' @param lwd The width of the edges
 #' @param edge.type Either "theta" (branches will be colored according to their median value of theta), "regimes" (clades will be assigned to distinct regimes if the posterior probability of a shift
 #' on that branch is > pp.cutoff), or "pp" (branches will be colored according to the probability of a shift on that branch). If "none" then edge.color will be assigned to all branches.
+#' @param pal A color palette function used to paint the branches (unless edge.type="none")
 #' @param pp.cutoff If edge.type=="regimes", the posterior probability above which a shift should be reconstructed on the tree.
 #' @param circles a logical value indicating whether or not a circle should be plotted at the base of the node with values that correspond to the posterior probability of having a shift.
 #' @param circle.cex.max The cex value of a circle with a posterior probability of 1
+#' @param circle.col The color used to fill the circles
 #' @param circle.pch the type of symbol used to plot at the node to indicate posterior probability
-#' @param circle.pal a palette of colors that will be used to color the interior of the circles. This will be varied over the interval proportional to the deviation that occurs at that shift on the phylogeny.
 #' @param circle.lwd the line width of the points plotted at the nodes
 #' @param circle.alpha a value between 0 and 255 that indicates the transparency of the circles (255 is completely opaque).
 #' @param pp.labels a logical indicating whether the posterior probability for each branch should be printed above the branch
+#' @param pp.col The color used for the posterior probability labels
 #' @param pp.alpha a logical or numeric value indicating transparency of posterior probability labels. If TRUE, then transparency is ramped from invisible (pp=0), to black (pp=1). If numeric, all labels are given the same transparency. If NULL, then no transparency is given. 
 #' @param pp.cex the size of the posterior probability labels 
-#' @param legend Logical indicating whether or not a legend should be produced
-#' @param limits Divergence values assigning the minimum and maximum amounts applied to the extremes of the color palette. Values outside the limits are assigned the most extreme values in the color palette function.
+#' @param edge.color The color of edges if edge.type="none"
 #' @param parameter.sample When edge.type=="theta", the number of samples used to estimate the median "theta" value from each branch. Since this is 
 #' computationally intensive, this enables you to downsample the chain.
+#' @param ... Additional arguments passed to ape's plot.phylo
 #' 
 #' @export
 
-plotSimmap.mcmc <- function(chain, burnin=NULL, lwd=1, edge.type = c("theta", "none", "regimes", "pp"), pal=rainbow, pp.cutoff=0.3, circles=TRUE, circle.cex.max=3, circle.col="red",
-                            circle.pch=21, circle.lwd=0.75, circle.alpha=100, pp.labels=FALSE, pp.col=1, pp.alpha=255, pp.cex=0.75, edge.color = 1, parameter.sample=1000, ...){
+plotSimmap.mcmc <- function(chain, burnin=NULL, lwd=1, edge.type = c("theta", "none", "regimes", "pp"), 
+                            pal=rainbow, pp.cutoff=0.3, circles=TRUE, circle.cex.max=3, circle.col="red",
+                            circle.pch=21, circle.lwd=0.75, circle.alpha=100, pp.labels=FALSE, pp.col=1, 
+                            pp.alpha=255, pp.cex=0.75, edge.color = 1, parameter.sample=1000, ...){
   tree <- attributes(chain)$tree
   edge.type <- match.arg(edge.type, c("theta", "none", "regimes", "pp"))
   cache <- .prepare.ou.univariate(tree, attributes(chain)$dat)
@@ -388,9 +392,10 @@ plotBayoupars <- function(pars, tree,...){
 #' \dontrun{
 #' tree <- sim.bdtree(n=50)
 #' tree$edge.length <- tree$edge.length/max(branching.times(tree))
-#' prior <- make.prior(tree, dists=list(dk="cdpois", dsig2="dnorm", dtheta="dnorm"), 
-#'              param=list(dk=list(lambda=5, kmax=10), dsig2=list(mean=1, sd=0.01), 
-#'                    dtheta=list(mean=0, sd=3)), plot.prior=FALSE)
+#' prior <- make.prior(tree, dists=list(dk="cdpois", dsig2="dnorm", 
+#'            dtheta="dnorm"), param=list(dk=list(lambda=5, kmax=10), 
+#'              dsig2=list(mean=1, sd=0.01), dtheta=list(mean=0, sd=3)), 
+#'                plot.prior=FALSE)
 #' pars <- priorSim(prior, tree, plot=FALSE, nsim=1)$pars[[1]]
 #' pars$alpha <- 4
 #' dat <- dataSim(pars, model="OU", phenogram=FALSE, tree)$dat

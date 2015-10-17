@@ -5,7 +5,8 @@
 \alias{bayou-package}
 \title{bayou-package}
 \description{
-A package for inferring adaptive evolution to phylogenetic comparative data using Bayesian reversible-jump
+A package for inferring adaptive evolution to phylogenetic
+comparative data using Bayesian reversible-jump
 estimation of multi-optima Ornstein-Uhlenbeck models.
 }
 \author{

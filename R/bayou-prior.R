@@ -11,12 +11,18 @@
 #' Takes values \code{"OU"} (alpha & sig2), \code{"QG"} (h2, P, w2, Ne), or \code{"OUrepar"} (halflife,Vy)
 #' @param fixed A list of parameters that are to be fixed at provided values. These are removed from calculation of the prior value. 
 #' @details Default distributions and parameter values are given as follows:
-#' OU: \code{list(dists=list("dalpha"="dlnorm","dsig2"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dunif"),
-#'    param=list("dalpha"=list(),"dsig2"=list(),"dtheta"=list(),"dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list()))}
-#' QG: \code{list(dists=list("dh2"="dbeta","dP"="dlnorm","dw2"="dlnorm","dNe"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dunif"),
-#'    param=list("dh2"=list(shape1=1,shape2=1),"dP"=list(),"dw2"=list(),"dNe"=list(),"dtheta"=list(),"dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list()))}
-#' OUrepar: \code{list(dists=list("dhalflife"="dlnorm","dVy"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dunif"),
-#'    param=list("dhalflife"=list("meanlog"=0.25,"sdlog"=1.5),"dVy"=list("meanlog"=1,"sdlog"=2),"dk"=list(lambda=1,kmax=2*ntips-2),"dtheta"=list(),"dloc"=list(min=0,max=1)),"dsb"=list())}
+#' OU: \code{list(dists=list("dalpha"="dlnorm","dsig2"="dlnorm",
+#'          "dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dunif"),
+#'    param=list("dalpha"=list(),"dsig2"=list(),"dtheta"=list(),
+#'          "dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list()))}
+#' QG: \code{list(dists=list("dh2"="dbeta","dP"="dlnorm","dw2"="dlnorm","dNe"="dlnorm",
+#'          "dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dunif"),
+#'    param=list("dh2"=list(shape1=1,shape2=1),"dP"=list(),"dw2"=list(),"dNe"=list(),"dtheta"=list(),
+#'          "dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list()))}
+#' OUrepar: \code{list(dists=list("dhalflife"="dlnorm","dVy"="dlnorm",
+#'          "dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dunif"),
+#'    param=list("dhalflife"=list("meanlog"=0.25,"sdlog"=1.5),"dVy"=list("meanlog"=1,"sdlog"=2),
+#'          "dk"=list(lambda=1,kmax=2*ntips-2),"dtheta"=list(),"dloc"=list(min=0,max=1)),"dsb"=list())}
 #' 
 #' \code{dalpha, dsig2, dh2, dP, dw2, dNe, dhalflife},  and \code{dVy} must be positive continuous distributions and provide the parameters used to calculate alpha and sigma^2 of the OU model. 
 #' \code{dtheta} must be continuous and describes the prior distribution of the optima. dk is the prior distribution for the number of shifts. For Poisson and conditional Poisson (cdpois) are provided
@@ -34,11 +40,13 @@
 #' tree <- chelonia$phy
 #' dat <- chelonia$dat
 #' 
-#' #Create a prior that allows only one shift per branch with equal probability across branches
-#' prior <- make.prior(tree, dists=list(dalpha="dlnorm", dsig2="dlnorm",dsb="dsb", dk="cdpois",
-#'        dtheta="dnorm"), param=list(dalpha=list(meanlog=-5, sdlog=2), 
-#'            dsig2=list(meanlog=-1, sdlog=5), dk=list(lambda=15, kmax=200), 
-#'                dsb=list(bmax=1,prob=1), dtheta=list(mean=mean(dat), sd=2)))
+#' #Create a prior that allows only one shift per branch with equal probability 
+#' #across branches
+#' prior <- make.prior(tree, dists=list(dalpha="dlnorm", dsig2="dlnorm",
+#'            dsb="dsb", dk="cdpois", dtheta="dnorm"), 
+#'              param=list(dalpha=list(meanlog=-5, sdlog=2), 
+#'                dsig2=list(meanlog=-1, sdlog=5), dk=list(lambda=15, kmax=200), 
+#'                  dsb=list(bmax=1,prob=1), dtheta=list(mean=mean(dat), sd=2)))
 #'              
 #' #Evaluate some parameter sets
 #' pars1 <- list(alpha=0.1, sig2=0.1, k=5, ntheta=6, theta=rnorm(6, mean(dat), 2), 
@@ -50,18 +58,21 @@
 #' 
 #' #Create a prior that allows any number of shifts along each branch with probability proportional 
 #' #to branch length
-#' prior <- make.prior(tree, dists=list(dalpha="dlnorm", dsig2="dlnorm",dsb="dsb", dk="cdpois", 
-#'              dtheta="dnorm"), param=list(dalpha=list(meanlog=-5, sdlog=2), 
+#' prior <- make.prior(tree, dists=list(dalpha="dlnorm", dsig2="dlnorm",
+#'            dsb="dsb", dk="cdpois", dtheta="dnorm"), 
+#'              param=list(dalpha=list(meanlog=-5, sdlog=2), 
 #'                dsig2=list(meanlog=-1, sdlog=5), dk=list(lambda=15, kmax=200), 
-#'                  dsb=list(bmax=Inf,prob=tree$edge.length), dtheta=list(mean=mean(dat), sd=2)))
+#'                  dsb=list(bmax=Inf,prob=tree$edge.length), 
+#'                    dtheta=list(mean=mean(dat), sd=2)))
 #' prior(pars1)
 #' prior(pars2)
 #' 
 #' #Create a prior with fixed regime placement and sigma^2 value
-#' prior <- make.prior(tree, dists=list(dalpha="dlnorm", dsig2="fixed", dsb="fixed", dk="fixed", 
-#'              dtheta="dnorm", dloc="dunif"), param=list(dalpha=list(meanlog=-5, sdlog=2), 
-#'                dtheta=list(mean=mean(dat), sd=2)), fixed=list(sig2=1, k=3, ntheta=4, 
-#'                  sb=c(447, 396, 29)))
+#' prior <- make.prior(tree, dists=list(dalpha="dlnorm", dsig2="fixed", 
+#'            dsb="fixed", dk="fixed", dtheta="dnorm", dloc="dunif"), 
+#'              param=list(dalpha=list(meanlog=-5, sdlog=2), 
+#'                dtheta=list(mean=mean(dat), sd=2)), 
+#'                  fixed=list(sig2=1, k=3, ntheta=4, sb=c(447, 396, 29)))
 #'                  
 #' pars3 <- list(alpha=0.01, theta=rnorm(4, mean(dat), 2), loc=rep(0.1, 4))
 #' prior(pars3)

@@ -333,13 +333,10 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
 #' a list of the mcmc chains used for importance sampling to estimating the marginal likelihood at each step \code{chains}, and mcmc fit data from each of the runs \code{fits}.
 #' Note that this object may become quite large if a number of chains are run for many generations. To reduce the number of samples taken, increase the parameter \code{samp} (default = 10)
 #' which sets the frequency at which samples are saved in the mcmc chain. 
-steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burnin=0.3, ngen=10000, powerposteriorFn=NULL, parallel=FALSE, ...){
+steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, 
+                          burnin=0.3, ngen=10000, powerposteriorFn=NULL, 
+                          parallel=FALSE, ...){
     model <- attributes(prior)$model
-    if(parallel){
-      require(foreach)
-      #require(doMC)
-      #registerDoMC(cores=cores)
-    }
     if(is.null(powerposteriorFn)){
       cat("Making power posterior function from provided mcmc chain...\n")
       ref <- suppressWarnings(make.refFn(chain, prior, plot=TRUE))
