@@ -26,63 +26,40 @@ makeTransparent <- function(someColor, alpha=100)
 
 #' Plot a phylogenetic tree with posterior probabilities from a bayouMCMC chain (function adapted from phytools' plotSimmap)
 #' 
-#' @param tree A tree of class phylo
 #' @param chain A bayouMCMC chain
-#' @param burnin The proportion of runs to be discarded
-#' @param colors A named vector of colors corresponding to the regimes in the stored simmap map in the tree
-#' @param fsize relative font size for tip labels
-#' @param ftype font type- options are "reg", "i" (italics), "b" (bold), or "bi" (bold-italics)
-#' @param lwd line width for plotting
-#' @param node.numbers a logical value indicating whether or not node numbers should be plotted
-#' @param mar vector containing the margins for the plot to be passed to par. If not specified, the default margins are (0.1,0.1,0.1,0.1)
-#' @param add a logical value indicating whether or not the tree should be plotted in the current or a new plot
-#' @param offset offset for the tip labels
-#' @param pp.cutoff the posterior probability above which a shift should be reconstructed on the tree. If this value is provided, it overrides any preexisting simmap associated with the tree.
-#' @param circle a logical value indicating whether or not a circle should be plotted at the base of the node with values that correspond to the posterior probability of having a shift.
+#' @param burnin The proportion of runs to be discarded, if NULL, then the value stored in the bayouMCMC chain's attributes is used
+#' @param lwd The width of the edges
+#' @param edge.type Either "theta" (branches will be colored according to their median value of theta), "regimes" (clades will be assigned to distinct regimes if the posterior probability of a shift
+#' on that branch is > pp.cutoff), or "pp" (branches will be colored according to the probability of a shift on that branch). If "none" then edge.color will be assigned to all branches.
+#' @param pp.cutoff If edge.type=="regimes", the posterior probability above which a shift should be reconstructed on the tree.
+#' @param circles a logical value indicating whether or not a circle should be plotted at the base of the node with values that correspond to the posterior probability of having a shift.
+#' @param circle.cex.max The cex value of a circle with a posterior probability of 1
 #' @param circle.pch the type of symbol used to plot at the node to indicate posterior probability
 #' @param circle.pal a palette of colors that will be used to color the interior of the circles. This will be varied over the interval proportional to the deviation that occurs at that shift on the phylogeny.
 #' @param circle.lwd the line width of the points plotted at the nodes
 #' @param circle.alpha a value between 0 and 255 that indicates the transparency of the circles (255 is completely opaque).
-#' @param dash a logical value indicating whether or not a dash (or other point) should be plotted on the branches at every location that a shift was present in the posterior chain.
-#' @param dash.pal Ignored for now
-#' @param dash.cex the relative size of dashes
-#' @param dash.pch the plotting symbol for dashes
-#' @param dash.lwd the line width for dashes
-#' @param dash.alpha the transparency of dashes
 #' @param pp.labels a logical indicating whether the posterior probability for each branch should be printed above the branch
 #' @param pp.alpha a logical or numeric value indicating transparency of posterior probability labels. If TRUE, then transparency is ramped from invisible (pp=0), to black (pp=1). If numeric, all labels are given the same transparency. If NULL, then no transparency is given. 
 #' @param pp.cex the size of the posterior probability labels 
 #' @param legend Logical indicating whether or not a legend should be produced
 #' @param limits Divergence values assigning the minimum and maximum amounts applied to the extremes of the color palette. Values outside the limits are assigned the most extreme values in the color palette function.
+#' @param parameter.sample When edge.type=="theta", the number of samples used to estimate the median "theta" value from each branch. Since this is 
+#' computationally intensive, this enables you to downsample the chain.
 #' 
 #' @export
-plotSimmap.mcmc <- function (tree, chain, burnin=NULL, colors = NULL, fsize = 1, ftype = "reg", lwd = 0.75, 
-                             node.numbers = FALSE, mar = NULL, add = FALSE, offset = NULL, pp.cutoff=NULL,legend=TRUE, limits=NULL, 
-                             circle=TRUE, circle.pch=21, circle.pal=cm.colors, circle.lwd=0.75, circle.alpha=200, 
-                             dash=FALSE, dash.pal=cm.colors, dash.cex=0.5, dash.pch="|", dash.lwd=0.5, dash.alpha=10, pp.labels=FALSE, pp.alpha=NULL, pp.cex=0.75) {
-  dummy <- setNames(rep(1, length(tree$tip.label)), tree$tip.label)
-  cache <- .prepare.ou.univariate(tree, dummy)
+
+plotSimmap.mcmc <- function(chain, burnin=NULL, lwd=1, edge.type = c("theta", "none", "regimes", "pp"), pal=rainbow, pp.cutoff=0.3, circles=TRUE, circle.cex.max=3, circle.col="red",
+                            circle.pch=21, circle.lwd=0.75, circle.alpha=100, pp.labels=FALSE, pp.col=1, pp.alpha=255, pp.cex=0.75, edge.color = 1, parameter.sample=1000, ...){
+  tree <- attributes(chain)$tree
+  edge.type <- match.arg(edge.type, c("theta", "none", "regimes", "pp"))
+  cache <- .prepare.ou.univariate(tree, attributes(chain)$dat)
   tree <- cache$phy
   if(is.null(burnin)) burnin = attributes(chain)$burnin
+  if(is.null(burnin)) burnin = 0
   if(burnin==0) postburn <- 1:length(chain$gen)  else {
     postburn <- round(burnin*length(chain$gen),0):length(chain$gen)
   }
-  L <- Lposterior(chain, tree)
-  pull.map <- function(x, chain){
-    pars.list <- lapply(x, function(i) list(k=chain$k[[i]], ntheta=chain$ntheta[[i]], theta=chain$theta[[i]], sb=chain$sb[[i]], t2=chain$t2[[i]], loc=chain$loc[[i]]))
-    return(pars.list)
-  }
-  map2color<-function(x,pal,limits=NULL){
-    if(is.null(limits)) limits=range(x)
-    pal(100)[findInterval(x,seq(limits[1],limits[2],length.out=100+1), all.inside=TRUE)]
-  }
-  pars.list <- pull.map(postburn, chain)
-  Div <- unlist(lapply(pars.list, function(x) .D.from.theta(x, cache)$D), F,F)
-  sb <- unlist(lapply(pars.list, function(x) x$sb), F, F)
-  sb <- factor(sb, levels=1:nrow(tree$edge))
-  ave.Div <- tapply(Div, sb, mean)
-  ave.Div[is.na(ave.Div)] <- 0
-  
+  L <- Lposterior(chain, tree, burnin=burnin)
   if(!is.null(pp.cutoff)){
     pp <- L$pp
     pars <- list()
@@ -92,157 +69,76 @@ plotSimmap.mcmc <- function (tree, chain, burnin=NULL, colors = NULL, fsize = 1,
     pars$loc <- L$rel.location[pars$sb]*tree$edge.length[pars$sb]
     pars$t2 <- 2:(length(pars$sb)+1)
     if(length(pars$sb)>0){
-      tr <- pars2simmap(pars, tree)
-      tree <- tr$tree
-      colors <- tr$col
-      names(colors) <- 1:length(colors)
+      tr <- pars2simmap(pars, tree)$tree
+      colors <- NULL
     } else {
       tr <- tree
-      colors <- 1; names(colors) <-1
+      colors <- NULL
     }
+  } else {
+    tr <- tree
+    tr$maps <- lapply(tr$edge.length, function(x) setNames(x, 1))
+    colors <- setNames(1, 1)
   }
-  if (is.null(tree$maps)){
-    tree$maps <- lapply(tree$edge.length,function(x){names(x) <- 1; x})
-  } 
-  nb <- length(unique(unlist(sapply(tree$maps,names))))
-  ftype <- which(c("off", "reg", "b", "i", "bi") == ftype) - 1
-  if (!ftype) 
-    fsize = 0
-  if (is.null(colors)) {
-    colors <- rainbow(nb-1)
-    colors <- c("gray50",colors)
-    names(colors) <- as.character(1:nb)
-  }
-  if (class(tree) != "phylo") 
-    stop("tree should be object of class 'phylo.'")
-  tree$tip.label <- gsub("_", " ", tree$tip.label)
-  cw <- reorderSimmap(tree)
-  o <- .whichorder(cw$edge[,2],tree$edge[,2])
-  ob <- (1:length(tree$edge.length))[o]
-  #shifts.o <- shifts[o,]
-  pw <- reorderSimmap(tree, "pruningwise")
-  n <- length(cw$tip)
-  m <- cw$Nnode
-  Y <- matrix(NA, m + n, 1)
-  Y[cw$edge[cw$edge[, 2] <= length(cw$tip), 2]] <- 1:n
-  nodes <- unique(pw$edge[, 1])
-  for (i in 1:m) {
-    desc <- pw$edge[which(pw$edge[, 1] == nodes[i]), 
-                    2]
-    Y[nodes[i]] <- (min(Y[desc]) + max(Y[desc]))/2
-  }
-  root <- length(cw$tip) + 1
-  node.height <- matrix(NA, nrow(cw$edge), 2)
-  for (i in 1:nrow(cw$edge)) {
-    if (cw$edge[i, 1] == root) {
-      node.height[i, 1] <- 0
-      node.height[i, 2] <- cw$edge.length[i]
+  .colorRamp <- function(trait, .pal, nn){
+    strait <- (trait-min(trait))/(max(trait-min(trait)))
+    itrait <- floor(strait*(nn-1))+1
+    if(!is.null(.pal)){
+    return(.pal(nn+1)[itrait])
     } else {
-      node.height[i, 1] <- node.height[match(cw$edge[i, 
-                                                     1], cw$edge[, 2]), 2]
-      node.height[i, 2] <- node.height[i, 1] + cw$edge.length[i]
+      return(itrait)
     }
   }
-  ### Here is stuff I've added
-  b.shift <- unlist(chain$sb[postburn])
-  r1 <- tree$edge.length[b.shift]-unlist(chain$loc[postburn])
-  loc.shift <- r1
-  shifts.o <- node.height[match(b.shift,o),1]+loc.shift
-  L <- L[o,]
-  ####
-  if (is.null(mar)) {
-    par(mar = c(0.1, 0.1, 0.1, 0.1))
-  } else par(mar = mar)
-  if (!add) 
-    plot.new()
-  if (fsize * max(strwidth(cw$tip.label)) < 1) {
-    c <- (1 - fsize * max(strwidth(cw$tip.label)))/max(node.height)
-    cw$edge.length <- c * cw$edge.length
-    cw$maps <- lapply(cw$maps, function(x) x <- c * x)
-    node.height <- c * node.height
-  } else message("Font size too large to properly rescale tree to window.")
-  height <- max(nodeHeights(tree))
-  if (!add) 
-    plot.window(xlim = c(0, max(node.height) + fsize * 
-                           max(strwidth(cw$tip.label))), ylim = c(1, max(Y)))
-  for (i in 1:m) lines(node.height[which(cw$edge[, 1] == nodes[i]), 1], Y[cw$edge[which(cw$edge[, 1] == nodes[i]), 2]], col = colors[names(cw$maps[[match(nodes[i], cw$edge[, 1])]])[1]], lwd = lwd)
-  for (i in 1:nrow(cw$edge)) {
-    x <- node.height[i, 1]
-    #  bs <- shifts.o/height
-    # points(bs,rep(Y[cw$edge[i,2]],length(bs)),cex=sh.cex,pch="|",lwd=(lwd-1),col=makeTransparent("#000000",alpha=alpha))
-    for (j in 1:length(cw$maps[[i]])) {
-      lines(c(x, x + cw$maps[[i]][j]), c(Y[cw$edge[i, 
-                                                   2]], Y[cw$edge[i, 2]]), col = colors[names(cw$maps[[i]])[j]], 
-            lwd = lwd, lend = 2)
-
-      x <- x + cw$maps[[i]][j]
-      j <- j + 1
+  if(edge.type=="none"){
+    plot(tr, edge.color=edge.color, lwd=lwd, ...)
+  }
+  if(edge.type == "regimes"){
+    plotRegimes(tr, col=colors, lwd=lwd, pal=pal, ...)
+  }
+  if(edge.type == "theta"){
+    .ancestorBranches <- function(branch, cache){
+      ancbranches <- which(sapply(cache$bdesc, function(x) branch %in% x))
+      sort(ancbranches, decreasing=FALSE)
     }
-  }
-  
-  #    if(type=="dashes"){
-  #     bs <- shifts.o*c
-  #      points(bs,Y[tree$edge[b.shift,2]],cex=sh.cex,pch="|",lwd=(lwd-1),col=makeTransparent("#000000",alpha=alpha))
-  #    }
-  if(dash){
-    bs <- shifts.o*c
-    points(bs,Y[tree$edge[b.shift,2]],cex=dash.cex, pch=dash.pch,lwd=dash.lwd, col=makeTransparent("black", dash.alpha))
-  }
-  if(circle){
-    if(all(ave.Div==0)){
-     cols <- rep(circle.pal(1), length(ave.Div)) 
+    .branchRegime <- function(branch, abranches, chain, parameter, seqx, summary=FALSE){
+      ancs <- c(branch, abranches[[branch]])
+      ancshifts <- lapply(1:length(seqx), function(x) chain$t2[[seqx[x]]][which(chain$sb[[seqx[x]]] == ancs[min(which(ancs %in% chain$sb[[seqx[x]]]))])])
+      ancshifts <- sapply(ancshifts, function(x) ifelse(length(x)==0, 1, x))
+      ests <- sapply(1:length(ancshifts), function(x) chain[[parameter]][[seqx[x]]][ancshifts[x]])
+      res <- cbind(ests)
+      if(summary){
+        return(apply(res, 2, median))
+      } else {
+        return(res)
+      }
+    }
+    if(length(postburn) < parameter.sample){
+      warning("Length of post-burnin sample less than the requested parameter sample, using entire post-burnin chain instead")
+      seq1 <- postburn
     } else {
-      cols <- map2color(ave.Div[o], circle.pal, limits=limits)
+      seq1 <- sample(postburn, parameter.sample, replace=FALSE)
     }
-    points(node.height[,1], Y[cw$edge[, 2]], cex=sqrt(4^2*L[,1]), lwd=circle.lwd,bg=makeTransparent(cols,alpha=circle.alpha),pch=circle.pch)
-    if(legend==TRUE){
-    legend_image <- as.raster(matrix(rev(circle.pal(100)), ncol=1))
-    text(x=1.5, y = round(seq(range(ave.Div)[1],range(ave.Div)[2],l=5),2), labels = seq(range(ave.Div)[1],range(ave.Div)[2],l=5))
-    rasterImage(legend_image, 1, 0.25*length(tree$tip.label), 1.01, length(tree$tip.label)-0.25*length(tree$tip.label))
-    text(1.02, seq(0.25*length(tree$tip.label), length(tree$tip.label)-0.25*length(tree$tip.label), length.out=5), labels=round(seq(range(ave.Div)[1], range(ave.Div)[2], length.out=5),2), cex=fsize)
-    }
-    }
+    abranches <- lapply(1:nrow(tree$edge), .ancestorBranches, cache=cache)
+    allbranches <- suppressWarnings(sapply(1:nrow(tree$edge), function(x) .branchRegime(x, abranches, chain, "theta", seq1, summary=TRUE)))
+    plot(tree, edge.color=.colorRamp(allbranches, pal, 100), ...)
+  }
+  if(edge.type == "pp"){
+   plot(tree, edge.color=.colorRamp(L$pp, pal, 100), ...)
+  }
+  if(circles){
+    #theta2 <- L$magnitude.of.theta2
+    #root.median <- median(sapply(chain$theta[postburn], function(x) x[1]))
+    #theta2[is.na(theta2)] <- root.median
+    #theta2 <- theta2 - root.median
+    #circle.cols <- sapply(colorRamp(theta2, circle.pal, 100), function(x) makeTransparent(x, circle.alpha))
+    circle.cexs <- seq(0, circle.cex.max, length.out=100)[.colorRamp(L$pp, NULL, 100)]
+    edgelabels(pch=circle.pch, lwd=circle.lwd, bg=makeTransparent(circle.col, circle.alpha), cex=circle.cexs)
+  }
   if(pp.labels){
-    if(is.null(pp.alpha)){
-      pp.col = "black"
-    } else {
-      if(is.numeric(pp.alpha)){
-        pp.col = makeTransparent("black", pp.alpha)
-      }
-      if(pp.alpha){
-        pp.col <- makeTransparent("black",alpha=(0:255)[findInterval(L[,1],seq(0,1,length.out=256))])
-      }
-    }
-    text(node.height[,1]+0.5*apply(node.height,1,diff), Y[cw$edge[, 2]]-(2.5-fsize), labels=round(L[,1],2), cex=pp.cex, pos=3, col=pp.col)
+    edgelabels(round(L$pp,2), col=makeTransparent(pp.col, pp.alpha), cex=pp.cex, frame = "none")
   }
+    
   
-  
-  if (node.numbers) {
-    symbols(0, mean(Y[cw$edge[cw$edge[, 1] == (length(cw$tip) + 
-                                                 1), 2]]), rectangles = matrix(c(1.2 * fsize * 
-                                                                                   strwidth(as.character(length(cw$tip) + 1)), 1.4 * 
-                                                                                   fsize * strheight(as.character(length(cw$tip) + 
-                                                                                                                    1))), 1, 2), inches = F, bg = "white", add = T)
-    text(0, mean(Y[cw$edge[cw$edge[, 1] == (length(cw$tip) + 
-                                              1), 2]]), length(cw$tip) + 1, cex = fsize)
-    for (i in 1:nrow(cw$edge)) {
-      x <- node.height[i, 2]
-      if (cw$edge[i, 2] > length(tree$tip)) {
-        symbols(x, Y[cw$edge[i, 2]], rectangles = matrix(c(1.2 * 
-                                                             fsize * strwidth(as.character(cw$edge[i, 
-                                                                                                   2])), 1.4 * fsize * strheight(as.character(cw$edge[i, 
-                                                                                                                                                      2]))), 1, 2), inches = F, bg = "white", add = T)
-        text(x, Y[cw$edge[i, 2]], cw$edge[i, 2], cex = fsize)
-      }
-    }
-  }
-  if (is.null(offset)) 
-    offset <- 0.2 * lwd/3 + 0.2/3
-  for (i in 1:n) if (ftype) 
-    text(node.height[which(cw$edge[, 2] == i), 2], Y[i], 
-         cw$tip.label[i], pos = 4, offset = offset, cex = fsize, 
-         font = ftype)
-  par(mar = c(5, 4, 4, 2) + 0.1)
 }
 
 #' Adds visualization of regimes to a plot
@@ -342,7 +238,7 @@ phenogram.density <- function(tree, dat, burnin=0, chain ,colors=NULL, pp.cutoff
     }
   nH <- max(nodeHeights(tree))
   plot(c(0,nH+0.3*nH),c(min(dat)-0.25,max(dat)+0.25),type='n',xlab="Time",ylab="Phenotype")
-  phenogram(tree,dat,add=TRUE, colors=colors)#,...)
+  phenogram(tree, dat, add=TRUE, colors=colors, spread.labels=FALSE, ...)
   dens.theta <- lapply(1:length(K), function(x) density(unlist(theta[no.theta %in% K[[x]]])))
   tmp <- sapply(1:length(dens.theta),function(Q){lines(nH+dens.theta[[Q]]$y*(0.3*nH)/max(dens.theta[[Q]]$y),dens.theta[[Q]]$x,col=Q+1)})
 }
@@ -376,7 +272,7 @@ plot.bayouMCMC <- function(x, ...){
 #' 
 #' @param pars A bayou formatted parameter list
 #' @param tree A tree of class 'phylo'
-#' @param ... Additional arguments passed to plotSimmap
+#' @param ... Additional arguments passed to plotRegimes
 #' 
 #' @export
 plotBayoupars <- function(pars, tree,...){
@@ -386,7 +282,7 @@ plotBayoupars <- function(pars, tree,...){
   names(X) <- tree$tip.label
   cache <- .prepare.ou.univariate(tree, X)
   tr <- .toSimmap(.pars2map(pars, cache),cache)
-  plotSimmap(tr,...)
+  plotRegimes(tr,...)
   par(mar=mar)
 }
 
@@ -511,7 +407,7 @@ OUphenogram <- function(pars, tree, dat, SE=0, regime.col=NULL, ...){
     regime.cols <- tr$col
   } else {regime.cols <- regime.col}
   ylim <- c(min(c(dat, pars$theta-2*sqrt(pars$sig2/(pars$alpha*2)))), max(c(dat, pars$theta-2*sqrt(pars$sig2/(pars$alpha*2)))))
-  phenogram(tr$tree, datanc, colors=regime.cols, ylim=ylim, ...)
+  phenogram(tr$tree, datanc, colors=regime.cols, ylim=ylim, spread.labels=FALSE, ...)
   for(i in 1:pars$ntheta){
     x <- seq(OA[i,1],OA[i,2],length=10)
     y <- seq(ylim[1],ylim[2],length=100)
@@ -524,5 +420,80 @@ OUphenogram <- function(pars, tree, dat, SE=0, regime.col=NULL, ...){
     }
     lines(c(OA[i,1],OA[i,2]),rep(pars$theta[i],2),col=regime.cols[i],lwd=2)
   }
-  phenogram(tr$tree, datanc, , colors=regime.cols, add=TRUE, ...)
+  phenogram(tr$tree, datanc, , colors=regime.cols, add=TRUE, spread.labels=FALSE,  ...)
 }
+
+#' Function to plot the regimes from a simmap tree
+#' 
+#' @param tree A simmap tree of class phylo or simmap with a tree$maps list
+#' @param col A named vector of colors to assign to character states, if NULL, then colors are generated from pal
+#' @param lwd A numeric value indicating the width of the edges
+#' @param pal A color palette function to generate colors if col=NULL
+#' @param ... Optional arguments that are passed to plot.phylo
+#' 
+#' @details This function uses plot.phylo to generate coordinates and plot the tree, but plots the 
+#' 'maps' element of phytools' simmap format. This provides much of the functionality of plot.phylo from
+#' the ape package. Currently, only types 'phylogram', 'unrooted', 'radial', and 'cladogram' are allowed. Phylogenies must
+#' have branch lengths.
+#' 
+#' @export
+plotRegimes <- function(tree, col=NULL, lwd=1, pal=rainbow, ...){
+  if(is.null(col)){
+    regNames <- unique(names(unlist(tree$maps)))
+    nreg <- length(regNames)
+    col <- setNames(pal(nreg), regNames)
+  }
+  #nodecols <- col[sapply(tree$maps, function(x) names(x)[1])]
+  tmp <- plot(tree, edge.color="#FFFFFF00", use.edge.length=TRUE, ...)
+  lastPP <- get("last_plot.phylo", envir = .PlotPhyloEnv)
+  #if(lastPP$type != "phylogram") stop("Currently only able to plot phylograms")
+  nbranch <- nrow(tree$edge)
+  .getBranchCoords <- function(i){
+    xx <- lastPP$xx[tree$edge[i,]]
+    yy <- lastPP$yy[tree$edge[i,]]
+    xdist <- diff(xx)
+    ydist <- diff(yy)
+    map <- tree$maps[[i]]
+    cs <- cumsum(c(0, map))/sum(map)
+    colmap <- col[names(map)]
+    return(list(xx=xx, yy=yy, xdist=xdist, ydist=ydist, cs=cs, colmap=colmap, nsegs=length(cs)-1, segreg = names(colmap)))
+  }
+  coords <- lapply(1:nbranch, .getBranchCoords)
+  .phylogramLines <- function(x){
+    xdist <- x$xdist; ydist <- x$ydist; xx <- x$xx; yy <- x$yy
+    cs <- x$cs; nsegs <- x$nsegs; segreg <- x$segreg; colmap <- x$colmap
+    if(lastPP$direction %in% c("upwards", "downwards")){
+      xcoord <- rbind(xx, matrix(xx[2], nrow=nsegs, ncol=2))
+      ycoord <- rbind(rep(yy[1],2), cbind(cs[1:(length(cs)-1)]*ydist+yy[1], cs[2:(length(cs))]*ydist+yy[1]))
+      rownames(xcoord) <- rownames(ycoord) <- c(segreg[1], segreg)
+      cols <- c(colmap[1], colmap)
+      dum <- lapply(1:(nsegs+1), function(i) lines(xcoord[i,], ycoord[i, ], col=cols[i], lwd=lwd))
+    }
+    if(lastPP$direction %in% c("leftwards", "rightwards")){
+      ycoord <- rbind(yy, matrix(yy[2], nrow=nsegs, ncol=2))
+      xcoord <- rbind(rep(xx[1],2), cbind(cs[1:(length(cs)-1)]*xdist+xx[1], cs[2:(length(cs))]*xdist+xx[1]))
+      rownames(xcoord) <- rownames(ycoord) <- c(segreg[1], segreg)
+      cols <- c(colmap[1], colmap)
+      dum <- lapply(1:(nsegs+1), function(i) lines(xcoord[i,], ycoord[i, ], col=cols[i], lwd=lwd))
+    }
+  }
+  .cladogramLines <- function(x){
+    xdist <- x$xdist; ydist <- x$ydist; xx <- x$xx; yy <- x$yy
+    cs <- x$cs; nsegs <- x$nsegs; segreg <- x$segreg; colmap <- x$colmap
+    xcoord <- cbind(cs[1:(length(cs)-1)]*xdist+xx[1], cs[2:(length(cs))]*xdist+xx[1])
+    ycoord <- cbind(cs[1:(length(cs)-1)]*ydist+yy[1], cs[2:(length(cs))]*ydist+yy[1])
+    rownames(xcoord) <- rownames(ycoord) <- segreg
+    cols <- colmap
+    dum <- lapply(1:nsegs, function(i) lines(xcoord[i,], ycoord[i, ], col=cols[i], lwd=lwd))
+  }
+  .fanLines <- function(x){
+    xdist <- x$xdist; ydist <- x$ydist; xx <- x$xx; yy <- x$yy
+    cs <- x$cs; nsegs <- x$nsegs; segreg <- x$segreg; colmap <- x$colmap
+    circular.plot(lastPP$edge, lastPP$Ntip, lastPP$Nnode, lastPP$xx, lastPP$yy, )
+  }
+  if(lastPP$type=="fan") warning("type='fan' not currently supported, plotting a radial cladogram")
+  plotfn <- switch(lastPP$type, phylogram=.phylogramLines, cladogram=.cladogramLines, unrooted=.cladogramLines, radial=.cladogramLines, fan=.cladogramLines)
+  dum <- lapply(coords, plotfn)
+}
+
+

@@ -113,7 +113,7 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
     tr <- .toSimmap(.pars2map(oldpar, cache),cache)
     tcols <- makeTransparent(rainbow(oldpar$ntheta),alpha=100)
     names(tcols)<- 1:oldpar$ntheta
-    phenogram(tr,dat,colors=tcols,ftype="off")
+    phenogram(tr,dat,colors=tcols,ftype="off", spread.labels=FALSE)
     plot.dim <- list(par('usr')[1:2],par('usr')[3:4])
   }
   #tuning.int <- round(tuning.int*ngen,0)
@@ -151,7 +151,7 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
         mtext(paste("gens = ",i," lnL = ",round(oll,2)),3)
         #regime.plot probably doesn't work for simmaps
         #try(regime.plot(oldpar,tr$tree,tcols,type="density",model=model),silent=TRUE)
-        phenogram(tr,dat,colors=tcols,ftype="off",add=TRUE)
+        phenogram(tr,dat,colors=tcols,ftype="off",add=TRUE, spread.labels=FALSE)
       }
     }
     #if(i %in% tuning.int){

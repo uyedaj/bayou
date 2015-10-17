@@ -128,7 +128,7 @@ dataSim <- function(pars, model, tree, map.type="pars", SE=0, phenogram=TRUE, ..
   if(phenogram){
     col <- c(1,rainbow(pars$k))
     names(col) <- 1:pars$ntheta
-    phenogram(cache$phy,X,colors=col, ...)
+    phenogram(cache$phy,X,colors=col,spread.labels=FALSE, ...)
   }
   return(list(W=W, E.th=E.th,dat=X))
 }
