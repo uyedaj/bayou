@@ -1,3 +1,4 @@
+rm(list=ls(all=TRUE))
 setwd("~/repos/bayou/bayou_1.0/")
 require(devtools)
 require(roxygen2)

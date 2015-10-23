@@ -21,7 +21,10 @@ Imports:
     mnormt,
     fitdistrplus,
     denstrip,
-    foreach
+    foreach, 
+    stats, 
+    grDevices,
+    graphics
 Suggests:
     doParallel
 LinkingTo: Rcpp, RcppArmadillo
