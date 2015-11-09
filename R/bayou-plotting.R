@@ -526,3 +526,76 @@ OUphenogram <- function(pars, tree, dat, SE=0, regime.col=NULL, ...){
   }
   phenogram(tr$tree, datanc, , colors=regime.cols, add=TRUE, ...)
 }
+
+#' Function to plot the regimes from a simmap tree
+#' 
+#' @param tree A simmap tree of class phylo or simmap with a tree$maps list
+#' @param col A named vector of colors to assign to character states, if NULL, then colors are generated from pal
+#' @param lwd A numeric value indicating the width of the edges
+#' @param pal A color palette function to generate colors if col=NULL
+#' @param ... Optional arguments that are passed to plot.phylo
+#' 
+#' @details This function uses plot.phylo to generate coordinates and plot the tree, but plots the 
+#' 'maps' element of phytools' simmap format. This provides much of the functionality of plot.phylo from
+#' the ape package. Currently, only types 'phylogram', 'unrooted', 'radial', and 'cladogram' are allowed. Phylogenies must
+#' have branch lengths.
+#' 
+#' @export
+plotRegimes <- function(tree, col=NULL, lwd=1, pal=rainbow, ...){
+  if(is.null(col)){
+    regNames <- unique(names(unlist(tree$maps)))
+    nreg <- length(regNames)
+    col <- setNames(pal(nreg), regNames)
+  }
+  #nodecols <- col[sapply(tree$maps, function(x) names(x)[1])]
+  tmp <- plot(tree, edge.color="#FFFFFF00", use.edge.length=TRUE, ...)
+  lastPP <- get("last_plot.phylo", envir = .PlotPhyloEnv)
+  #if(lastPP$type != "phylogram") stop("Currently only able to plot phylograms")
+  nbranch <- nrow(tree$edge)
+  .getBranchCoords <- function(i){
+    xx <- lastPP$xx[tree$edge[i,]]
+    yy <- lastPP$yy[tree$edge[i,]]
+    xdist <- diff(xx)
+    ydist <- diff(yy)
+    map <- tree$maps[[i]]
+    cs <- cumsum(c(0, map))/sum(map)
+    colmap <- col[names(map)]
+    return(list(xx=xx, yy=yy, xdist=xdist, ydist=ydist, cs=cs, colmap=colmap, nsegs=length(cs)-1, segreg = names(colmap)))
+  }
+  coords <- lapply(1:nbranch, .getBranchCoords)
+  .phylogramLines <- function(x){
+    xdist <- x$xdist; ydist <- x$ydist; xx <- x$xx; yy <- x$yy
+    cs <- x$cs; nsegs <- x$nsegs; segreg <- x$segreg; colmap <- x$colmap
+    if(lastPP$direction %in% c("upwards", "downwards")){
+      xcoord <- rbind(xx, matrix(xx[2], nrow=nsegs, ncol=2))
+      ycoord <- rbind(rep(yy[1],2), cbind(cs[1:(length(cs)-1)]*ydist+yy[1], cs[2:(length(cs))]*ydist+yy[1]))
+      rownames(xcoord) <- rownames(ycoord) <- c(segreg[1], segreg)
+      cols <- c(colmap[1], colmap)
+      dum <- lapply(1:(nsegs+1), function(i) lines(xcoord[i,], ycoord[i, ], col=cols[i], lwd=lwd))
+    }
+    if(lastPP$direction %in% c("leftwards", "rightwards")){
+      ycoord <- rbind(yy, matrix(yy[2], nrow=nsegs, ncol=2))
+      xcoord <- rbind(rep(xx[1],2), cbind(cs[1:(length(cs)-1)]*xdist+xx[1], cs[2:(length(cs))]*xdist+xx[1]))
+      rownames(xcoord) <- rownames(ycoord) <- c(segreg[1], segreg)
+      cols <- c(colmap[1], colmap)
+      dum <- lapply(1:(nsegs+1), function(i) lines(xcoord[i,], ycoord[i, ], col=cols[i], lwd=lwd))
+    }
+  }
+  .cladogramLines <- function(x){
+    xdist <- x$xdist; ydist <- x$ydist; xx <- x$xx; yy <- x$yy
+    cs <- x$cs; nsegs <- x$nsegs; segreg <- x$segreg; colmap <- x$colmap
+    xcoord <- cbind(cs[1:(length(cs)-1)]*xdist+xx[1], cs[2:(length(cs))]*xdist+xx[1])
+    ycoord <- cbind(cs[1:(length(cs)-1)]*ydist+yy[1], cs[2:(length(cs))]*ydist+yy[1])
+    rownames(xcoord) <- rownames(ycoord) <- segreg
+    cols <- colmap
+    dum <- lapply(1:nsegs, function(i) lines(xcoord[i,], ycoord[i, ], col=cols[i], lwd=lwd))
+  }
+  .fanLines <- function(x){
+    xdist <- x$xdist; ydist <- x$ydist; xx <- x$xx; yy <- x$yy
+    cs <- x$cs; nsegs <- x$nsegs; segreg <- x$segreg; colmap <- x$colmap
+    circular.plot(lastPP$edge, lastPP$Ntip, lastPP$Nnode, lastPP$xx, lastPP$yy, )
+  }
+  if(lastPP$type=="fan") warning("type='fan' not currently supported, plotting a radial cladogram")
+  plotfn <- switch(lastPP$type, phylogram=.phylogramLines, cladogram=.cladogramLines, unrooted=.cladogramLines, radial=.cladogramLines, fan=.cladogramLines)
+  dum <- lapply(coords, plotfn)
+}
