@@ -56,6 +56,7 @@ make.refFn <- function(chain, model, priorFn, burnin=0.3, plot=TRUE){
     fitdists <- switch(dist.types[i], "ddist"=discdists, "pcdist"=poscontdists, "bdist"=bounddists, "cdist"=contdists)
     {
       tmpFits <- lapply(fitdists, function(x) suppressWarnings(try(fitdist(xx, x), silent=TRUE)))
+      tmpFits[sapply(tmpFits, function(x) (class(x)=="try-error"))] <- lapply(which(sapply(tmpFits, function(x) (class(x)=="try-error"))), function(j) suppressWarnings(try(fitdist(xx, fitdists[j], method="mme"), silent=TRUE)))
       tmpFits <- tmpFits[sapply(tmpFits, function(x) !(class(x)=="try-error"))]
       aic <- sapply(tmpFits, function(x) x$aic)
       fit <- tmpFits[[which(aic==min(aic,na.rm=TRUE))]]
