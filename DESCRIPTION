@@ -25,3 +25,4 @@ Suggests:
     doParallel,
     foreach
 LinkingTo: Rcpp, RcppArmadillo
+RoxygenNote: 5.0.1
