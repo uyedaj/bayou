@@ -309,7 +309,7 @@ makeBayouModel <- function(f, rjpars, cache, prior, impute=NULL, startpar=NULL, 
         if(startpar$k==0) startpar$t2 <- numeric(0) else startpar$t2 <- 2:(startpar$ntheta) 
       } else {
         startpar$ntheta <- startpar$k+1
-        startpar$t2 <- 2:(startpar$ntheta)
+        if(startpar$k==0) startpar$t2 <- numeric(0) else startpar$t2 <- 2:(startpar$ntheta) 
       }
       startpar <- startpar[c(parorder, shiftpars)]
       #startpar[parorder[(parorder %in% c(rjpars2))]] <- lapply(rdists[parorder[(parorder %in% c(rjpars2))]], function(x) x(startpar$ntheta))
