@@ -632,7 +632,7 @@ plotShiftSummaries <- function(summaries, pal=rainbow, ask=FALSE,  ...){
     abline(a=regressions[i,1], b=regressions[i,2], col=pal(nrow(regressions))[i], lwd=2, lty=2)
     dens <- summaries$cladesummaries[[i]]$densities
     gbg <- lapply(1:length(dens), function(y)plot(dens[[y]], col=pal(nrow(regressions))[i], main=names(dens)[y],xlim=c(xlimits[,y])))
-    if(blank.panels >0){lapply(1:blank.panels, plot.new)}
+    if(blank.panels >0){lapply(1:blank.panels,function(x) plot.new())}
   }
   px <- px[!(names(px) %in% c("cin", "cra", "cxy", "csi", "din", "page"))]
   suppressWarnings(par(px))
