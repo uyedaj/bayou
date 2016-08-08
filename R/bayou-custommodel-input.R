@@ -118,12 +118,18 @@ addColorBar <- function(x, y, height, width, pal, trait, ticks, adjx=0, n=100,ce
 }
 
 #' @export
-plotBranchHeatMap <- function(tree, chain, variable, burnin=0, nn=NULL, pal, legend_ticks, ...){
+plotBranchHeatMap <- function(tree, chain, variable, burnin=0, nn=NULL, pal=heat.colors, legend_ticks=NULL, ...){
+  dum <- setNames(rep(1, length(tree$tip.label)), tree$tip.label)
+  cache <- .prepare.ou.univariate(tree, dum)
+  tree <- cache$phy
   seq1 <- floor(max(seq(burnin*length(chain$gen),1), length(chain$gen), 1))
+  if(is.null(legend_ticks)){
+    legend_ticks <- seq(min(unlist(chain[[variable]][seq1],F,F)), max(unlist(chain[[variable]][seq1],F,F)), length.out=5)
+  }
   if(is.null(nn)) nn <- length(seq1) else { seq1 <- floor(seq(max(burnin*length(chain$gen),1), length(chain$gen), length.out=nn))}
   if(length(nn) > length(chain$gen)) stop("Number of samples greater than chain length, lower nn")
   abranches <- lapply(1:nrow(tree$edge), .ancestorBranches, cache=cache)
-  allbranches <- sapply(1:nrow(tree$edge), function(x) .branchRegime(x, abranches, chain, variable, seq1, summary=TRUE))
+  allbranches <- suppressWarnings(sapply(1:nrow(tree$edge), function(x) .branchRegime(x, abranches, chain, variable, seq1, summary=TRUE)))
   plot(tree, edge.color=colorRamp(allbranches, pal, 100), ...)
   addColorBar(x=470, y=100, height=150, width=10, pal=pal, n=100, trait=allbranches, ticks=legend_ticks,adjx=25, cex.lab=.5, text.col="white")
 }
@@ -317,7 +323,7 @@ makeBayouModel <- function(f, rjpars, cache, prior, impute=NULL, startpar=NULL, 
     }
   }
   rjpars[!(rjpars %in% "theta")] <- paste("beta",rjpars[!(rjpars %in% "theta")], sep="_")
-  model <- list(moves=moves, control.weights=control.weights, D=D, rjpars=rjpars, parorder=parorder, shiftpars=shiftpars, monitor.fn=monitorFn, lik.fn=likFn)
+  model <- list(moves=moves, control.weights=control.weights, D=D, rjpars=rjpars, parorder=parorder, shiftpars=shiftpars, monitor.fn=monitorFn, call=f, expFn=expFn, lik.fn=likFn)
   if(length(impute)>0){
     missing <- which(is.na(cache$pred[,impute])) #$impute
     pv <- getPreValues(cache) #$impute

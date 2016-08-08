@@ -502,3 +502,140 @@ plotRegimes <- function(tree, col=NULL, lwd=1, pal=rainbow, ...){
 }
 
 
+#'  Function for summarizing the state of a model after a shift
+#'  
+#'  @param chain A bayouMCMC chain
+#'  @param mcmc A bayou mcmc object
+#'  @param pp.cutoff The threshold posterior probability for shifts to summarize, if \code{branches}
+#'  specified than this is ignored.
+#'  @param branches The specific branches with shifts to summarize, assuming postordered tree
+#'  
+#'  @details shiftSummaries summarizes the immediate parameter values after a shift on a particular
+#'  branch. Parameters are summarized only for the duration that the particular shift exists. Thus,
+#'  even global parameters will be different for particular shifts. 
+#'  
+#'  @return A list with elements:
+#'  \code{pars}= a bayoupars list giving the location of shifts specified,
+#'  \code{tree}= The tree
+#'  \code{pred}= Predictor variable matrix
+#'  \code{dat} A vector of the data
+#'  \code{SE} A vector of standard errors
+#'  \code{PP} Posterior probabilities of the specified shifts
+#'  \code{model} A list specifying the model used
+#'  \code{variables} The variables summarized
+#'  \code{cladesummaries} A list providing the medians and densities of the distributions
+#'  of regression variables for each shift
+#'  \code{descendents} A list providing the taxa that belong to each regime
+#'  \code{regressions} A matrix providing the regression coefficients for each regime
+#'  @export
+shiftSummaries <- function(chain, mcmc, pp.cutoff=0.3, branches=NULL, ...){
+  if(is.null(attributes(chain)$burnin)){
+    L <- Lposterior(chain, tree, burnin=0)
+  } else {
+    L <- Lposterior(chain, tree, burnin=attributes(chain)$burnin)
+  }
+  if(is.null(branches)){
+    branches <- which(L[,1] > pp.cutoff)
+    PP <- L[branches,1]
+  } else {
+    PP <- L[branches,1]
+  }
+  if(length(branches) == 0){
+    stop("No shifts found with posterior probability above cutoff")
+  }
+  cache <- .prepare.ou.univariate(mcmc$tree,mcmc$dat, SE=mcmc$SE, pred=mcmc$pred)
+  tree <- cache$phy
+  dat <- cache$dat
+  pred <- cache$pred
+  SE <- cache$SE
+  model <- mcmc$model.pars
+  if(!is.null(model$call)){
+    coefs <- paste("beta_", attr(terms(model$call), "term.labels"), sep="")
+  } else {
+    coefs <- NULL
+  }
+  variables <- c('theta', coefs)
+  sumpars <- list(k=length(branches), ntheta=length(branches)+1, sb=branches, t2=2:(length(branches)+1), loc=rep(0, length(branches)))
+  .summarizeDerivedState <- function(branch, chain, variables){
+    if(branch==0){
+      values <- lapply(variables, function(x) sapply(chain[[x]], function(y) y[1]))
+    } else {
+      SB <- unlist(chain$sb)
+      gen <- unlist(lapply(1:length(chain$sb), function(x) rep(x, length(chain$sb[[x]]))))
+      ind <- which(SB==branch)
+      gen <- gen[ind]
+      T2 <- unlist(chain$t2)[ind]
+      values <- lapply(variables, function(x) sapply(1:length(T2), function(y)if(length(chain[[x]][[gen[y]]]) > 1) {chain[[x]][[gen[y]]][T2[y]]} else chain[[x]][[gen[y]]]))
+    }
+    medians <- lapply(values, median)
+    densities <- lapply(values, density)
+    names(medians) <- names(densities) <- variables
+    return(list(medians=medians, densities=densities))
+  }
+  cladesummaries <- lapply(c(0, branches), function(x) .summarizeDerivedState(x, chain, variables))
+  regressions <- do.call(rbind, lapply(cladesummaries, function(x) unlist(x$medians)))
+  rownames(regressions) = c("root", sumpars$sb)
+  tipregs <- .tipregime(sumpars, tree)
+  descendents <- lapply(1:(length(sumpars$sb)+1), function(x) names(tipregs[tipregs==x])) 
+  out <- list(pars= sumpars, tree=tree, pred=pred, dat=dat, SE=SE, PP=PP, model=model, variables=variables, cladesummaries=cladesummaries, descendents=descendents, regressions=regressions)
+  return(out)
+}
+
+#' A function to plot a list produced by \code{shiftSummaries}
+#' 
+#' @param summaries A list produced by the function \code{shiftSummaries}
+#' @param pal A color palette function
+#' @param ask Whether to wait for the user between plotting each shift summary
+#' @param ... Additional parameters passed to par(...)
+#' 
+#' @details For each shift, this function plots the taxa on the phylogeny that are (usually) in this regime (each taxon
+#' is assigned to the specified shifts, thus some descendent taxa may not always be in indicated regime if the shift if 
+#' they are sometimes in another tipward shift with low posterior probability). The function then plots the distribution 
+#' of phenotypic states and the predicted regression line, as well as density plots for the intercept and any regression
+#' coefficients in the model.
+#' @export
+plotShiftSummaries <- function(summaries, pal=rainbow, ask=FALSE,  ...){
+  px <- par()
+  ndens <- length(summaries$cladesummaries[[1]]$densities)
+  par(mfrow=c(2,max(ndens,2)), mar=c(3,3,5,1), bg="black", ask=FALSE, col.axis="white", col.lab="white", col.main="white", ...)
+  blank.panels <- prod(par()$mfrow) - (2+ndens)
+  par(ask=ask)
+  regressions <- summaries$regressions
+  if(ncol(regressions)==1){ regressions <- data.frame(regressions, "slope"=0)}
+  dat <- summaries$dat
+  tree <- summaries$tree
+  sumpars <- summaries$pars
+  descendents <- summaries$descendents
+  PP <- c("Root",round(summaries$PP,2))
+  xlimits <- apply(do.call(rbind, 
+                           lapply(summaries$cladesummaries, function(x) 
+                             sapply(x$densities, function(y) range(y$x))
+                           )), 2, range)
+  xlimits[1,] <- xlimits[1,]-0.1*apply(xlimits, 2, diff)
+  xlimits[2,] <- xlimits[2,]+0.1*apply(xlimits, 2, diff)
+  if(ndens > 1){
+    xint <- setNames(summaries$pred[[1]], names(dat))
+    xlimits2 <- range(xint)
+  } else {
+    xint <- jitter(.tipregime(sumpars, tree))
+    xlimits2 <- c(-2, sumpars$ntheta+3)
+  }
+  for(i in (1:nrow(regressions))){
+    plotBayoupars(sumpars, tree, col=setNames(c(pal(nrow(regressions))[i], rep("gray80", nrow(regressions)-1)), c(i, (1:nrow(regressions))[-i])), cex=0.2)
+    plot(xint, dat, pch=21, xlim=xlimits2, bg=makeTransparent("gray80", 100), col =makeTransparent("gray80", 10), main=paste("Posterior prob: ", PP[i], sep=""))
+    if(length(descendents[[i]] > 0)){
+      text(xint[descendents[[i]]], dat[descendents[[i]]], labels=names(dat[descendents[[i]]]), col="white", cex=0.4, pos = 2)
+      points(xint[descendents[[i]]], dat[descendents[[i]]], pch=21, bg=makeTransparent(pal(nrow(regressions))[i], 100), col =makeTransparent(pal(nrow(regressions))[i], 10))
+    } else{
+      warnings("No descendents for this shift")
+    }
+    abline(a=regressions[i,1], b=regressions[i,2], col=pal(nrow(regressions))[i], lwd=2, lty=2)
+    dens <- summaries$cladesummaries[[i]]$densities
+    gbg <- lapply(1:length(dens), function(y)plot(dens[[y]], col=pal(nrow(regressions))[i], main=names(dens)[y],xlim=c(xlimits[,y])))
+    if(blank.panels >0){lapply(1:blank.panels, plot.new)}
+  }
+  px <- px[!(names(px) %in% c("cin", "cra", "cxy", "csi", "din", "page"))]
+  suppressWarnings(par(px))
+}
+
+

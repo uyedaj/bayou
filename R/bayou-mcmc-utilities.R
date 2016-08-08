@@ -3,7 +3,7 @@
 #' \code{load.bayou} loads a bayouFit object that was created using \code{bayou.mcmc()}
 #' 
 #' @param bayouFit An object of class \code{bayouFit} produced by the function \code{bayou.mcmc()}
-#' @param save.Rdata A logical indicating whether the resulting chains should be saved as an *.rds file
+#' @param saveRDS A logical indicating whether the resulting chains should be saved as an *.rds file
 #' @param file An optional filename (possibly including path) for the saved *.rds file
 #' @param cleanup A logical indicating whether the files produced by \code{bayou.mcmc()} should be removed. 
 #' 
@@ -22,7 +22,7 @@
 #' plot(chain)
 #' }
 #' @export
-load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE, ref=FALSE){
+load.bayou <- function(bayouFit, saveRDS=TRUE, file=NULL, cleanup=FALSE, ref=FALSE){
   tree <- bayouFit$tree
   dat <- bayouFit$dat
   outname <- bayouFit$outname
@@ -82,18 +82,18 @@ load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, cleanup=FALSE, ref=
   attributes(chain)$tree <- tree
   attributes(chain)$dat <- dat
   class(chain) <- c("bayouMCMC", "list")
-  if(save.Rdata==FALSE & cleanup==TRUE){
+  if(saveRDS==FALSE & cleanup==TRUE){
     ans <- toupper(readline("Warning: You have selected to delete all created MCMC files and not to save them as an .rds file. 
                     Your mcmc results will not be saved on your hard drive. If you do not output to a object, your results will be lost. 
                     Continue? (Y or N):"))
     cleanup <- ifelse(ans=="Y", TRUE, FALSE)
   }
-  if(save.Rdata){
+  if(saveRDS){
     if(is.null(file)){
-      save(chain, file=paste(bayouFit$dir,"../", outname, ".chain.rds",sep=""))
+      saveRDS(chain, file=paste(bayouFit$dir, outname, ".chain.rds",sep=""))
       cat(paste("file saved to", paste(bayouFit$dir,"/",outname,".chain.rds\n",sep="")))
     } else {
-      save(chain, file=file)
+      saveRDS(chain, file=file)
       cat(paste("file saved to", file))
     }
   }
@@ -443,19 +443,25 @@ summary.bayouMCMC <- function(object, ...){
   outpars <- parorder[!(parorder %in% model.pars$rjpars)]
   summat <- matrix(unlist(object[outpars]),ncol=length(outpars))
   colnames(summat) <- outpars
-  for(i in model.pars$rjpars){
-    summat <- cbind(summat, sapply(object[[i]],function(x) x[1]))
-    colnames(summat)[ncol(summat)] <- paste("root.",i,sep="")
+  if(length(model.pars$rjpars) > 0){
+    for(i in model.pars$rjpars){
+      summat <- cbind(summat, sapply(object[[i]],function(x) x[1]))
+      colnames(summat)[ncol(summat)] <- paste("root.",i,sep="")
+    }
+    sum.rjpars <- lapply(model.pars$rjpars, function(x) summary(coda::mcmc(unlist(object[[x]]))))
+  } else {
+    sum.rjpars <- NULL
   }
   #summat <- cbind(summat, "root"=sapply(object$theta,function(x) x[1]))
   sum.1vars <- summary(coda::mcmc(summat))
-  sum.rjpars <- lapply(model.pars$rjpars, function(x) summary(coda::mcmc(unlist(object[[x]]))))
-  statistics <- rbind(cbind(sum.1vars$statistics, "Effective Size" = effectiveSize(summat)))
-  for(i in 1:length(model.pars$rjpars)){
-    statistics <- rbind(statistics,c(sum.rjpars[[i]]$statistics[1:2],rep(NA,3)))
-    rownames(statistics)[nrow(statistics)] <- paste("all", model.pars$rjpars[i],sep=" ")
+  HPDs <- apply(summat,2,function(x) HPDinterval(mcmc(x), 0.95))
+  statistics <- rbind(cbind(sum.1vars$statistics, "Effective Size" = effectiveSize(summat), "HPD95Lower"=HPDs[1,], "HPD95Upper"=HPDs[2,]))
+  if(length(model.pars$rjpars) > 0){
+    for(i in 1:length(model.pars$rjpars)){
+      statistics <- rbind(statistics,c(sum.rjpars[[i]]$statistics[1:2],rep(NA,3)))
+      rownames(statistics)[nrow(statistics)] <- paste("all", model.pars$rjpars[i],sep=" ")
+    }
   }
-  
   cat("\n\nSummary statistics for parameters:\n")
   print(statistics, ...)
   Lpost <- Lposterior(object, tree)

@@ -355,16 +355,17 @@ model.OU <- list(moves = list(alpha=".multiplierProposal",sig2=".multiplierPropo
                  fixedpars = c(),
                  rjpars = "theta",
                  shiftpars = c("sb", "loc", "t2"),
-                 monitor.fn = function(i, lik, pr, pars){
-                   names <- c("gen", "lnL", "prior", "alpha", "sig2", "k")
-                   string <- "%-8i%-8.2f%-8.2f%-8.2f%-8.2f%-8i"
+                 monitor.fn = function(i, lik, pr, pars, accept, accept.type, j){
+                   names <- c("gen", "lnL", "prior", "alpha", "sig2","rtheta", "k")
+                   format <- c("%-8i",rep("%-8.2f", 5),"%-8i")
                    acceptratios <- tapply(accept, accept.type, mean)
                    names <- c(names, names(acceptratios))
-                   if(i %% 100*ticker.freq == 0 | i == 1){
-                   cat(sprintf("%-7s", names))
+                   if(j==0){
+                     cat(sprintf("%-7.7s", names), "\n", sep=" ") 
                      
                    }
-                   cat(sprintf(string, i, lnL, pr, pars$alpha, pars$sig2, pars$k), sprintf("%-8.2f", acceptratios), sep="")
+                   item <- c(i, lik, pr, pars$alpha, pars$sig2, pars$theta[1], pars$k)
+                   cat(sapply(1:length(item), function(x) sprintf(format[x], item[x])), sprintf("%-8.2f", acceptratios),"\n", sep="")
                  },
                  lik.fn = bayou.lik)
 
@@ -375,16 +376,17 @@ model.QG <- list(moves = list(h2=".multiplierProposal",P=".multiplierProposal",w
                  fixedpars = c(),
                  rjpars = "theta",
                  shiftpars = c("sb", "loc", "t2"),
-                 monitor.fn = function(i, lik, pr, pars){
-                   names <- c("gen", "lnL", "prior", "alpha", "sig2", "k")
-                   string <- "%-8i%-8.2f%-8.2f%-8.2f%-8.2f%-8i"
+                 monitor.fn = function(i, lik, pr, pars, accept, accept.type, j){
+                   names <- c("gen", "lnL", "prior", "h2", "P", "w2", "Ne","rtheta", "k")
+                   format <- c("%-8i",rep("%-8.2f", 7),"%-8i")
                    acceptratios <- tapply(accept, accept.type, mean)
                    names <- c(names, names(acceptratios))
-                   if(i %% 100*ticker.freq == 0 | i == 1){
-                     cat(sprintf("%-7s", names))
+                   if(j==0){
+                     cat(sprintf("%-7.7s", names), "\n", sep=" ") 
                      
                    }
-                   cat(sprintf(string, i, lnL, pr, QG.alpha(pars),QG.sig2(pars), pars$k), sprintf("%-8.2f", acceptratios), sep="")
+                   item <- c(i, lik, pr, pars$h2, pars$P, pars$w2, pars$Ne, pars$theta[1], pars$k)
+                   cat(sapply(1:length(item), function(x) sprintf(format[x], item[x])), sprintf("%-8.2f", acceptratios),"\n", sep="")
                  },
                  lik.fn = bayou.lik)
 
@@ -395,17 +397,18 @@ model.OUrepar <- list(moves = list(halflife=".multiplierProposal",Vy=".multiplie
                       fixedpars = c(),
                       rjpars = "theta",
                       shiftpars = c("sb", "loc", "t2"),
-                      monitor.fn = function(i, lik, pr, pars){
-                        names <- c("gen", "lnL", "prior", "alpha", "sig2", "k")
-                        string <- "%-8i%-8.2f%-8.2f%-8.2f%-8.2f%-8i"
+                      monitor.fn = function(i, lik, pr, pars, accept, accept.type, j){
+                        names <- c("gen", "lnL", "prior", "halflife", "Vy","rtheta", "k")
+                        format <- c("%-8i",rep("%-8.2f", 5),"%-8i")
                         acceptratios <- tapply(accept, accept.type, mean)
                         names <- c(names, names(acceptratios))
-                        if(i %% 100*ticker.freq == 0 | i == 1){
-                          cat(sprintf("%-7s", names))
+                        if(j==0){
+                          cat(sprintf("%-7.7s", names), "\n", sep=" ") 
                           
                         }
-                        cat(sprintf(string, i, lnL, pr, OU.repar(pars)$alpha, OU.repar(pars)$sig2, pars$k), sprintf("%-8.2f", acceptratios), sep="")
-                      },
+                        item <- c(i, lik, pr, pars$halflife, pars$Vy, pars$theta[1], pars$k)
+                        cat(sapply(1:length(item), function(x) sprintf(format[x], item[x])), sprintf("%-8.2f", acceptratios),"\n", sep="")
+                        },
                       lik.fn = bayou.lik)
 
 model.bd <- list(moves = list(r=".vectorMultiplier", eps=".vectorMultiplier", k=".splitmergebd"),

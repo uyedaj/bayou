@@ -555,7 +555,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     
     ssfits <- foreach(j=1:length(Bk)) %dopar% steppingstone.loop(j, Bk, ngen, ssfilenames, ref)
     outs <- lapply(1:length(Bk), function(x){out$outname <- paste(outname, "_ss", x, sep=""); out})
-    chains <- lapply(1:length(Bk), function(x) load.bayou(outs[[x]], save.Rdata=FALSE, file=NULL, cleanup=FALSE, ref=TRUE))
+    chains <- lapply(1:length(Bk), function(x) load.bayou(outs[[x]], saveRDS=FALSE, file=NULL, cleanup=FALSE, ref=TRUE))
     postburn <- floor(max(c(1, burnin*length(chains[[1]]$gen)))):length(chains[[1]]$gen)
     lnr <- .computelnr(chains, Bk, postburn)   
     ssres <- list(chains=chains, lnr=lnr$lnr, lnrk=lnr$lnrk, Bk=Bk, fits=ssfits, filenames=ssfilenames, startpars=startpars, refFn=ref)
@@ -563,8 +563,8 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     return(ssres)
   }
   out <- list('run' = run.mcmc, 'steppingstone'=run.steppingstone, 'model'=model, 'model.pars'=model.pars, 'dir.name'=dir.name,'dir'=dir, 'outname'=outname, 'tree'=tree, 'dat'=dat, 'pred'=pred, 'SE'=SE, 'tmpdir'=ifelse(new.dir==TRUE, TRUE, FALSE), 'startpar'=startpar)
-  mcmc.load <- function(save.Rdata=FALSE, file=NULL, cleanup=FALSE){
-    load.bayou(out, save.Rdata, file, cleanup)
+  mcmc.load <- function(saveRDS=FALSE, file=NULL, cleanup=FALSE){
+    load.bayou(out, saveRDS, file, cleanup)
   }
   out$load <- mcmc.load
   class(out) <- c("bayouMCMCFn", "list")
