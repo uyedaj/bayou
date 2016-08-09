@@ -502,32 +502,32 @@ plotRegimes <- function(tree, col=NULL, lwd=1, pal=rainbow, ...){
 }
 
 
-#'  Function for summarizing the state of a model after a shift
-#'  
-#'  @param chain A bayouMCMC chain
-#'  @param mcmc A bayou mcmc object
-#'  @param pp.cutoff The threshold posterior probability for shifts to summarize, if \code{branches}
-#'  specified than this is ignored.
-#'  @param branches The specific branches with shifts to summarize, assuming postordered tree
-#'  
-#'  @details shiftSummaries summarizes the immediate parameter values after a shift on a particular
-#'  branch. Parameters are summarized only for the duration that the particular shift exists. Thus,
-#'  even global parameters will be different for particular shifts. 
-#'  
-#'  @return A list with elements:
-#'  \code{pars}= a bayoupars list giving the location of shifts specified,
-#'  \code{tree}= The tree
-#'  \code{pred}= Predictor variable matrix
-#'  \code{dat} A vector of the data
-#'  \code{SE} A vector of standard errors
-#'  \code{PP} Posterior probabilities of the specified shifts
-#'  \code{model} A list specifying the model used
-#'  \code{variables} The variables summarized
-#'  \code{cladesummaries} A list providing the medians and densities of the distributions
-#'  of regression variables for each shift
-#'  \code{descendents} A list providing the taxa that belong to each regime
-#'  \code{regressions} A matrix providing the regression coefficients for each regime
-#'  @export
+#' A function for summarizing the state of a model after a shift
+#' 
+#' @param chain A bayouMCMC chain
+#' @param mcmc A bayou mcmc object
+#' @param pp.cutoff The threshold posterior probability for shifts to summarize, if 'branches' 
+#' specified than this is ignored.
+#' @param branches The specific branches with shifts to summarize, assuming postordered tree
+#' 
+#' @details shiftSummaries summarizes the immediate parameter values after a shift on a particular
+#' branch. Parameters are summarized only for the duration that the particular shift exists. Thus,
+#' even global parameters will be different for particular shifts. 
+#' 
+#' @return A list with elements: 
+#' \code{pars} = a bayoupars list giving the location of shifts specified;
+#' \code{tree} = The tree; 
+#' \code{pred} = Predictor variable matrix; 
+#' \code{dat} = A vector of the data; 
+#' \code{SE} = A vector of standard errors;
+#' \code{PP} = Posterior probabilities of the specified shifts; 
+#' \code{model} = A list specifying the model used; 
+#' \code{variables} = The variables summarized; 
+#' \code{cladesummaries} = A list providing the medians and densities of the distributions of regression 
+#' variables for each shift; 
+#' \code{descendents} = A list providing the taxa that belong to each regime 
+#' \code{regressions} = A matrix providing the regression coefficients for each regime.
+#' @export
 shiftSummaries <- function(chain, mcmc, pp.cutoff=0.3, branches=NULL, ...){
   if(is.null(attributes(chain)$burnin)){
     L <- Lposterior(chain, tree, burnin=0)
@@ -586,7 +586,7 @@ shiftSummaries <- function(chain, mcmc, pp.cutoff=0.3, branches=NULL, ...){
 #' @param summaries A list produced by the function \code{shiftSummaries}
 #' @param pal A color palette function
 #' @param ask Whether to wait for the user between plotting each shift summary
-#' @param ... Additional parameters passed to par(...)
+#' @param ... Additional parameters passed to the function par(...)
 #' 
 #' @details For each shift, this function plots the taxa on the phylogeny that are (usually) in this regime (each taxon
 #' is assigned to the specified shifts, thus some descendent taxa may not always be in indicated regime if the shift if 

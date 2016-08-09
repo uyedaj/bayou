@@ -2,61 +2,41 @@
 % Please edit documentation in R/bayou-plotting.R
 \name{shiftSummaries}
 \alias{shiftSummaries}
-\title{Function for summarizing the state of a model after a shift
- 
- @param chain A bayouMCMC chain
- @param mcmc A bayou mcmc object
- @param pp.cutoff The threshold posterior probability for shifts to summarize, if \code{branches}
- specified than this is ignored.
- @param branches The specific branches with shifts to summarize, assuming postordered tree
- 
- @details shiftSummaries summarizes the immediate parameter values after a shift on a particular
- branch. Parameters are summarized only for the duration that the particular shift exists. Thus,
- even global parameters will be different for particular shifts. 
- 
- @return A list with elements:
- \code{pars}= a bayoupars list giving the location of shifts specified,
- \code{tree}= The tree
- \code{pred}= Predictor variable matrix
- \code{dat} A vector of the data
- \code{SE} A vector of standard errors
- \code{PP} Posterior probabilities of the specified shifts
- \code{model} A list specifying the model used
- \code{variables} The variables summarized
- \code{cladesummaries} A list providing the medians and densities of the distributions
- of regression variables for each shift
- \code{descendents} A list providing the taxa that belong to each regime
- \code{regressions} A matrix providing the regression coefficients for each regime
- @export}
+\title{A function for summarizing the state of a model after a shift}
 \usage{
 shiftSummaries(chain, mcmc, pp.cutoff = 0.3, branches = NULL, ...)
 }
+\arguments{
+\item{chain}{A bayouMCMC chain}
+
+\item{mcmc}{A bayou mcmc object}
+
+\item{pp.cutoff}{The threshold posterior probability for shifts to summarize, if 'branches' 
+specified than this is ignored.}
+
+\item{branches}{The specific branches with shifts to summarize, assuming postordered tree}
+}
+\value{
+A list with elements: 
+\code{pars} = a bayoupars list giving the location of shifts specified;
+\code{tree} = The tree; 
+\code{pred} = Predictor variable matrix; 
+\code{dat} = A vector of the data; 
+\code{SE} = A vector of standard errors;
+\code{PP} = Posterior probabilities of the specified shifts; 
+\code{model} = A list specifying the model used; 
+\code{variables} = The variables summarized; 
+\code{cladesummaries} = A list providing the medians and densities of the distributions of regression 
+variables for each shift; 
+\code{descendents} = A list providing the taxa that belong to each regime 
+\code{regressions} = A matrix providing the regression coefficients for each regime.
+}
 \description{
-Function for summarizing the state of a model after a shift
- 
- @param chain A bayouMCMC chain
- @param mcmc A bayou mcmc object
- @param pp.cutoff The threshold posterior probability for shifts to summarize, if \code{branches}
- specified than this is ignored.
- @param branches The specific branches with shifts to summarize, assuming postordered tree
- 
- @details shiftSummaries summarizes the immediate parameter values after a shift on a particular
- branch. Parameters are summarized only for the duration that the particular shift exists. Thus,
- even global parameters will be different for particular shifts. 
- 
- @return A list with elements:
- \code{pars}= a bayoupars list giving the location of shifts specified,
- \code{tree}= The tree
- \code{pred}= Predictor variable matrix
- \code{dat} A vector of the data
- \code{SE} A vector of standard errors
- \code{PP} Posterior probabilities of the specified shifts
- \code{model} A list specifying the model used
- \code{variables} The variables summarized
- \code{cladesummaries} A list providing the medians and densities of the distributions
- of regression variables for each shift
- \code{descendents} A list providing the taxa that belong to each regime
- \code{regressions} A matrix providing the regression coefficients for each regime
- @export
+A function for summarizing the state of a model after a shift
+}
+\details{
+shiftSummaries summarizes the immediate parameter values after a shift on a particular
+branch. Parameters are summarized only for the duration that the particular shift exists. Thus,
+even global parameters will be different for particular shifts.
 }
 

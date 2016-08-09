@@ -536,7 +536,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     ssfilenames <- lapply(1:length(Bk), function(y) lapply(filenames, function(x) gsub(paste(outname, ".", sep=""), paste(outname, "_ss", y,".", sep=""), x)))
     ssfiles <- list(); 
     postburn <- floor(max(c(1,burnin*length(chain$gen)))):length(chain$gen)
-    ref <- make.refFn(chain, model=model.pars, priorFn=prior, burnin = burnin, plot=TRUE)
+    ref <- make.refFn(chain, model=model.pars, priorFn=prior, burnin = burnin, plot)
     for(x in 1:length(Bk)){
       ssfiles[[x]] <- list(mapsb=file(ssfilenames[[x]]$mapsb,open="a"), 
                         mapsloc=file(ssfilenames[[x]]$mapsloc,open="a"),
@@ -545,7 +545,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
                         rjpars=file(ssfilenames[[x]]$rjpars, open="a"))
       #ppFn <-make.powerposteriorFn(Bk, priorFn=prior, refFn = ref, model=model.pars)
       startpars <- pull.pars(sample(postburn, 1, replace=FALSE), chain, model=model.pars)
-      olls <- lik.fn(startpars, cache, dat)$loglik
+      olls <- lik.fn(startpars, cache, dat, model=model)$loglik
       prs <- prior(startpars, cache)
       refs <- ref(startpars, cache)
       stores <- list("out"=list(), "rjpars"=list(), "sb"=list(), "loc"=list(), "t2"=list())

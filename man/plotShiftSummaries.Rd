@@ -13,7 +13,7 @@ plotShiftSummaries(summaries, pal = rainbow, ask = FALSE, ...)
 
 \item{ask}{Whether to wait for the user between plotting each shift summary}
 
-\item{...}{Additional parameters passed to par(...)}
+\item{...}{Additional parameters passed to the function par(...)}
 }
 \description{
 A function to plot a list produced by \code{shiftSummaries}
