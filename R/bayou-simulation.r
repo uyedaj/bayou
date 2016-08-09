@@ -72,8 +72,8 @@ priorSim <- function(prior,tree,plot=TRUE,nsim=1, ...){
     }
     for(i in 1:nsim){
       maps <- pars2simmap(simpar[[i]],tree)
-      col <- maps$col
-      plotSimmap(maps$tree,colors=col, ...)
+      #col <- maps$col
+      plotRegimes(maps$tree, ...)
     }
     
   }
