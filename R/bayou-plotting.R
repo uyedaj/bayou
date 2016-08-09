@@ -529,6 +529,13 @@ plotRegimes <- function(tree, col=NULL, lwd=1, pal=rainbow, ...){
 #' \code{regressions} = A matrix providing the regression coefficients for each regime.
 #' @export
 shiftSummaries <- function(chain, mcmc, pp.cutoff=0.3, branches=NULL, ...){
+  cache <- .prepare.ou.univariate(mcmc$tree,mcmc$dat, SE=mcmc$SE, pred=mcmc$pred)
+  tree <- cache$phy
+  dat <- cache$dat
+  pred <- cache$pred
+  SE <- cache$SE
+  model <- mcmc$model.pars
+  
   if(is.null(attributes(chain)$burnin)){
     L <- Lposterior(chain, tree, burnin=0)
   } else {
@@ -543,12 +550,7 @@ shiftSummaries <- function(chain, mcmc, pp.cutoff=0.3, branches=NULL, ...){
   if(length(branches) == 0){
     stop("No shifts found with posterior probability above cutoff")
   }
-  cache <- .prepare.ou.univariate(mcmc$tree,mcmc$dat, SE=mcmc$SE, pred=mcmc$pred)
-  tree <- cache$phy
-  dat <- cache$dat
-  pred <- cache$pred
-  SE <- cache$SE
-  model <- mcmc$model.pars
+
   if(!is.null(model$call)){
     coefs <- paste("beta_", attr(terms(model$call), "term.labels"), sep="")
   } else {
