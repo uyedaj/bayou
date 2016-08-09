@@ -60,6 +60,8 @@ make.refFn <- function(chain, model, priorFn, burnin=0.3, plot=TRUE){
       tmpFits <- tmpFits[sapply(tmpFits, function(x) !(class(x)=="try-error"))]
       aic <- sapply(tmpFits, function(x) x$aic)
       fit <- tmpFits[[which(aic==min(aic,na.rm=TRUE))]]
+      ## Fix for problem with negative binomial distribution
+      if(fit$distname == "nbinom"){fit$estimate <- c(fit$estimate, prob=unname(fit$estimate['size']/(fit$estimate['size']+fit$estimate['mu'])))}
       fitPars <- as.list(fit$estimate)
       fitPars$log <- TRUE
       fitName <- fit$distname
