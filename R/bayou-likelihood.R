@@ -348,7 +348,7 @@ bdSplit.lik <- function(pars, cache, X=NULL, model="bd"){
 #' @description Default bayou models. New models may be specified by providing a set of moves, control weights,
 #' tuning parameters, parameter names, RJ parameters and a likelihood function. 
 
-model.OU <- list(moves = list(alpha=".multiplierProposal",sig2=".multiplierProposal",k=".splitmerge",theta=".adjustTheta",slide=".slide"),
+model.OU <- list(moves = list(alpha=".multiplierProposal",sig2=".multiplierProposal",k=".splitmergePrior",theta=".adjustTheta",slide=".slide"),
                  control.weights = list("alpha"=4,"sig2"=2,"theta"=4,"slide"=2,"k"=10),
                  D = list(alpha=1, sig2= 1, k = 4,theta=2,slide=1),
                  parorder = c("alpha","sig2","k","ntheta","theta"),
@@ -369,7 +369,7 @@ model.OU <- list(moves = list(alpha=".multiplierProposal",sig2=".multiplierPropo
                  },
                  lik.fn = bayou.lik)
 
-model.QG <- list(moves = list(h2=".multiplierProposal",P=".multiplierProposal",w2=".multiplierProposal",Ne=".multiplierProposal",k=".splitmerge",theta=".adjustTheta",slide=".slide"),
+model.QG <- list(moves = list(h2=".multiplierProposal",P=".multiplierProposal",w2=".multiplierProposal",Ne=".multiplierProposal",k=".splitmergePrior",theta=".adjustTheta",slide=".slide"),
                  control.weights = list("h2"=5,"P"=2,"w2"=5,"Ne"=5,"theta"=5,"slide"=3,"k"=20),
                  D = list(h2=1, P=1, w2=1, Ne=1, k = 4, theta=2, slide=1),
                  parorder = c("h2","P","w2","Ne","k","ntheta","theta"),
@@ -390,7 +390,7 @@ model.QG <- list(moves = list(h2=".multiplierProposal",P=".multiplierProposal",w
                  },
                  lik.fn = bayou.lik)
 
-model.OUrepar <- list(moves = list(halflife=".multiplierProposal",Vy=".multiplierProposal",k=".splitmerge",theta=".adjustTheta",slide=".slide"),
+model.OUrepar <- list(moves = list(halflife=".multiplierProposal",Vy=".multiplierProposal",k=".splitmergePrior",theta=".adjustTheta",slide=".slide"),
                       control.weights = list(halflife=5,"Vy"=3,theta=5,slide=3,k=20),
                       D = list(halflife=1, Vy=1, k=4, theta=2, slide=1),
                       parorder = c("halflife","Vy","k","ntheta","theta"),
@@ -428,24 +428,4 @@ model.bd <- list(moves = list(r=".vectorMultiplier", eps=".vectorMultiplier", k=
                     cat(sprintf(string, i, lnL, pr, pars$r, pars$eps, pars$k), sprintf("%-8.2f", acceptratios), sep="")
                  },
                  lik.fn = bdSplit.lik)
-
-model.ffancova <- list(moves = list(alpha=".multiplierProposal", sig2=".multiplierProposal", beta1=".vectorMultiplier", k=".splitmerge", "theta"=".adjustTheta", slide=".slide"),
-                       control.weights = list("alpha"=4,"sig2"=2,"beta1"=4, "theta"=4,"slide"=2,"k"=10),
-                       D = list(alpha=1, sig2= 1, beta1=1, k = 4,theta=2,slide=1),
-                       parorder = c("alpha", "sig2", "beta1", "k", "ntheta", "theta"),
-                       rjpars = "theta",
-                       shiftpars = c("sb", "loc", "t2"),
-                       monitor.fn = function(i, lik, pr, pars, accept, accept.type, j){
-                         names <- c("gen", "lnL", "prior", "alpha", "beta1","sig2", "k")
-                         string <- "%-8i%-8.2f%-8.2f%-8.2f%-8.2f%-8.2f%-8i"
-                         acceptratios <- tapply(accept, accept.type, mean)
-                         names <- c(names, names(acceptratios))
-                         if(j==0){
-                           cat(sprintf("%-7.7s", names), "\n", sep=" ") 
-                           
-                         }
-                         cat(sprintf(string, i, lik, pr, pars$alpha, pars$sig2, pars$beta1, pars$k), sprintf("%-8.2f", acceptratios), "\n", sep="")                     
-                       },
-                       lik.fn = bayou.lik)
-
 

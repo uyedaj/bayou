@@ -458,7 +458,7 @@ summary.bayouMCMC <- function(object, ...){
   statistics <- rbind(cbind(sum.1vars$statistics, "Effective Size" = effectiveSize(summat), "HPD95Lower"=HPDs[1,], "HPD95Upper"=HPDs[2,]))
   if(length(model.pars$rjpars) > 0){
     for(i in 1:length(model.pars$rjpars)){
-      statistics <- rbind(statistics,c(sum.rjpars[[i]]$statistics[1:2],rep(NA,3)))
+      statistics <- rbind(statistics,c(sum.rjpars[[i]]$statistics[1:2],rep(NA,5)))
       rownames(statistics)[nrow(statistics)] <- paste("all", model.pars$rjpars[i],sep=" ")
     }
   }

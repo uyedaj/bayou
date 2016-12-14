@@ -122,18 +122,19 @@ make.prior <- function(tree, dists=list(), param=list(), fixed=list(), plot.prio
   #}
   par.names <- gsub('^[a-zA-Z]',"",names(dists2get))
   
+  rfx <- lapply(gsub('^[a-zA-Z]',"r",dists2get),function(x) try(get(x),silent=TRUE))
+  rprior.param <- prior.param[1:(length(prior.param))]
+  rprior.param <- lapply(rprior.param, function(x) x[-length(x)])
+  if(!is.null(dists2get$dsb) & !is.null(dists2get$dloc)){
+    if(dists2get$dsb=="dsb" & any(rprior.param$dsb$bmax==1)){rprior.param$dsb$bmax[rprior.param$dsb$bmax==1] <- Inf; rprior.param$dsb$prob <- 1}
+  }
+  rfx <- lapply(1:length(rprior.param),function(x) try(.set.defaults(rfx[[x]],defaults=rprior.param[[x]]),silent=TRUE))
+  plot.names<-par.names[sapply(rfx,class)=="function"]
+  rfx <- rfx[sapply(rfx,class)=="function"]
+  names(rfx) <- names(rprior.param)
+  
   if(plot.prior){
     par(mfrow=c(ceiling(length(dists2get)/2),2))
-    rfx <- lapply(gsub('^[a-zA-Z]',"r",dists2get),function(x) try(get(x),silent=TRUE))
-    rprior.param <- prior.param[1:(length(prior.param))]
-    rprior.param <- lapply(rprior.param, function(x) x[-length(x)])
-    if(!is.null(dists2get$dsb) & !is.null(dists2get$dloc)){
-      if(dists2get$dsb=="dsb" & any(rprior.param$dsb$bmax==1)){rprior.param$dsb$bmax[rprior.param$dsb$bmax==1] <- Inf; rprior.param$dsb$prob <- 1}
-    }
-    rfx <- lapply(1:length(rprior.param),function(x) try(.set.defaults(rfx[[x]],defaults=rprior.param[[x]]),silent=TRUE))
-    plot.names<-par.names[sapply(rfx,class)=="function"]
-    rfx <- rfx[sapply(rfx,class)=="function"]
-    names(rfx) <- names(rprior.param)
     nsim <-500000
     for(i in 1:length(rfx)){
       if(names(rfx)[i]=="dsb"){
@@ -190,7 +191,7 @@ make.prior <- function(tree, dists=list(), param=list(), fixed=list(), plot.prio
       prior.param$dsb$prob <- prior.param$dsb$bmax
     }
   }
-  attributes(priorFUN) <- list("model"=model,"parnames"=par.names,"distributions"=dists,"parameters"=prior.param,"fixed"=fixed, "functions"=prior.fx, "splitmergepars"="theta")
+  attributes(priorFUN) <- list("model"=model,"parnames"=par.names,"distributions"=dists, "parameters"=prior.param,"fixed"=fixed, "functions"=prior.fx,"rfunctions"=rfx, "splitmergepars"="theta")
   class(priorFUN) <- c("priorFn","function")
   return(priorFUN)
 }

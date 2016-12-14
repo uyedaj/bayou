@@ -588,6 +588,8 @@ shiftSummaries <- function(chain, mcmc, pp.cutoff=0.3, branches=NULL, ...){
 #' @param summaries A list produced by the function \code{shiftSummaries}
 #' @param pal A color palette function
 #' @param ask Whether to wait for the user between plotting each shift summary
+#' @param single.plot A logical indicating whether to summarize all shifts in a single plot.
+#' @param label.pts A logical indicating whether to label the scatter plot.
 #' @param ... Additional parameters passed to the function par(...)
 #' 
 #' @details For each shift, this function plots the taxa on the phylogeny that are (usually) in this regime (each taxon
@@ -596,7 +598,7 @@ shiftSummaries <- function(chain, mcmc, pp.cutoff=0.3, branches=NULL, ...){
 #' of phenotypic states and the predicted regression line, as well as density plots for the intercept and any regression
 #' coefficients in the model.
 #' @export
-plotShiftSummaries <- function(summaries, pal=rainbow, ask=FALSE,  ...){
+plotShiftSummaries <- function(summaries, pal=rainbow, ask=FALSE, single.plot=FALSE, label.pts=TRUE, ...){
   px <- par()
   ndens <- length(summaries$cladesummaries[[1]]$densities)
   par(mfrow=c(2,max(ndens,2)), mar=c(3,3,5,1), bg="black", ask=FALSE, col.axis="white", col.lab="white", col.main="white", ...)
@@ -622,22 +624,44 @@ plotShiftSummaries <- function(summaries, pal=rainbow, ask=FALSE,  ...){
     xint <- jitter(.tipregime(sumpars, tree))
     xlimits2 <- c(-2, sumpars$ntheta+3)
   }
-  for(i in (1:nrow(regressions))){
-    plotBayoupars(sumpars, tree, col=setNames(c(pal(nrow(regressions))[i], rep("gray80", nrow(regressions)-1)), c(i, (1:nrow(regressions))[-i])), cex=0.2)
-    plot(xint, dat, pch=21, xlim=xlimits2, bg=makeTransparent("gray80", 100), col =makeTransparent("gray80", 10), main=paste("Posterior prob: ", PP[i], sep=""))
-    if(length(descendents[[i]] > 0)){
-      text(xint[descendents[[i]]], dat[descendents[[i]]], labels=names(dat[descendents[[i]]]), col="white", cex=0.4, pos = 2)
-      points(xint[descendents[[i]]], dat[descendents[[i]]], pch=21, bg=makeTransparent(pal(nrow(regressions))[i], 100), col =makeTransparent(pal(nrow(regressions))[i], 10))
-    } else{
-      warnings("No descendents for this shift")
+  if(!single.plot){
+    for(i in (1:nrow(regressions))){
+      plotBayoupars(sumpars, tree, col=setNames(c(pal(nrow(regressions))[i], rep("gray80", nrow(regressions)-1)), c(i, (1:nrow(regressions))[-i])), cex=0.2)
+      plot(xint, dat, pch=21, xlim=xlimits2, bg=makeTransparent("gray80", 100), col =makeTransparent("gray80", 10), main=paste("Posterior prob: ", PP[i], sep=""))
+      if(length(descendents[[i]] > 0)){
+        if(label.pts) text(xint[descendents[[i]]], dat[descendents[[i]]], labels=names(dat[descendents[[i]]]), col="white", cex=0.4, pos = 2)
+        points(xint[descendents[[i]]], dat[descendents[[i]]], pch=21, bg=makeTransparent(pal(nrow(regressions))[i], 100), col =makeTransparent(pal(nrow(regressions))[i], 10))
+      } else{
+        warnings("No descendents for this shift")
+      }
+      abline(a=regressions[i,1], b=regressions[i,2], col=pal(nrow(regressions))[i], lwd=2, lty=2)
+      dens <- summaries$cladesummaries[[i]]$densities
+      gbg <- lapply(1:length(dens), function(y)plot(dens[[y]], col=pal(nrow(regressions))[i], main=names(dens)[y],xlim=c(xlimits[,y])))
+      if(blank.panels >0){lapply(1:blank.panels,function(x) plot.new())}
     }
-    abline(a=regressions[i,1], b=regressions[i,2], col=pal(nrow(regressions))[i], lwd=2, lty=2)
-    dens <- summaries$cladesummaries[[i]]$densities
-    gbg <- lapply(1:length(dens), function(y)plot(dens[[y]], col=pal(nrow(regressions))[i], main=names(dens)[y],xlim=c(xlimits[,y])))
-    if(blank.panels >0){lapply(1:blank.panels,function(x) plot.new())}
+  } else {
+    plotBayoupars(sumpars, tree, col=setNames(pal(sumpars$ntheta), 1:sumpars$ntheta), cex=0.2, tip.col="white")
+    plot(xint, dat, pch=21, xlim=xlimits2, bg=makeTransparent("gray80", 100), col =makeTransparent("gray80", 10), main=paste("Posterior prob: ", PP[i], sep=""))
+    for(i in 1:length(descendents)){
+      if(length(descendents[[i]] > 0)){
+        if(label.pts) text(xint[descendents[[i]]], dat[descendents[[i]]], labels=names(dat[descendents[[i]]]), col="white", cex=0.4, pos = 2)
+        points(xint[descendents[[i]]], dat[descendents[[i]]], pch=21, bg=makeTransparent(pal(nrow(regressions))[i], 100), col =makeTransparent(pal(nrow(regressions))[i], 10))
+        } else{
+          warnings("No descendents for this shift")
+        }
+      abline(a=regressions[i,1], b=regressions[i,2], col=pal(nrow(regressions))[i], lwd=2, lty=2)
+    }
+    varN <- length(summaries$cladesummaries[[1]]$densities)
+    for(j in 1:varN){
+      dens <- lapply(1:length(summaries$cladesummaries), function(x) summaries$cladesummaries[[x]]$densities[[j]])
+      xrange <- quantile((do.call(c, lapply(dens, function(q) q$x))), c(0.01, 0.99))
+      ymax <- max(do.call(c, lapply(dens, function(q) q$y)))
+      plot(xrange, c(0, ymax*1.1), type="n", main=names(summaries$cladesummaries[[1]]$densities)[j])
+      gbg <- lapply(1:length(dens), function(y) lines(dens[[y]], col=pal(nrow(regressions))[y]))
+    }
+    
   }
   px <- px[!(names(px) %in% c("cin", "cra", "cxy", "csi", "din", "page"))]
   suppressWarnings(par(px))
 }
-
 
