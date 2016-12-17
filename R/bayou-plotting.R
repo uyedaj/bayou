@@ -641,7 +641,7 @@ plotShiftSummaries <- function(summaries, pal=rainbow, ask=FALSE, single.plot=FA
     }
   } else {
     plotBayoupars(sumpars, tree, col=setNames(pal(sumpars$ntheta), 1:sumpars$ntheta), cex=0.2, tip.col="white")
-    plot(xint, dat, pch=21, xlim=xlimits2, bg=makeTransparent("gray80", 100), col =makeTransparent("gray80", 10), main=paste("Posterior prob: ", PP[i], sep=""))
+    plot(xint, dat, pch=21, xlim=xlimits2, bg=makeTransparent("gray80", 100), col =makeTransparent("gray80", 10))
     for(i in 1:length(descendents)){
       if(length(descendents[[i]] > 0)){
         if(label.pts) text(xint[descendents[[i]]], dat[descendents[[i]]], labels=names(dat[descendents[[i]]]), col="white", cex=0.4, pos = 2)

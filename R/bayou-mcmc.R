@@ -309,6 +309,37 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     pr1 <- unlist(res[[4]][3], F,F)
     return(list(pars=pars, i=i, oll=oll, pr1=pr1))
   }
+  .lastparSS <- function(files){
+    fL <- min(sapply(files, function(x) countL(summary(x)$description)))
+    if(fL==1){skipL <- 0} else {skipL=fL-1}
+    res <- lapply(1:length(files), function(x) try(read.table(summary(files[[x]])$description, skip=skipL), silent=TRUE))
+    res <- lapply(1:length(files), function(x) if(class(res[[x]])=="try-error"){numeric(0)}else{res[[x]]})
+    pars <- list()
+    parLs <- lapply(startpar, length)[outpars]
+    npars <- length(res[[4]])
+    j=5
+    if(length(outpars) > 0){
+      for(i in 1:length(outpars)){
+        pars[[outpars[i]]] <- unlist(res[[4]][,j:(j+parLs[[i]]-1)],F,F)
+        j <- j+1+parLs[[i]]-1
+      }
+    }
+    if(length(rjpars) > 0){
+      j <- 1
+      for(i in 1:length(rjpars)){
+        pars[[rjpars[i]]] <- unlist((res[[5]][j:(j+pars$ntheta-1)]),F,F)
+        j <- j+pars$ntheta
+      }
+    }
+    pars$sb <- unlist(res[[1]], F, F)
+    pars$loc <- unlist(res[[2]], F, F)
+    pars$t2 <- unlist(res[[3]], F, F)
+    i <- unlist(res[[4]][1], F, F)
+    oll <- unlist(res[[4]][2],F,F)
+    pr1 <- unlist(res[[4]][3], F,F)
+    ref1 <- unlist(res[[4]][4], F,F)
+    return(list(pars=pars, i=i, oll=oll, pr1=pr1, ref1=ref1))
+  }
   
   parorder <- model.pars$parorder
   rjpars <- model.pars$rjpars
@@ -513,7 +544,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
                          mapst2=file(ssfilenames[[k]]$mapst2,open="a"),
                          pars.output=file(ssfilenames[[k]]$pars.output,open="a"),
                          rjpars=file(ssfilenames[[k]]$rjpars, open="a"))
-      startinf <- .lastpar(ssfiles)
+      startinf <- .lastparSS(ssfiles)
       oldpar <- startinf$pars
       i <- startinf$i
       oll <- startinf$oll
@@ -608,11 +639,11 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     postburn <- floor(max(c(1,burnin*length(chain$gen)))):length(chain$gen)
     ref <- make.refFn(chain, model=model.pars, priorFn=prior, burnin = burnin, plot)
     for(x in 1:length(Bk)){
-      ssfiles[[x]] <- list(mapsb=file(ssfilenames[[x]]$mapsb,open="a"), 
-                        mapsloc=file(ssfilenames[[x]]$mapsloc,open="a"),
-                        mapst2=file(ssfilenames[[x]]$mapst2,open="a"),
-                        pars.output=file(ssfilenames[[x]]$pars.output,open="a"),
-                        rjpars=file(ssfilenames[[x]]$rjpars, open="a"))
+      ssfiles[[x]] <- list(mapsb=file(ssfilenames[[x]]$mapsb,open="w"), 
+                        mapsloc=file(ssfilenames[[x]]$mapsloc,open="w"),
+                        mapst2=file(ssfilenames[[x]]$mapst2,open="w"),
+                        pars.output=file(ssfilenames[[x]]$pars.output,open="w"),
+                        rjpars=file(ssfilenames[[x]]$rjpars, open="w"))
       #ppFn <-make.powerposteriorFn(Bk, priorFn=prior, refFn = ref, model=model.pars)
       startpars <- pull.pars(sample(postburn, 1, replace=FALSE), chain, model=model.pars)
       olls <- lik.fn(startpars, cache, dat, model=model)$loglik
@@ -626,7 +657,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     ssfits <- foreach(j=1:length(Bk)) %dopar% steppingstone.loop(j, Bk, ngen, ssfilenames, ref)
     outs <- lapply(1:length(Bk), function(x){out$outname <- paste(outname, "_ss", x, sep=""); out})
     chains <- lapply(1:length(Bk), function(x) load.bayou(outs[[x]], saveRDS=FALSE, file=NULL, cleanup=FALSE, ref=TRUE))
-    postburn <- floor(max(c(1, burnin*length(chains[[1]]$gen)))):length(chains[[1]]$gen)
+    postburn <- floor(max(c(1, burnin*length(chains[[1]]$gen)))):( min(sapply(chains, function(x) length(x$gen))) )
     lnr <- .computelnr(chains, Bk, postburn)   
     ssres <- list(chains=chains, lnr=lnr$lnr, lnrk=lnr$lnrk, Bk=Bk, fits=ssfits, filenames=ssfilenames, startpars=startpars, refFn=ref)
     class(ssres) <- c("ssMCMC", "list")
