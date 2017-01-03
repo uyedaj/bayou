@@ -32,7 +32,16 @@
   rnorm(1, Exp, sqrt(sig2*tt))
 }
 
-
+#' A function to visualize a multi-optimum OU process evolving on a phylogeny
+#' 
+#' @param pars A bayou parameter list to simulate the OU process from
+#' @param tree A phylogenetic tree
+#' @param ptsperunit A number giving the number of points to simulate per unit time
+#' @param pal A color palette function
+#' @param aph The alpha value for transparency of the lines
+#' @param lwd The width of the lines
+#' 
+#' @export
 plotOUtreesim <- function(pars, tree, ptsperunit=100, pal=rainbow, aph=255, lwd=1){
   simmapTree <- pars2simmap(pars, tree)
   maps <- simmapTree$tree$maps
