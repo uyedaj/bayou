@@ -4,7 +4,8 @@
 \alias{plotShiftSummaries}
 \title{A function to plot a list produced by \code{shiftSummaries}}
 \usage{
-plotShiftSummaries(summaries, pal = rainbow, ask = FALSE, ...)
+plotShiftSummaries(summaries, pal = rainbow, ask = FALSE,
+  single.plot = FALSE, label.pts = TRUE, ...)
 }
 \arguments{
 \item{summaries}{A list produced by the function \code{shiftSummaries}}
@@ -12,6 +13,10 @@ plotShiftSummaries(summaries, pal = rainbow, ask = FALSE, ...)
 \item{pal}{A color palette function}
 
 \item{ask}{Whether to wait for the user between plotting each shift summary}
+
+\item{single.plot}{A logical indicating whether to summarize all shifts in a single plot.}
+
+\item{label.pts}{A logical indicating whether to label the scatter plot.}
 
 \item{...}{Additional parameters passed to the function par(...)}
 }

@@ -238,17 +238,12 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
   cache <- .prepare.ou.univariate(tree, dat, SE=SE, pred=pred)
   dat <- cache$dat
   pv <- model.pars$prevalues 
+  parorder <- model.pars$parorder
+  rjpars <- model.pars$rjpars
+  outpars <- parorder[which(!(parorder %in% rjpars | parorder %in% model.pars$shiftpars))]
   
   if(is.null(startpar)){
-    if(any(fixed %in% c("h2", "P", "w2", "Ne", "halflife", "Vy", "beta1"))){
-      stop(paste("Parameters '", paste(fixed[fixed %in% c("h2", "P", "w2", "Ne", "halflife", "Vy", "beta1")], collapse=" "), "' are set to be fixed but no starting values are supplied. 
-                 Please specify starting parameter values",sep=""))
-    }
-    startpar <- priorSim(prior, cache$phy, model, nsim=1, plot=FALSE, exclude.branches=NULL)$pars[[1]]
-    if(length(fixed) > 0){
-      assumed <- sapply(fixed, function(x) switch(x, slide="", sb="sb=numeric(0)", k= "k=0", alpha="alpha=0", sig2="sig2=0", loc="0.5*edge.length"))
-      print(paste("Warning: Fixed parameters '", paste(fixed,collapse=", "), "' not specified, assuming values: ", paste(assumed,collapse=", "),sep="" ))
-    }
+      startpar <- priorSim(prior, cache$phy, model, nsim=1, plot=FALSE, shiftpars=rjpars, exclude.branches=NULL)$pars[[1]]
     } 
   if(length(fixed)==0 & is.null(control.weights)){
     control.weights <- model.pars$control.weights
@@ -280,7 +275,8 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     }
   } 
   .lastpar <- function(files){
-    fL <- min(sapply(files, function(x) countL(summary(x)$description)))
+    fLs <- sapply(files, function(x) countL(summary(x)$description))
+    fL <- min(fLs[fLs > 0])
     if(fL==1){skipL <- 0} else {skipL=fL-1}
     res <- lapply(1:length(files), function(x) try(read.table(summary(files[[x]])$description, skip=skipL), silent=TRUE))
     res <- lapply(1:length(files), function(x) if(class(res[[x]])=="try-error"){numeric(0)}else{res[[x]]})
@@ -310,7 +306,8 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     return(list(pars=pars, i=i, oll=oll, pr1=pr1))
   }
   .lastparSS <- function(files){
-    fL <- min(sapply(files, function(x) countL(summary(x)$description)))
+    fLs <- sapply(files, function(x) countL(summary(x)$description))
+    fL <- min(fLs[fLs > 0])
     if(fL==1){skipL <- 0} else {skipL=fL-1}
     res <- lapply(1:length(files), function(x) try(read.table(summary(files[[x]])$description, skip=skipL), silent=TRUE))
     res <- lapply(1:length(files), function(x) if(class(res[[x]])=="try-error"){numeric(0)}else{res[[x]]})
@@ -341,10 +338,8 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     return(list(pars=pars, i=i, oll=oll, pr1=pr1, ref1=ref1))
   }
   
-  parorder <- model.pars$parorder
-  rjpars <- model.pars$rjpars
-  outpars <- parorder[which(!(parorder %in% rjpars | parorder %in% model.pars$shiftpars))]
   attributes(ct)$splitmergepars <- rjpars
+  
   if(is.null(lik.fn)) lik.fn <- model.pars$lik.fn #.OU.lik
   
   filenames <- list(mapsb=paste(dir, outname,".sb",sep=""), 
@@ -413,7 +408,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     for (i in iseq){
       ct <- .updateControl(ct, oldpar, fixed)
       u <- runif(1)
-      prop <- .proposalFn(u,ct,D,moves,cache,oldpar, prior)
+      prop <- .proposalFn(u,ct,D,moves,cache,oldpar,prior)
       new.pars <- prop$pars
       #new.cache <- prop$prop$cache
       accept.type <- c(accept.type,paste(prop$decision,prop$move,sep="."))

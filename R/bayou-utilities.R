@@ -77,6 +77,7 @@
   cache$edge <- unname(cache$edge)
   o <- match(tree$tip.label, cache$tip.label)
   cache$pred <- cbind(pred[o,])
+  colnames(cache$pred) <- colnames(pred)
   plook <- function(x){mapply(paste,x[2:length(x)],x[1:(length(x)-1)],sep=",")}
   tB <- cache$desc$anc[1:ntips]
   tB <- mapply(c,1:ntips,tB, SIMPLIFY=FALSE)

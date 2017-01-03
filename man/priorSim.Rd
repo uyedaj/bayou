@@ -4,7 +4,7 @@
 \alias{priorSim}
 \title{Simulates parameters from bayou models}
 \usage{
-priorSim(prior, tree, plot = TRUE, nsim = 1, ...)
+priorSim(prior, tree, plot = TRUE, nsim = 1, shiftpars = "theta", ...)
 }
 \arguments{
 \item{prior}{A prior function created by \code{bayou::make.prior}}
@@ -14,6 +14,8 @@ priorSim(prior, tree, plot = TRUE, nsim = 1, ...)
 \item{plot}{A logical indicating whether the simulated parameters should be plotted}
 
 \item{nsim}{The number of parameter sets to be simulated}
+
+\item{shiftpars}{A vector of parameters that split upon a shift, default is "theta"}
 
 \item{...}{Parameters passed on to \code{plotSimmap(...)}}
 }

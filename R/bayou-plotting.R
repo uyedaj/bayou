@@ -50,12 +50,12 @@ makeTransparent <- function(someColor, alpha=100)
 #' 
 #' @export
 
-plotSimmap.mcmc <- function(chain, burnin=NULL, lwd=1, edge.type = c("theta", "none", "regimes", "pp"), 
+plotSimmap.mcmc <- function(chain, burnin=NULL, lwd=1, edge.type = c("regimes", "theta", "none", "pp"), 
                             pal=rainbow, pp.cutoff=0.3, circles=TRUE, circle.cex.max=3, circle.col="red",
                             circle.pch=21, circle.lwd=0.75, circle.alpha=100, pp.labels=FALSE, pp.col=1, 
                             pp.alpha=255, pp.cex=0.75, edge.color = 1, parameter.sample=1000, ...){
   tree <- attributes(chain)$tree
-  edge.type <- match.arg(edge.type, c("theta", "none", "regimes", "pp"))
+  edge.type <- match.arg(edge.type, c("regimes", "theta", "none", "pp"))
   cache <- .prepare.ou.univariate(tree, attributes(chain)$dat)
   tree <- cache$phy
   if(is.null(burnin)) burnin = attributes(chain)$burnin
@@ -100,31 +100,7 @@ plotSimmap.mcmc <- function(chain, burnin=NULL, lwd=1, edge.type = c("theta", "n
     plotRegimes(tr, col=colors, lwd=lwd, pal=pal, ...)
   }
   if(edge.type == "theta"){
-    .ancestorBranches <- function(branch, cache){
-      ancbranches <- which(sapply(cache$bdesc, function(x) branch %in% x))
-      sort(ancbranches, decreasing=FALSE)
-    }
-    .branchRegime <- function(branch, abranches, chain, parameter, seqx, summary=FALSE){
-      ancs <- c(branch, abranches[[branch]])
-      ancshifts <- lapply(1:length(seqx), function(x) chain$t2[[seqx[x]]][which(chain$sb[[seqx[x]]] == ancs[min(which(ancs %in% chain$sb[[seqx[x]]]))])])
-      ancshifts <- sapply(ancshifts, function(x) ifelse(length(x)==0, 1, x))
-      ests <- sapply(1:length(ancshifts), function(x) chain[[parameter]][[seqx[x]]][ancshifts[x]])
-      res <- cbind(ests)
-      if(summary){
-        return(apply(res, 2, median))
-      } else {
-        return(res)
-      }
-    }
-    if(length(postburn) < parameter.sample){
-      warning("Length of post-burnin sample less than the requested parameter sample, using entire post-burnin chain instead")
-      seq1 <- postburn
-    } else {
-      seq1 <- sample(postburn, parameter.sample, replace=FALSE)
-    }
-    abranches <- lapply(1:nrow(tree$edge), .ancestorBranches, cache=cache)
-    allbranches <- suppressWarnings(sapply(1:nrow(tree$edge), function(x) .branchRegime(x, abranches, chain, "theta", seq1, summary=TRUE)))
-    plot(tree, edge.color=.colorRamp(allbranches, pal, 100), ...)
+    plotBranchHeatMap(tree, chain, "theta", burnin=burnin, pal=heat.colors, ...)
   }
   if(edge.type == "pp"){
    plot(tree, edge.color=.colorRamp(L$pp, pal, 100), ...)

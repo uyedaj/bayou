@@ -4,12 +4,12 @@
 \alias{plotSimmap.mcmc}
 \title{Plot a phylogenetic tree with posterior probabilities from a bayouMCMC chain (function adapted from phytools' plotSimmap)}
 \usage{
-plotSimmap.mcmc(chain, burnin = NULL, lwd = 1, edge.type = c("theta",
-  "none", "regimes", "pp"), pal = rainbow, pp.cutoff = 0.3,
-  circles = TRUE, circle.cex.max = 3, circle.col = "red",
-  circle.pch = 21, circle.lwd = 0.75, circle.alpha = 100,
-  pp.labels = FALSE, pp.col = 1, pp.alpha = 255, pp.cex = 0.75,
-  edge.color = 1, parameter.sample = 1000, ...)
+plotSimmap.mcmc(chain, burnin = NULL, lwd = 1, edge.type = c("regimes",
+  "theta", "none", "pp"), pal = rainbow, pp.cutoff = 0.3, circles = TRUE,
+  circle.cex.max = 3, circle.col = "red", circle.pch = 21,
+  circle.lwd = 0.75, circle.alpha = 100, pp.labels = FALSE, pp.col = 1,
+  pp.alpha = 255, pp.cex = 0.75, edge.color = 1,
+  parameter.sample = 1000, ...)
 }
 \arguments{
 \item{chain}{A bayouMCMC chain}

@@ -1,7 +1,7 @@
 #' @export
-getPreValues <- function(cache){
+getPreValues <- function(cache, col){
   V <- vcvPhylo(cache$phy, anc.nodes=FALSE)
-  X <- cache$pred[,3]
+  X <- cache$pred[,col]
   unknown <- is.na(X)
   known <- !unknown
   Vkk <- V[known, known]
@@ -31,7 +31,7 @@ cMVNorm <- function(cache, pars, prevalues=pv, known=FALSE){
 }
 
 ## Proposal function to simulate conditional draws from a multivariate normal distribution
-.imputePredBM <- function(cache, pars, d, move,ct=NULL, prevalues=pv){
+.imputePredBM <- function(cache, pars, d, move,ct=NULL, prevalues=pv, prior=prior){
   #(tree, dat, sig2, plot=TRUE, ...){
   X <- prevalues$X
   Vuk <- pars$pred.sig2*prevalues$Vuk
@@ -349,7 +349,7 @@ plotBranchHeatMap <- function(tree, chain, variable, burnin=0, nn=NULL, pal=heat
   model <- list(moves=moves, control.weights=control.weights, D=D, rjpars=rjpars, parorder=parorder, shiftpars=shiftpars, monitor.fn=monitorFn, call=f, expFn=expFn, lik.fn=likFn)
   if(length(impute)>0){
     missing <- which(is.na(cache$pred[,impute])) #$impute
-    pv <- getPreValues(cache) #$impute
+    pv <- getPreValues(cache, impute) #$impute
     model$moves$missing.pred <- ".imputePredBM"
     model$control.weights$missing.pred <- 1
     model$D$missing.pred <- 1
@@ -365,8 +365,40 @@ plotBranchHeatMap <- function(tree, chain, variable, burnin=0, nn=NULL, pal=heat
   return(list(model=model, startpar=startpar))
 }
 
+#' This function makes a bayou model object that can be used for customized allometric regression models.
+#' 
+#' @param f A formula describing the relationship between the data and one or more predictors (use 'dat' 
+#' for the dependent variable)
+#' @param rjpars A character vector of parameters to split at the mapped shifts on the tree
+#' @param tree A phylogenetic tree
+#' @param dat A named vector of trait data (dependent variable)
+#' @param pred A matrix or data frame with named columns with predictor data represented in the specified
+#' formula
+#' @param prior A prior function made by the 'make.prior' function
+#' @param SE A single value or vector of measurement error estimates
+#' @param impute The name of a single predictor for which missing values will be imputed using BM (see details).
+#' Default is NULL.
+#' @param startpar An optional list of starting parameters for the model. If not provided, the model will simulate
+#' starting values from the prior function.
+#' @param moves An optional list of moves to be passed on to bayou.makeMCMC.
+#' @param control.weights An optional list of control weights to be passed on to bayou.makeMCMC.
+#' @param D A vector of tuning parameters to be passed on to bayou.makeMCMC.
+#' @param shiftpars The names of the parameters defining the map of shifts (for now, always c("sb", "loc", "t2")).
+#' @param model The parameterization of the OU model, either "OU", "OUrepar" or "QG".
+#' 
+#' @details This function generates a list with the '$model', which provides the specifications of the regression
+#' model and '$startpar', which provides starting values to input into bayou.makeMCMC. Note that this model assumes
+#' that predictors immediately affect trait values at a shift. In other words, regardless of the past history of the
+#' predictor, only the current value affects the current expected trait value. This is only reasonable for allometric
+#' models, although it may be appropriate for other models if phylogenetic inertia is very low (short half-lives). 
+#' 
+#' One predictor variable may include missing data (coded as "NA"). The model will assume the maximum-likelihood
+#' best-fit BM model and simulate the missing predictor values throughout the course of the MCMC. These values will
+#' then be used to calculate the likelihood given the parameters for each MCMC step. 
+#' 
 #' @export
-makeBayouModel <- function(f, rjpars, cache, prior, impute=NULL, startpar=NULL, moves=NULL, control.weights=NULL, D=NULL, shiftpars=c("sb", "loc", "t2"), model="OU"){
+makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, impute=NULL, startpar=NULL, moves=NULL, control.weights=NULL, D=NULL, shiftpars=c("sb", "loc", "t2"), model="OU"){
+  cache <- .prepare.ou.univariate(tree, dat, SE=SE, pred=pred)
   vars <- terms(f)
   cache$pred <- as.data.frame(cache$pred)
   dep <-  rownames(attr(vars, "factors"))[attr(vars, "response")]
@@ -493,18 +525,20 @@ makeBayouModel <- function(f, rjpars, cache, prior, impute=NULL, startpar=NULL, 
     
     }
     if(is.null(startpar)){
-      simdists <- rdists[parorder[!(parorder %in% c(rjpars2,shiftpars, "ntheta"))]]
-      if(length(attributes(prior)$fixed)>0){
-        simdists[names(attributes(prior)$fixed)] <- lapply(1:length(attributes(prior)$fixed), function(x) function(n) attributes(prior)$fixed[[x]])
-        fixed.pars <- attributes(prior)$fixed
-        fixed <- TRUE
-      } else {fixed <- FALSE}
-      simdists <- simdists[!is.na(names(simdists))]
-      startpar <- lapply(simdists, function(x) x(1))
-      startpar$ntheta <- startpar$k+1
-      startpar[parorder[(parorder %in% c(rjpars2))]] <- lapply(rdists[parorder[(parorder %in% c(rjpars2))]], function(x) x(startpar$ntheta))
-      startpar <- c(startpar, list(sb=sample(1:length(cache$bdesc), startpar$k, replace=FALSE, prob = sapply(cache$bdesc, length)), loc=rep(0, startpar$k), t2=2:startpar$ntheta))
+      startpar <- priorSim(prior, cache$phy, shiftpars=rjpars2)$pars[[1]]
       startpar <- startpar[c(parorder, shiftpars)]
+      #simdists <- rdists[parorder[!(parorder %in% c(rjpars2,shiftpars, "ntheta"))]]
+      #if(length(attributes(prior)$fixed)>0){
+      #  simdists[names(attributes(prior)$fixed)] <- lapply(1:length(attributes(prior)$fixed), function(x) function(n) attributes(prior)$fixed[[x]])
+      #  fixed.pars <- attributes(prior)$fixed
+      #  fixed <- TRUE
+      #} else {fixed <- FALSE}
+      #simdists <- simdists[!is.na(names(simdists))]
+      #startpar <- lapply(simdists, function(x) x(1))
+      #startpar$ntheta <- startpar$k+1
+      #startpar[parorder[(parorder %in% c(rjpars2))]] <- lapply(rdists[parorder[(parorder %in% c(rjpars2))]], function(x) x(startpar$ntheta))
+      #startpar <- c(startpar, list(sb=sample(1:length(cache$bdesc), startpar$k, replace=FALSE, prob = sapply(cache$bdesc, length)), loc=rep(0, startpar$k), t2=2:startpar$ntheta))
+      #startpar <- startpar[c(parorder, shiftpars)]
     }
   } else {
     rj <- numeric(0)
@@ -538,31 +572,31 @@ makeBayouModel <- function(f, rjpars, cache, prior, impute=NULL, startpar=NULL, 
     parorder <- parorder[!duplicated(parorder) & !(parorder %in% shiftpars)]
     }
     if(is.null(startpar)){
-      simdists <- rdists[parorder[!(parorder %in% c(rjpars2,shiftpars, "ntheta"))]]
-      if(length(attributes(prior)$fixed)>0){
-        simdists[names(attributes(prior)$fixed)] <- lapply(1:length(attributes(prior)$fixed), function(x) function(n) attributes(prior)$fixed[[x]])
-        fixed.pars <- attributes(prior)$fixed
-      } 
-      simdists <- simdists[!is.na(names(simdists))]
-      startpar <- lapply(simdists, function(x) x(1))
-      if(!("k" %in% fixed)){
-        startpar$k <- 0
-        startpar$ntheta <- startpar$k+1
-        if(startpar$k==0) startpar$t2 <- numeric(0) else startpar$t2 <- 2:(startpar$ntheta) 
-      } else {
-        startpar$ntheta <- startpar$k+1
-        if(startpar$k==0) startpar$t2 <- numeric(0) else startpar$t2 <- 2:(startpar$ntheta) 
-      }
+      startpar <- priorSim(prior, cache$phy, shiftpars = rjpars2)$pars[[1]]
       startpar <- startpar[c(parorder, shiftpars)]
-      #startpar[parorder[(parorder %in% c(rjpars2))]] <- lapply(rdists[parorder[(parorder %in% c(rjpars2))]], function(x) x(startpar$ntheta))
-      #startpar <- c(startpar, list(sb=numeric(0), loc=numeric(0), t2=numeric(0)))
+      #simdists <- rdists[parorder[!(parorder %in% c(rjpars2,shiftpars, "ntheta"))]]
+      #if(length(attributes(prior)$fixed)>0){
+      #  simdists[names(attributes(prior)$fixed)] <- lapply(1:length(attributes(prior)$fixed), function(x) function(n) attributes(prior)$fixed[[x]])
+      #  fixed.pars <- attributes(prior)$fixed
+      #} 
+      #simdists <- simdists[!is.na(names(simdists))]
+      #startpar <- lapply(simdists, function(x) x(1))
+      #if(!("k" %in% fixed)){
+      #  startpar$k <- 0
+      #  startpar$ntheta <- startpar$k+1
+      #  if(startpar$k==0) startpar$t2 <- numeric(0) else startpar$t2 <- 2:(startpar$ntheta) 
+      #} else {
+      #  startpar$ntheta <- startpar$k+1
+      #  if(startpar$k==0) startpar$t2 <- numeric(0) else startpar$t2 <- 2:(startpar$ntheta) 
+      #}
+      #startpar <- startpar[c(parorder, shiftpars)]
     }
   }
   rjpars[!(rjpars %in% "theta")] <- paste("beta",rjpars[!(rjpars %in% "theta")], sep="_")
   model <- list(moves=moves, control.weights=control.weights, D=D, rjpars=rjpars, parorder=parorder, shiftpars=shiftpars, monitor.fn=monitorFn, call=f, expFn=expFn, lik.fn=likFn)
   if(length(impute)>0){
     missing <- which(is.na(cache$pred[,impute])) #$impute
-    pv <- getPreValues(cache) #$impute
+    pv <- getPreValues(cache, impute) #$impute
     model$moves$missing.pred <- ".imputePredBM"
     model$control.weights$missing.pred <- 1
     model$D$missing.pred <- 1
@@ -570,6 +604,7 @@ makeBayouModel <- function(f, rjpars, cache, prior, impute=NULL, startpar=NULL, 
     bp <- which(names(startpar)=="pred.root")
     model$parorder <- c(parorder[1:bp], "missing.pred", if(length(parorder)>bp)parorder[(bp+1):length(parorder)] else NULL)
     startpar <- startpar[c(parorder, names(startpar)[!names(startpar) %in% parorder])]
+    model$prevalues <- pv
   }
   
   #try(prior(startpar))
