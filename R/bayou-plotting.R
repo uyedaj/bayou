@@ -594,7 +594,7 @@ plotShiftSummaries <- function(summaries, pal=rainbow, ask=FALSE, single.plot=FA
   xlimits[1,] <- xlimits[1,]-0.1*apply(xlimits, 2, diff)
   xlimits[2,] <- xlimits[2,]+0.1*apply(xlimits, 2, diff)
   if(ndens > 1){
-    xint <- setNames(summaries$pred[[1]], names(dat))
+    xint <- setNames(data.frame(summaries$pred)[[1]], names(dat))
     xlimits2 <- range(xint)
   } else {
     xint <- jitter(.tipregime(sumpars, tree))
