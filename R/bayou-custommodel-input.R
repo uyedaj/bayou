@@ -84,7 +84,7 @@ make.monitorFn <- function(model, noMonitor=c("missing.pred", "ntheta"), integer
 
 #' @export
 getTipMap <- function(pars, cache){
-  map <- bayou:::.pars2map(pars,cache)
+  map <- .pars2map(pars,cache)
   tipreg <- rev(map$theta)
   ntipreg <- rev(map$branch)
   #ntipreg <- names(map$theta)
@@ -146,223 +146,10 @@ plotBranchHeatMap <- function(tree, chain, variable, burnin=0, nn=NULL, pal=heat
   ests <- sapply(1:length(ancshifts), function(x) chain[[parameter]][[seqx[x]]][ancshifts[x]])
   res <- cbind(ests)
   if(summary){
-    return(apply(res, 2, median))
+    return(apply(res, 2, stats::median))
   } else {
     return(res)
   }
-}
-
-#' deprecated version of makeBayouModel
-.makeBayouModel_deprecated <- function(f, rjpars, cache, prior, impute=NULL, startpar=NULL, moves=NULL, control.weights=NULL, D=NULL, shiftpars=c("sb", "loc", "t2"), model="OU"){
-  vars <- terms(f)
-  cache$pred <- as.data.frame(cache$pred)
-  dep <-  rownames(attr(vars, "factors"))[attr(vars, "response")]
-  mf <- cbind(cache$dat, cache$pred)
-  colnames(mf)[1] <- dep
-  MF <- model.frame(f, data=mf, na.action=na.pass)
-  MM <- model.matrix(f, MF)
-  colnames(MM) <- gsub(":", "x", colnames(MM))
-  parnames <- paste("beta", colnames(MM)[-1], sep="_")
-  if(length(rjpars) > 0){
-    rjpars2 <- c(rjpars, paste("beta", rjpars, sep="_"))
-    rj <- which(colnames(MM) %in% rjpars2)-1
-    expFn <- function(pars, cache){
-      betaID <- getTipMap(pars, cache)    
-      if(length(impute)>0){
-        MF[is.na(MF[,impute]),impute] <- pars$missing.pred #$impute
-        MM <- model.matrix(f, MF)
-      }
-      parframe <- lapply(pars[parnames], function(x) return(x))
-      parframe[rj] <- lapply(parframe[rj], function(x) x[betaID])
-      ExpV <- apply(sapply(1:length(parframe), function(x) parframe[[x]]*MM[,x+1]), 1, sum)
-      return(ExpV)
-    }
-  } else {
-    rjpars2 <- numeric(0)
-    expFn <- function(pars, cache){
-      #betaID <- getTipMap(pars, cache)
-      if(length(impute)>0){
-        MF[is.na(MF[,impute]),impute] <- pars$missing.pred #$impute
-        MM <- model.matrix(f, MF)
-      }
-      parframe <- lapply(pars[parnames], function(x) return(x))
-      #parframe[rjpars] <- lapply(parframe[rjpars], function(x) x[betaID])
-      ExpV <- apply(sapply(1:length(parframe), function(x) parframe[[x]]*MM[,x+1]), 1, sum)
-      return(ExpV)
-    }
-  }
-  varnames <- switch(model, "OU"=c("alpha","sig2"), "OUrepar"=c("halflife", "Vy"), "QG"=c("h2", "P", "Ne", "w2"))
-  if(model=="OU"){
-    varTransform <- function(pars) return(pars)
-  } 
-  if(model=="OUrepar"){
-    varTransform <- function(pars){
-      repar <- OU.repar(pars)
-      pars$alpha <- repar$alpha
-      pars$sig2 <- repar$sig2
-      return(pars)
-    }
-  }
-  if(model=="QG"){
-    varTransform <- function(pars){
-      pars$alpha <- QG.alpha(pars)
-      pars$sig2 <- QG.sig2(pars)
-      return(pars)
-    }
-  }
-  likFn <- function(pars, cache, X, model="Custom"){
-    n <- cache$n
-    X <- cache$dat
-    pred <- cache$pred
-    ## Permit alternative OU parameterizations
-    pars <- varTransform(pars)
-    ## Specify the model here
-    X = X - expFn(pars, cache)
-    cache$dat <- X
-    ### The part below mostly does not change
-    X.c <- bayou:::C_weightmatrix(cache, pars)$resid
-    transf.phy <- bayou:::C_transf_branch_lengths(cache, 1, X.c, pars$alpha)
-    transf.phy$edge.length[cache$externalEdge] <- transf.phy$edge[cache$externalEdge] + cache$SE[cache$phy$edge[cache$externalEdge, 2]]^2*(2*pars$alpha)/pars$sig2
-    comp <- bayou:::C_threepoint(list(n=n, N=cache$N, anc=cache$phy$edge[, 1], des=cache$phy$edge[, 2], diagMatrix=transf.phy$diagMatrix, P=X.c, root=transf.phy$root.edge, len=transf.phy$edge.length))
-    if(pars$alpha==0){
-      inv.yVy <- comp$PP
-      detV <- comp$logd
-    } else {
-      inv.yVy <- comp$PP*(2*pars$alpha)/(pars$sig2)
-      detV <- comp$logd+n*log(pars$sig2/(2*pars$alpha))
-    }
-    llh <- -0.5*(n*log(2*pi)+detV+inv.yVy)
-    return(list(loglik=llh, theta=pars$theta,resid=X.c, comp=comp, transf.phy=transf.phy))
-  }
-  monitorFn <- function(i, lik, pr, pars, accept, accept.type, j){
-    names <- c("gen", "lnL", "prior", varnames, parnames, "rtheta", "k")
-    format <- c("%-8i",rep("%-8.2f",4), rep("%-8.2f", length(parnames)), "%-8.2f","%-8i")
-    acceptratios <- tapply(accept, accept.type, mean)
-    names <- c(names, names(acceptratios))
-    if(j==0){
-      cat(sprintf("%-7.7s", names), "\n", sep=" ")                           
-    }
-    item <- c(i, lik, pr, pars[[varnames[1]]], pars[[varnames[2]]], sapply(pars[parnames], function(x) x[1]), pars$theta[1], pars$k)
-    cat(sapply(1:length(item), function(x) sprintf(format[x], item[x])), sprintf("%-8.2f", acceptratios),"\n", sep="")
-  }
-  rdists <- getSimDists(prior)
-  ## Set default moves if not specified. 
-  if(length(rjpars) > 0){
-    if(is.null(moves)){
-      moves =  c(switch(model, "OU" = list(alpha=".multiplierProposal", sig2=".multiplierProposal"), 
-                        "OUrepar" = list(halflife=".jointHalflifeVyProposal", Vy=".jointHalflifeVyProposal")), 
-                 as.list(setNames(rep(".vectorSlidingWindowSplit", length(parnames)), parnames)),
-                 c(theta=".vectorSlidingWindowSplit", k=".splitmergebd", slide=".slide2"))
-    } 
-    if(is.null(control.weights)){
-      control.weights <- setNames(rep(1, length(parnames)+5), c(varnames, parnames, "k", "theta", "slide"))
-      control.weights[c(varnames[1], parnames)] <- 2
-      control.weights[c("theta", parnames[rj])] <- 10
-      control.weights["k"] <- 5
-      control.weights <- as.list(control.weights)
-    }
-    
-    if(is.null(D)){
-      D <- lapply(rdists[!(names(rdists) %in% shiftpars)], function(x) sd(x(1000))/50)
-      D$k <- rep(1, length(rjpars))
-      D$slide <- 1
-    }
-    {
-    parorder <- c(varnames, parnames,"theta", "k","ntheta")
-    rjord <- which(parorder %in% rjpars2)
-    fixed <- names(attributes(prior)$fixed)
-    if(length(rjord > 0)){
-      parorder <- c(parorder[-rjord], fixed , parorder[rjord])
-    } else {
-      parorder <- c(parorder, fixed)
-    }
-    parorder <- parorder[!duplicated(parorder) & !(parorder %in% shiftpars)]
-    
-    }
-    if(is.null(startpar)){
-      simdists <- rdists[parorder[!(parorder %in% c(rjpars2,shiftpars, "ntheta"))]]
-      if(length(attributes(prior)$fixed)>0){
-        simdists[names(attributes(prior)$fixed)] <- lapply(1:length(attributes(prior)$fixed), function(x) function(n) attributes(prior)$fixed[[x]])
-        fixed.pars <- attributes(prior)$fixed
-        fixed <- TRUE
-      } else {fixed <- FALSE}
-      simdists <- simdists[!is.na(names(simdists))]
-      startpar <- lapply(simdists, function(x) x(1))
-      startpar$ntheta <- startpar$k+1
-      startpar[parorder[(parorder %in% c(rjpars2))]] <- lapply(rdists[parorder[(parorder %in% c(rjpars2))]], function(x) x(startpar$ntheta))
-      startpar <- c(startpar, list(sb=sample(1:length(cache$bdesc), startpar$k, replace=FALSE, prob = sapply(cache$bdesc, length)), loc=rep(0, startpar$k), t2=2:startpar$ntheta))
-      startpar <- startpar[c(parorder, shiftpars)]
-    }
-  } else {
-    rj <- numeric(0)
-    if(is.null(moves)){
-      moves =  c(switch(model, "OU" = list(alpha=".multiplierProposal", sig2=".multiplierProposal"), 
-                               "OUrepar" = list(halflife=".jointHalflifeVyProposal", Vy=".jointHalflifeVyProposal")), 
-                 as.list(setNames(rep(".vectorSlidingWindowSplit", length(parnames)), parnames)),
-                 c(theta=".vectorSlidingWindowSplit"))
-    }
-    if(is.null(control.weights)){
-      control.weights <- setNames(rep(1, length(parnames)+5), c(varnames, parnames, "k", "theta", "slide"))
-      control.weights[c(varnames[1], parnames)] <- 2
-      control.weights[c("theta", parnames[rj])] <- 6
-      control.weights[c("k","slide")] <- 0
-      control.weights <- as.list(control.weights)
-    }
-    if(is.null(D)){
-      D <- lapply(rdists[!(names(rdists) %in% shiftpars)], function(x) sd(x(1000))/50)
-      D$k <- 1
-      D$slide <- 1
-    }
-    {
-    parorder <- c(varnames, parnames,"theta", "k","ntheta")
-    rjord <- which(parorder %in% rjpars2)
-    fixed <- names(attributes(prior)$fixed)
-    if(length(rjord > 0)){
-      parorder <- c(parorder[-rjord], fixed , parorder[rjord])
-    } else {
-      parorder <- c(parorder, fixed)
-    }
-    parorder <- parorder[!duplicated(parorder) & !(parorder %in% shiftpars)]
-    }
-    if(is.null(startpar)){
-      simdists <- rdists[parorder[!(parorder %in% c(rjpars2,shiftpars, "ntheta"))]]
-      if(length(attributes(prior)$fixed)>0){
-        simdists[names(attributes(prior)$fixed)] <- lapply(1:length(attributes(prior)$fixed), function(x) function(n) attributes(prior)$fixed[[x]])
-        fixed.pars <- attributes(prior)$fixed
-      } 
-      simdists <- simdists[!is.na(names(simdists))]
-      startpar <- lapply(simdists, function(x) x(1))
-      if(!("k" %in% fixed)){
-        startpar$k <- 0
-        startpar$ntheta <- startpar$k+1
-        if(startpar$k==0) startpar$t2 <- numeric(0) else startpar$t2 <- 2:(startpar$ntheta) 
-      } else {
-        startpar$ntheta <- startpar$k+1
-        if(startpar$k==0) startpar$t2 <- numeric(0) else startpar$t2 <- 2:(startpar$ntheta) 
-      }
-      startpar <- startpar[c(parorder, shiftpars)]
-      #startpar[parorder[(parorder %in% c(rjpars2))]] <- lapply(rdists[parorder[(parorder %in% c(rjpars2))]], function(x) x(startpar$ntheta))
-      #startpar <- c(startpar, list(sb=numeric(0), loc=numeric(0), t2=numeric(0)))
-    }
-  }
-  rjpars[!(rjpars %in% "theta")] <- paste("beta",rjpars[!(rjpars %in% "theta")], sep="_")
-  model <- list(moves=moves, control.weights=control.weights, D=D, rjpars=rjpars, parorder=parorder, shiftpars=shiftpars, monitor.fn=monitorFn, call=f, expFn=expFn, lik.fn=likFn)
-  if(length(impute)>0){
-    missing <- which(is.na(cache$pred[,impute])) #$impute
-    pv <- getPreValues(cache, impute) #$impute
-    model$moves$missing.pred <- ".imputePredBM"
-    model$control.weights$missing.pred <- 1
-    model$D$missing.pred <- 1
-    startpar <- .imputePredBM(cache, startpar, d=1, NULL, ct=NULL, prevalues=pv)$pars#$impute 
-    bp <- which(names(startpar)=="pred.root")
-    model$parorder <- c(parorder[1:bp], "missing.pred", if(length(parorder)>bp)parorder[(bp+1):length(parorder)] else NULL)
-    startpar <- startpar[c(parorder, names(startpar)[!names(startpar) %in% parorder])]
-    model$prevalues <- pv
-  }
-
-  #try(prior(startpar))
-  #try(likFn(startpar, cache, cache$dat))
-  return(list(model=model, startpar=startpar))
 }
 
 #' This function makes a bayou model object that can be used for customized allometric regression models.
@@ -465,10 +252,10 @@ makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, impute=NULL,
     X = X - expFn(pars, cache)
     cache$dat <- X
     ### The part below mostly does not change
-    X.c <- bayou:::C_weightmatrix(cache, pars)$resid
-    transf.phy <- bayou:::C_transf_branch_lengths(cache, 1, X.c, pars$alpha)
+    X.c <- C_weightmatrix(cache, pars)$resid
+    transf.phy <- C_transf_branch_lengths(cache, 1, X.c, pars$alpha)
     transf.phy$edge.length[cache$externalEdge] <- transf.phy$edge[cache$externalEdge] + cache$SE[cache$phy$edge[cache$externalEdge, 2]]^2*(2*pars$alpha)/pars$sig2
-    comp <- bayou:::C_threepoint(list(n=n, N=cache$N, anc=cache$phy$edge[, 1], des=cache$phy$edge[, 2], diagMatrix=transf.phy$diagMatrix, P=X.c, root=transf.phy$root.edge, len=transf.phy$edge.length))
+    comp <- C_threepoint(list(n=n, N=cache$N, anc=cache$phy$edge[, 1], des=cache$phy$edge[, 2], diagMatrix=transf.phy$diagMatrix, P=X.c, root=transf.phy$root.edge, len=transf.phy$edge.length))
     if(pars$alpha==0){
       inv.yVy <- comp$PP
       detV <- comp$logd
@@ -623,7 +410,7 @@ getSimDists <- function(prior){
   rdists <- lapply(dists,function(x) gsub('^[a-zA-Z]',"r",x))
   prior.params <- lapply(prior.params,function(x) x[-which(names(x)=="log")])
   rdists.fx <- lapply(rdists,get)
-  rdists.fx <- lapply(1:length(rdists.fx),function(x) bayou:::.set.defaults(rdists.fx[[x]],defaults=prior.params[[x]]))
+  rdists.fx <- lapply(1:length(rdists.fx),function(x) .set.defaults(rdists.fx[[x]],defaults=prior.params[[x]]))
   names(rdists.fx) <- gsub('^[a-zA-Z]',"",names(rdists))
   return(rdists.fx)
 }

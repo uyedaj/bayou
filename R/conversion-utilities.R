@@ -30,39 +30,43 @@ pars2simmap <- function(pars,tree){
   nbranch <- length(tree$edge.length)
   maps <- lapply(tree$edge.length,function(x){y <- x; names(y) <- 1; y})
   dup <- which(duplicated(sb))
-  if(length(dup)>0){
-    maps[sb[-dup]] <- lapply(1:length(sb[-dup]),.addshift2map,maps=maps,sb=sb[-dup],loc=loc[-dup],t2=t2[-dup])
-  } else {
-    maps[sb] <- lapply(1:length(sb),.addshift2map,maps=maps,sb=sb,loc=loc,t2=t2)
-  }
-  for(i in dup){
-    maps[[sb[i]]] <-.addshift2map(i,maps=maps,sb=sb,loc=loc,t2=t2)
-  }
-  nopt <- rep(1,nbranch)
-  for(i in nbranch:1){
-    if(i %in% sb){
-      opt <- as.integer(names(maps[[i]])[length(maps[[i]])])
-      nopt[tree$edge[i,2]] <- opt
-      names(maps[[i]])[1] <- nopt[tree$edge[i,1]]
+  if(pars$k > 0){
+    if(length(dup)>0){
+      maps[sb[-dup]] <- lapply(1:length(sb[-dup]),.addshift2map,maps=maps,sb=sb[-dup],loc=loc[-dup],t2=t2[-dup])
     } else {
-      names(maps[[i]])[1] <- nopt[tree$edge[i,1]] 
-      nopt[tree$edge[i,2]] <- nopt[tree$edge[i,1]]
+      maps[sb] <- lapply(1:length(sb),.addshift2map,maps=maps,sb=sb,loc=loc,t2=t2)
     }
-  }
-  shiftdown <- nopt[tree$edge[,1]]
-  new.maps <- lapply(1:nbranch,function(x){names(maps[[x]])[1] <- shiftdown[x]; maps[[x]]})
-  new.maps <- maps
-  for(j in 1:nbranch){
-    names(new.maps[[j]])[1] <-shiftdown[j]
-  }
-  anc.theta <- unlist(lapply(new.maps[sb],function(x) as.integer(names(x)[length(x)-1])),F,F)
-  o <- rev(order(sb,loc*-1))
-  shifted.maps <- new.maps[sb[o]]
-  t1 <- rep(NA,length(t2))
-  for(i in 1:length(t2)){
-    nm <- as.integer(names(maps[[sb[o][i]]]))
-    t1[nm[2:length(nm)]-1] <- nm[1:(length(nm)-1)]
-    Th[t2[o[i]]] <- Th[t1[o[i]]]
+    for(i in dup){
+      maps[[sb[i]]] <-.addshift2map(i,maps=maps,sb=sb,loc=loc,t2=t2)
+    }
+    nopt <- rep(1,nbranch)
+    for(i in nbranch:1){
+      if(i %in% sb){
+        opt <- as.integer(names(maps[[i]])[length(maps[[i]])])
+        nopt[tree$edge[i,2]] <- opt
+        names(maps[[i]])[1] <- nopt[tree$edge[i,1]]
+      } else {
+        names(maps[[i]])[1] <- nopt[tree$edge[i,1]] 
+        nopt[tree$edge[i,2]] <- nopt[tree$edge[i,1]]
+      }
+    }
+    shiftdown <- nopt[tree$edge[,1]]
+    new.maps <- lapply(1:nbranch,function(x){names(maps[[x]])[1] <- shiftdown[x]; maps[[x]]})
+    new.maps <- maps
+    for(j in 1:nbranch){
+      names(new.maps[[j]])[1] <-shiftdown[j]
+    }
+    anc.theta <- unlist(lapply(new.maps[sb],function(x) as.integer(names(x)[length(x)-1])),F,F)
+    o <- rev(order(sb,loc*-1))
+    shifted.maps <- new.maps[sb[o]]
+    t1 <- rep(NA,length(t2))
+    for(i in 1:length(t2)){
+      nm <- as.integer(names(maps[[sb[o][i]]]))
+      t1[nm[2:length(nm)]-1] <- nm[1:(length(nm)-1)]
+      Th[t2[o[i]]] <- Th[t1[o[i]]]
+    }
+  } else {
+    new.maps <- maps
   }
   new.tree <- tree
   new.tree$maps <- new.maps

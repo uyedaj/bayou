@@ -55,8 +55,8 @@ make.refFn <- function(chain, model, priorFn, burnin=0.3, plot=TRUE){
     xx <- unlist(chain[[parname]][postburn])
     fitdists <- switch(dist.types[i], "ddist"=discdists, "pcdist"=poscontdists, "bdist"=bounddists, "cdist"=contdists)
     {
-      tmpFits <- lapply(fitdists, function(x) suppressWarnings(try(fitdist(xx, x), silent=TRUE)))
-      tmpFits[sapply(tmpFits, function(x) (class(x)=="try-error"))] <- lapply(which(sapply(tmpFits, function(x) (class(x)=="try-error"))), function(j) suppressWarnings(try(fitdist(xx, fitdists[j], method="mme"), silent=TRUE)))
+      tmpFits <- lapply(fitdists, function(x) suppressWarnings(try(fitdistrplus::fitdist(xx, x), silent=TRUE)))
+      tmpFits[sapply(tmpFits, function(x) (class(x)=="try-error"))] <- lapply(which(sapply(tmpFits, function(x) (class(x)=="try-error"))), function(j) suppressWarnings(try(fitdistrplus::fitdist(xx, fitdists[j], method="mme"), silent=TRUE)))
       tmpFits <- tmpFits[sapply(tmpFits, function(x) !(class(x)=="try-error"))]
       aic <- sapply(tmpFits, function(x) x$aic)
       fit <- tmpFits[[which(aic==min(aic,na.rm=TRUE))]]
@@ -240,7 +240,7 @@ powerPosteriorFn <- function(k, Bk, lik, prior, ref){
   accept <- NULL
   if(!is.null(plot.freq)){
     tr <- .toSimmap(.pars2map(oldpar, cache),cache)
-    tcols <- makeTransparent(rainbow(oldpar$ntheta),alpha=100)
+    tcols <- makeTransparent(grDevices::rainbow(oldpar$ntheta),alpha=100)
     names(tcols)<- 1:oldpar$ntheta
     phenogram(tr,dat,colors=tcols,ftype="off")
     plot.dim <- list(par('usr')[1:2],par('usr')[3:4])
@@ -281,7 +281,7 @@ powerPosteriorFn <- function(k, Bk, lik, prior, ref){
     if(!is.null(plot.freq)){
       if(i %% plot.freq==0){
         tr <- .toSimmap(.pars2map(oldpar, cache),cache)
-        tcols <- makeTransparent(rainbow(oldpar$ntheta),alpha=100)
+        tcols <- makeTransparent(grDevices::rainbow(oldpar$ntheta),alpha=100)
         names(tcols)<- 1:oldpar$ntheta
         plot(plot.dim[[1]],plot.dim[[2]],type="n",xlab="time",ylab="phenotype")
         mtext(paste("gens = ",i," lnL = ",round(oll,2)),3)
@@ -349,7 +349,7 @@ powerPosteriorFn <- function(k, Bk, lik, prior, ref){
 steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burnin=0.3, ngen=10000, powerposteriorFn=NULL, parallel=FALSE, ...){
     model <- attributes(prior)$model
     if(parallel){
-      require(foreach)
+      requireNamespace(foreach)
       #require(doMC)
       #registerDoMC(cores=cores)
     }
@@ -361,7 +361,7 @@ steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burn
     cat("Running mcmc chains...\n")
     if(parallel==TRUE){
       k <- NULL; i <- NULL
-      ssfits <- foreach(k = 1:length(Bk)) %dopar% {
+      ssfits <- foreach::foreach(k = 1:length(Bk)) %dopar% {
         .steppingstone.mcmc(k=k, Bk=Bk, tree=tree, dat=dat, SE=SE, prior=prior, powerposteriorFn=ppost, startpar=startpar, plot.freq=NULL, ngen=ngen,  ...)
       }
     } else {
@@ -372,7 +372,7 @@ steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burn
     }
   cat("Loading mcmc chains...\n")
   if(parallel){
-    Kchains <- foreach(i = 1:length(Bk)) %dopar% {
+    Kchains <- foreach::foreach(i = 1:length(Bk)) %dopar% {
       load.bayou(ssfits[[i]], save.Rdata=FALSE, cleanup=FALSE)
     }
   } else {

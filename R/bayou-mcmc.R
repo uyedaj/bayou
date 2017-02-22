@@ -627,8 +627,6 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     gbg <- lapply(files, close)
   }
   run.steppingstone <- function(ngen, chain, Bk, burnin=0.3, plot=TRUE){
-    require(foreach)
-    require(fitdistrplus)
     ssfilenames <- lapply(1:length(Bk), function(y) lapply(filenames, function(x) gsub(paste(outname, ".", sep=""), paste(outname, "_ss", y,".", sep=""), x)))
     ssfiles <- list(); 
     postburn <- floor(max(c(1,burnin*length(chain$gen)))):length(chain$gen)
@@ -649,7 +647,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
       gbg <- lapply(ssfiles[[x]], close) #lapply(1:length(Bk), function(x) lapply(ssfiles[[x]], close))
     }
     
-    ssfits <- foreach(j=1:length(Bk), .export = c("steppingstone.loop")) %dopar% steppingstone.loop(j, Bk, ngen, ssfilenames, ref)
+    ssfits <- foreach::foreach(j=1:length(Bk), .export = c("steppingstone.loop")) %dopar% steppingstone.loop(j, Bk, ngen, ssfilenames, ref)
     outs <- lapply(1:length(Bk), function(x){out$outname <- paste(outname, "_ss", x, sep=""); out})
     chains <- lapply(1:length(Bk), function(x) load.bayou(outs[[x]], saveRDS=FALSE, file=NULL, cleanup=FALSE, ref=TRUE))
     postburn <- floor(max(c(1, burnin*length(chains[[1]]$gen)))):( min(sapply(chains, function(x) length(x$gen))) )

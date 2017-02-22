@@ -285,7 +285,7 @@ plotBayoupars <- function(pars, tree,...){
   if(is.null(start)){
     start = ExpV[(length(dat)+1):(length(phy$edge.length)+1)]
   } 
-  result <- optim(start, lik.fn, method="L-BFGS-B")
+  result <- stats::optim(start, lik.fn, method="L-BFGS-B")
   x <- c(dat, result$par)
   names(x)[(ntips+1):length(x)] <- (ntips+1):length(x)
   return(x)

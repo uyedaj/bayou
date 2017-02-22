@@ -135,15 +135,15 @@ make.prior <- function(tree, dists=list(), param=list(), fixed=list(), plot.prio
   names(rfx) <- names(rprior.param)
   
   if(plot.prior){
-    par(mfrow=c(ceiling(length(dists2get)/2),2))
+    graphics::par(mfrow=c(ceiling(length(dists2get)/2),2))
     nsim <-500000
     for(i in 1:length(rfx)){
       if(names(rfx)[i]=="dsb"){
-        curve(sapply(x,function(y) prior.fx$dsb(y,log=FALSE)),xlim=c(1,(2*ntips-2)),ylab="Density",main="branches")
+        graphics::curve(sapply(x,function(y) prior.fx$dsb(y,log=FALSE)),xlim=c(1,(2*ntips-2)),ylab="Density",main="branches")
       } else {
           x <- rfx[[i]](nsim)
-          qq <- quantile(x,c(0.001,0.999))
-          plot(density(x),xlim=qq, main=plot.names[i],lwd=2)
+          qq <- stats::quantile(x,c(0.001,0.999))
+          graphics::plot(stats::density(x),xlim=qq, main=plot.names[i],lwd=2)
           }
       }  
   }
@@ -157,34 +157,6 @@ make.prior <- function(tree, dists=list(), param=list(), fixed=list(), plot.prio
       return(lnprior)
   }
 
-#  if(type=="emap"){
-#    priorFUN <- function(pars,cache,emap){
-#      pars$sb <- which(emap$sh==1)
-#      pars$loc <- emap$r1[pars$sb]
-#      if(any(!(par.names %in% names(pars)))) stop(paste("Missing parameters: ", paste(par.names[!(par.names %in% names(pars))],collapse=" ")))
-#      pars.o <- pars[match(par.names,names(pars))]
-#      pars.o <- pars.o[!is.na(names(pars.o))]
-#      densities <- sapply(1:length(pars.o),function(x) prior.fx[[x]](pars.o[[x]]))
-#      names(densities) <- par.names
-#      lnprior <- sum(unlist(densities,F,F))
-#      return(lnprior)
-#    }
-#  }
-#  if(type=="simmap"){
-#    priorFUN <- function(pars,cache){
-#      pars$sb <- rep(1:length(cache$edge.length),sapply(cache$maps,length)-1)
-#      pars$loc <- sapply(pars$sb,function(x) cache$maps[[x]][-1])
-#      pars$t2 <- names(pars$loc)
-#      pars$loc <- unname(pars$loc)
-#      if(any(!(par.names %in% names(pars)))) stop(paste("Missing parameters: ", paste(par.names[!(par.names %in% names(pars))],collapse=" ")))
-#      pars.o <- pars[match(par.names,names(pars))]
-#      pars.o <- pars.o[!is.na(names(pars.o))]
-#      densities <- sapply(1:length(pars.o),function(x) prior.fx[[x]](pars.o[[x]]))
-#      names(densities) <- par.names
-#      lnprior <- sum(unlist(densities,F,F))
-#      return(lnprior)
-#    }
-#  }
   if(length(remove)>0){
     if("sb" %in% fixed.param){
       prior.param$dsb$bmax <- rep(0, nrow(tree$edge))

@@ -29,7 +29,7 @@
 
 .ou.next <- function(x, alpha, sig2, theta, tt){
   Exp <- x*exp(-alpha*tt) + theta*(1-exp(-alpha*tt))
-  rnorm(1, Exp, sqrt(sig2*tt))
+  stats::rnorm(1, Exp, sqrt(sig2*tt))
 }
 
 #' A function to visualize a multi-optimum OU process evolving on a phylogeny

@@ -253,22 +253,68 @@ pull.pars <- function(i,chain,model="OU"){
 
 #' Combine mcmc chains
 #' 
-#' @param chain1 The first chain to be combined
-#' @param chain2 The second chain to be combined
-#' @param burnin.prop The proportion of burnin from each chain to be discarded
+#' @param chain.list The first chain to be combined
+#' @param thin A number or vector specifying the thinning interval to be used. If a single value,
+#' then the same proportion will be applied to all chains.
+#' @param burnin.prop A number or vector giving the proportion of burnin from each chain to be 
+#' discarded. If a single value, then the same proportion will be applied to all chains.
 #' 
 #' @return A combined bayouMCMC chain
 #' 
 #' @export
-combine.chains <- function(chain1,chain2,burnin.prop=0){
-  nn <- names(chain1)
-  postburn <- (burnin.prop*(length(chain1$gen))+1):(length(chain1$gen))
-  chain1$gen <- chain1$gen + 0.1
-  chain2$gen <- chain2$gen + 0.2
-  chains <- lapply(nn,function(x) c(chain1[[x]][postburn],chain2[[x]][postburn]))
-  names(chains) <- nn
-  class(chains) <- c("bayouMCMC", "list")
+combine.chains <- function(chain.list, thin=1, burnin.prop=0){
+  nns <- lapply(chain.list, function(x) names(x))
+  if(length(burnin.prop) == 1){
+    burnins <- rep(burnin.prop, length(chain.list))
+  }
+  if(length(thin) == 1){
+    thins <- rep(thin, length(chain.list))
+  }
+  Ls <- sapply(chain.list, function(x) length(x$gen))
+  if(!all(sapply(nns, function(x) setequal(nns[[1]], x)))){
+    stop ("Not all chains have the same named elements and cannot be combined")
+  } else {
+    nn <- nns[[1]]
+  }
+  for(i in 1:length(chain.list)) chain.list[[i]]$gen <- chain.list[[i]]$gen + 0.1*i
+  postburns <- lapply(1:length(chain.list), function(x) seq(max(c(floor(burnins[x]*Ls[x]),1)), Ls[x], thins[x]))
+  chains <- setNames(vector("list", length(nns[[1]])), nns[[1]])
+  attributes(chains) <- attributes(chain.list[[1]])
+  for(i in 1:length(nn)){
+    chains[[nn[i]]] <- do.call(c, lapply(1:length(chain.list), function(x) chain.list[[x]][[nn[i]]][postburns[[x]]]))
+  }
+  attributes(chains)$burnin <- 0
   return(chains)
+}
+
+
+#' S3 method for printing bayouMCMC objects
+#' 
+#' @param x A mcmc chain of class 'bayouMCMC' produced by the function bayou.mcmc and loaded into the environment using load.bayou
+#' @param ... Additional arguments
+#' 
+#' @export
+#' @method print bayouMCMC
+print.bayouMCMC <- function(x, ...){
+  cat("bayouMCMC object \n")
+  nn <- names(x)
+  if("model.pars" %in% names(attributes(x))){
+    model.pars <- attributes(x)$model.pars
+    cat("shift-specific/reversible-jump parameters: ", model.pars$rjpars, "\n", sep="")
+    o <- match(c("gen", "lnL", "prior", model.pars$parorder, model.pars$shiftpars), names(x))
+  } else {
+    cat("No model specification found in attributes", "\n")
+    o <- 1:length(x)
+  }
+  for(i in o){
+    cat("$", nn[i], "     ", sep="")
+    cat(class(x[[i]]), " with ", length(x[[i]]), " elements", "\n", sep="")
+    if(class(x[[i]])=="numeric" & length(x[[i]]) > 0) cat(x[[i]][1:min(c(length(x[[i]]), 5))])
+    if(class(x[[i]])=="list" & length(x[[i]]) > 0) print(x[[i]][1:min(c(length(x[[i]]), 2))])
+    if(class(x[[i]])=="numeric" & length(x[[i]]) > 5) cat(" ...", "\n")
+    if(class(x[[i]])=="list" & length(x[[i]]) > 2) cat(" ...", "\n")
+    cat("\n")
+  }
 }
 
 .buildControl <- function(pars, prior, move.weights=list("alpha"=4,"sig2"=2,"theta"=4, "slide"=2,"k"=10)){

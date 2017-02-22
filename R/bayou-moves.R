@@ -28,7 +28,7 @@
 
 ###Generic multiplier proposal
 .multiplierProposal <- function(move,cache,pars,d,ct=NULL, prior=NULL){
-  m <- exp(d*(runif(1)-0.5))
+  m <- exp(d*(stats::runif(1)-0.5))
   prop <- pars[[move]]*m
   lnHastingsRatio <- log(m)
   pars.new <- pars
@@ -39,7 +39,7 @@
 }
 
 .slidingWindowProposal <- function(cache, pars, d, move, ct=NULL, prior=NULL){
-  prop <- d*(runif(1)-0.5)+pars[[move]]
+  prop <- d*(stats::runif(1)-0.5)+pars[[move]]
   lnHastingsRatio <- 0
   pars.new <- pars
   pars.new[[move]] <- prop
@@ -52,7 +52,7 @@
   j <- sample(1:pars$ntheta,1)
   if(type=="slidingwindow"){
     ##Generate sliding-window proposal
-    prop <- d*(runif(1)-0.5)+pars$theta[j]
+    prop <- d*(stats::runif(1)-0.5)+pars$theta[j]
     lnHastingsRatio <- 0
     pars.new <- pars
     pars.new$theta[j] <- prop
@@ -61,7 +61,7 @@
   }
   if(type=="multiplier"){
     ##Generate multiplier proposal
-    m <- exp(d*(runif(1)-0.5))
+    m <- exp(d*(stats::runif(1)-0.5))
     prop <- pars$theta[j]*m
     lnHastingsRatio <- log(m)
     pars.new <- pars
@@ -75,7 +75,7 @@
 .vectorMultiplier <- function(cache, pars, d, move,ct=NULL, prior=NULL){
   j <- sample(1:length(pars[[move]]),1)
   ##Generate multiplier proposal
-  m <- exp(d*(runif(1)-0.5))
+  m <- exp(d*(stats::runif(1)-0.5))
   prop <- pars[[move]][j]*m
   lnHastingsRatio <- log(m)
   pars.new <- pars
@@ -86,7 +86,7 @@
 
 .vectorSlidingWindow <- function(cache, pars, d, move,ct=NULL, prior=NULL){
   j <- sample(1:length(pars[[move]]),1)
-  prop <- d*(runif(1)-0.5)+pars[[move]][j]
+  prop <- d*(stats::runif(1)-0.5)+pars[[move]][j]
   lnHastingsRatio <- 0
   pars.new <- pars
   pars.new[[move]][j] <- prop
@@ -165,7 +165,7 @@
   pars.new <- pars
   mv <- .sample(1:5,1,prob=space$pp/sum(space$pp))
   type <- names(space$pp)[mv]
-  l <- runif(1,0,space$pp[type])
+  l <- stats::runif(1,0,space$pp[type])
   if(type=="U0"){
     pars.new$loc[j] <- l + pars$loc[j]
   } else {
@@ -198,7 +198,7 @@
 .splitmerge <- function(pars, cache, d, ct, move=NULL, prior=NULL){
   nbranch <- length(cache$edge.length)
   TH <- sum(cache$edge.length)
-  v <- runif(1)
+  v <- stats::runif(1)
   sb.max <- ct$sb$bmax
   sb.taken <- rep(0,2*cache$ntips-2)
   sb.table <- table(pars$sb)
@@ -208,7 +208,7 @@
   if(v < ct$bk[pars$ntheta]/(ct$bk[pars$ntheta]+ct$dk[pars$ntheta])){
     decision <- "birth"
     sb.j <- sample(1:(2*cache$ntips-2),1,prob=sb.prob)
-    loc.j <- runif(1,min=0,max=cache$edge.length[sb.j])
+    loc.j <- stats::runif(1,min=0,max=cache$edge.length[sb.j])
     t2.j <- pars$ntheta+1
     pars.new <- pars
     pars.new$sb <- c(pars$sb, sb.j)
@@ -219,7 +219,7 @@
     t2W <- sum(map.new$segs[map.new$theta==t2.j])
     t1W <- sum(map.new$segs[map.new$theta==t1])
     r <- t2W/(t1W+t2W)
-    u <- runif(1,-0.5,0.5)*d
+    u <- stats::runif(1,-0.5,0.5)*d
     pars.new$theta[t1] <- pars$theta[t1]-u*r
     pars.new$theta[t2.j] <- pars$theta[t1]+u*(1-r)   
     pars.new$k <- pars$k+1
@@ -286,7 +286,7 @@
   splitmergepars <- attributes(ct)$splitmergepars
   nbranch <- length(cache$edge.length)
   TH <- sum(cache$edge.length)
-  v <- runif(1)
+  v <- stats::runif(1)
   sb.max <- ct$sb$bmax
   sb.taken <- rep(0,2*cache$ntips-2)
   sb.table <- table(pars$sb)
@@ -296,7 +296,7 @@
   if(v < ct$bk[pars$ntheta]/(ct$bk[pars$ntheta]+ct$dk[pars$ntheta])){
     decision <- "birth"
     sb.j <- sample(1:(2*cache$ntips-2),1,prob=sb.prob)
-    loc.j <- runif(1,min=0,max=cache$edge.length[sb.j])
+    loc.j <- stats::runif(1,min=0,max=cache$edge.length[sb.j])
     t2.j <- pars$ntheta+1
     pars.new <- pars
     pars.new$sb <- c(pars$sb, sb.j)
@@ -308,7 +308,7 @@
     t1W <- sum(map.new$segs[map.new$theta==t1])
     r <- t2W/(t1W+t2W)
     for(i in 1:length(splitmergepars)){
-      u <- runif(1,-0.5,0.5)*d[i]
+      u <- stats::runif(1,-0.5,0.5)*d[i]
       pars.new[[splitmergepars[i]]][t1] <- pars[[splitmergepars[i]]][t1]-u*r
       pars.new[[splitmergepars[i]]][t2.j] <- pars[[splitmergepars[i]]][t1]+u*(1-r)
     }
@@ -355,7 +355,7 @@
   pars.new <- pars
   mv <- .sample(1:5,1,prob=space$pp/sum(space$pp))
   type <- names(space$pp)[mv]
-  l <- runif(1,0,space$pp[type])
+  l <- stats::runif(1,0,space$pp[type])
   if(type=="U0"){
     pars.new$loc[j] <- l + pars$loc[j]
   } else {
@@ -407,7 +407,7 @@
 .vectorSlidingWindowSplit <- function(move, cache, pars, d, ct=NULL, prior=NULL){
   j <- sample(1:length(pars[[move]]),1)
   if(j==1){
-    prop <- d[1]*(runif(1)-0.5)+pars[[move]][j]
+    prop <- d[1]*(stats::runif(1)-0.5)+pars[[move]][j]
     lnHastingsRatio <- 0
     pars.new <- pars
     pars.new[[move]][j] <- prop
@@ -415,7 +415,7 @@
     return(list("pars" = pars.new, "hr"=lnHastingsRatio, "j" = j))
   } else {
     hc <- .sample(1:length(d), 1, replace=FALSE)
-    prop <- d[1]*(runif(1)-0.5)+pars[[move]][j]
+    prop <- d[1]*(stats::runif(1)-0.5)+pars[[move]][j]
     lnHastingsRatio <- 0
     pars.new <- pars
     pars.new[[move]][j] <- prop
@@ -429,7 +429,7 @@
   splitmergepars <- attributes(ct)$splitmergepars
   nbranch <- length(cache$edge.length)
   TH <- sum(cache$edge.length)
-  v <- runif(1)
+  v <- stats::runif(1)
   sb.max <- ct$sb$bmax
   sb.taken <- rep(0,2*cache$ntips-2)
   sb.table <- table(pars$sb)
@@ -452,7 +452,7 @@
     r <- t2W/(t1W+t2W)
     .hr <- NULL
     for(i in 1:length(splitmergepars)){
-      u <- runif(1,0,1)*d[i]
+      u <- stats::runif(1,0,1)*d[i]
       pars.new[[splitmergepars[i]]][t1] <- pars[[splitmergepars[i]]][t1]*(u/(1-u))^(t1W/(t1W+t2W))
       pars.new[[splitmergepars[i]]][t2.j] <- pars[[splitmergepars[i]]][t1]*((1-u)/(u))^(t2W/(t1W+t2W))
       .hr <- c(.hr, log((pars.new[[splitmergepars[i]]][t1] + pars.new[[splitmergepars[i]]][t2.j])^2/pars[[splitmergepars[i]]][t1]))
@@ -499,7 +499,7 @@
   splitmergepars <- attributes(ct)$splitmergepars
   nbranch <- length(cache$edge.length)
   TH <- sum(cache$edge.length)
-  v <- runif(1)
+  v <- stats::runif(1)
   sb.max <- ct$sb$bmax
   sb.taken <- rep(0,2*cache$ntips-2)
   sb.table <- table(pars$sb)
