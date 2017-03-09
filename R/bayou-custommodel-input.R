@@ -172,6 +172,7 @@ plotBranchHeatMap <- function(tree, chain, variable, burnin=0, nn=NULL, pal=heat
 #' @param D A vector of tuning parameters to be passed on to bayou.makeMCMC.
 #' @param shiftpars The names of the parameters defining the map of shifts (for now, always c("sb", "loc", "t2")).
 #' @param model The parameterization of the OU model, either "OU", "OUrepar" or "QG".
+#' @param slopechange "immediate", "alphaWeighted"
 #' 
 #' @details This function generates a list with the '$model', which provides the specifications of the regression
 #' model and '$startpar', which provides starting values to input into bayou.makeMCMC. Note that this model assumes
@@ -184,7 +185,7 @@ plotBranchHeatMap <- function(tree, chain, variable, burnin=0, nn=NULL, pal=heat
 #' then be used to calculate the likelihood given the parameters for each MCMC step. 
 #' 
 #' @export
-makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, impute=NULL, startpar=NULL, moves=NULL, control.weights=NULL, D=NULL, shiftpars=c("sb", "loc", "t2"), model="OU"){
+makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, slopechange="immediate", impute=NULL, startpar=NULL, moves=NULL, control.weights=NULL, D=NULL, shiftpars=c("sb", "loc", "t2"), model="OU"){
   cache <- .prepare.ou.univariate(tree, dat, SE=SE, pred=pred)
   vars <- terms(f)
   cache$pred <- as.data.frame(cache$pred)
@@ -198,16 +199,30 @@ makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, impute=NULL,
   if(length(rjpars) > 0){
     rjpars2 <- c(rjpars, paste("beta", rjpars, sep="_"))
     rj <- which(colnames(MM) %in% rjpars2)-1
-    expFn <- function(pars, cache){
-      betaID <- getTipMap(pars, cache)    
-      if(length(impute)>0){
-        MF[is.na(MF[,impute]),impute] <- pars$missing.pred #$impute
-        MM <- model.matrix(f, MF)
+    if(slopechange=="alphaWeighted"){
+      expFn <- function(pars, cache){
+        W <- bayou:::C_weightmatrix(cache, pars)$W
+        if(length(impute)>0){
+          MF[is.na(MF[,impute]),impute] <- pars$missing.pred #$impute
+          MM <- model.matrix(f, MF)
+        }
+        parframe <- lapply(pars[parnames], function(x) return(x))
+        parframe[rj] <- lapply(parframe[rj], function(x) W%*%x)
+        ExpV <- apply(sapply(1:length(parframe), function(x) parframe[[x]]*MM[,x+1]), 1, sum)
+        return(ExpV)
       }
-      parframe <- lapply(pars[parnames], function(x) return(x))
-      parframe[rj] <- lapply(parframe[rj], function(x) x[betaID])
-      ExpV <- apply(sapply(1:length(parframe), function(x) parframe[[x]]*MM[,x+1]), 1, sum)
-      return(ExpV)
+    } else {
+      expFn <- function(pars, cache){
+        betaID <- getTipMap(pars, cache)    
+        if(length(impute)>0){
+          MF[is.na(MF[,impute]),impute] <- pars$missing.pred #$impute
+          MM <- model.matrix(f, MF)
+        }
+        parframe <- lapply(pars[parnames], function(x) return(x))
+        parframe[rj] <- lapply(parframe[rj], function(x) x[betaID])
+        ExpV <- apply(sapply(1:length(parframe), function(x) parframe[[x]]*MM[,x+1]), 1, sum)
+        return(ExpV)
+      }
     }
   } else {
     rjpars2 <- numeric(0)
