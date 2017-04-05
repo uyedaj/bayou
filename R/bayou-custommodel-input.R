@@ -131,7 +131,8 @@ plotBranchHeatMap <- function(tree, chain, variable, burnin=0, nn=NULL, pal=heat
   abranches <- lapply(1:nrow(tree$edge), .ancestorBranches, cache=cache)
   allbranches <- suppressWarnings(sapply(1:nrow(tree$edge), function(x) .branchRegime(x, abranches, chain, variable, seq1, summary=TRUE)))
   plot(tree, edge.color=colorRamp(allbranches, pal, 100), ...)
-  addColorBar(x=470, y=100, height=150, width=10, pal=pal, n=100, trait=allbranches, ticks=legend_ticks,adjx=25, cex.lab=.5, text.col="white")
+  lastPP<-get("last_plot.phylo",envir=.PlotPhyloEnv)
+  addColorBar(x=0.01* lastPP$x.lim[2], y=0, height=0.25*diff(lastPP$y.lim), width=0.01*diff(lastPP$x.lim), pal=pal, n=100, trait=allbranches, ticks=legend_ticks, adjx=0.01*lastPP$x.lim[2], cex.lab=0.5, text.col="black")
 }
 
 
@@ -172,7 +173,7 @@ plotBranchHeatMap <- function(tree, chain, variable, burnin=0, nn=NULL, pal=heat
 #' @param D A vector of tuning parameters to be passed on to bayou.makeMCMC.
 #' @param shiftpars The names of the parameters defining the map of shifts (for now, always c("sb", "loc", "t2")).
 #' @param model The parameterization of the OU model, either "OU", "OUrepar" or "QG".
-#' @param slopechange "immediate", "alphaWeighted"
+#' @param slopechange "immediate", "alphaWeighted" or "fullPGLS"
 #' 
 #' @details This function generates a list with the '$model', which provides the specifications of the regression
 #' model and '$startpar', which provides starting values to input into bayou.makeMCMC. Note that this model assumes
@@ -267,7 +268,9 @@ makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, slopechange=
     X = X - expFn(pars, cache)
     cache$dat <- X
     ### The part below mostly does not change
-    X.c <- C_weightmatrix(cache, pars)$resid
+    pars2 <- pars
+    if(slopechange=="fullPGLS"){pars2$alpha = 1e10}
+    X.c <- C_weightmatrix(cache, pars2)$resid
     transf.phy <- C_transf_branch_lengths(cache, 1, X.c, pars$alpha)
     transf.phy$edge.length[cache$externalEdge] <- transf.phy$edge[cache$externalEdge] + cache$SE[cache$phy$edge[cache$externalEdge, 2]]^2*(2*pars$alpha)/pars$sig2
     comp <- C_threepoint(list(n=n, N=cache$N, anc=cache$phy$edge[, 1], des=cache$phy$edge[, 2], diagMatrix=transf.phy$diagMatrix, P=X.c, root=transf.phy$root.edge, len=transf.phy$edge.length))
