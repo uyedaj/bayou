@@ -32,15 +32,25 @@ A function to plot a heatmap of reconstructed parameter values on the branches o
 }
 \details{
 legend_settings is an optional list of any of the following:
+
 legend - a logical indicating whether a legend should be plotted
+
 x - the x location of the legend
+
 y - the y location of the legend
+
 height - the height of the legend
+
 width - the width of the legend
+
 n - the number of gradations in color to plot from the palette
+
 adjx - an x adjustment for placing text next to the legend bar
+
 cex.lab - the size of text labels next to the legend bar
+
 text.col - The color of text labels
+
 locator - if TRUE, then x and y coordinates are ignored and legend is placed
 interactively.
 
