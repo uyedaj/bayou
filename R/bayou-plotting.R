@@ -529,6 +529,7 @@ shiftSummaries <- function(chain, mcmc, pp.cutoff=0.3, branches=NULL, ...){
 
   if(!is.null(model$call)){
     coefs <- paste("beta_", attr(terms(model$call), "term.labels"), sep="")
+    coefs <- gsub(":", "x", coefs)
   } else {
     coefs <- NULL
   }
