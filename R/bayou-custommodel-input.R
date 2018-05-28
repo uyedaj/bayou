@@ -148,7 +148,7 @@ getPreValues <- function(cache, col){
 #' locator - if TRUE, then x and y coordinates are ignored and legend is placed
 #' interactively.
 #' 
-#' #' @export
+#' @export
 plotBranchHeatMap <- function(tree, chain, variable, burnin=0, nn=NULL, pal=heat.colors, legend_ticks=NULL, legend_settings=list(plot=TRUE), ...){
   dum <- setNames(rep(1, length(tree$tip.label)), tree$tip.label)
   cache <- .prepare.ou.univariate(tree, dum)

@@ -53,6 +53,4 @@ text.col - The color of text labels
 
 locator - if TRUE, then x and y coordinates are ignored and legend is placed
 interactively.
-
-#' @export
 }
