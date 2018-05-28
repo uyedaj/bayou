@@ -6,7 +6,7 @@ Install using the devtools package.
 ```
 install.packages("devtools")
 require(devtools)
-install_github("bayou", username="uyedaj")
+install_github("uyedaj/bayou")
 require(bayou)
 ```
 

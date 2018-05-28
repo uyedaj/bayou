@@ -95,6 +95,7 @@ plotSimmap.mcmc <- function(chain, burnin=NULL, lwd=1, edge.type = c("regimes", 
   }
   if(edge.type=="none"){
     plot(tr, edge.color=edge.color, lwd=lwd, ...)
+<<<<<<< HEAD
   }
   if(edge.type == "regimes"){
     plotRegimes(tr, col=colors, lwd=lwd, pal=pal, ...)
@@ -117,6 +118,54 @@ plotSimmap.mcmc <- function(chain, burnin=NULL, lwd=1, edge.type = c("regimes", 
   if(pp.labels){
     edgelabels(round(L$pp,2), col=makeTransparent(pp.col, pp.alpha), cex=pp.cex, frame = "none")
   }
+=======
+  }
+  if(edge.type == "regimes"){
+    plotRegimes(tr, col=colors, lwd=lwd, pal=pal, ...)
+  }
+  if(edge.type == "theta"){
+    .ancestorBranches <- function(branch, cache){
+      ancbranches <- which(sapply(cache$bdesc, function(x) branch %in% x))
+      sort(ancbranches, decreasing=FALSE)
+    }
+    .branchRegime <- function(branch, abranches, chain, parameter, seqx, summary=FALSE){
+      ancs <- c(branch, abranches[[branch]])
+      ancshifts <- lapply(1:length(seqx), function(x) chain$t2[[seqx[x]]][which(chain$sb[[seqx[x]]] == ancs[min(which(ancs %in% chain$sb[[seqx[x]]]))])])
+      ancshifts <- sapply(ancshifts, function(x) ifelse(length(x)==0, 1, x))
+      ests <- sapply(1:length(ancshifts), function(x) chain[[parameter]][[seqx[x]]][ancshifts[x]])
+      res <- cbind(ests)
+      if(summary){
+        return(apply(res, 2, median))
+      } else {
+        return(res)
+      }
+    }
+    if(length(postburn) < parameter.sample){
+      warning("Length of post-burnin sample less than the requested parameter sample, using entire post-burnin chain instead")
+      seq1 <- postburn
+    } else {
+      seq1 <- sample(postburn, parameter.sample, replace=FALSE)
+    }
+    abranches <- lapply(1:nrow(tree$edge), .ancestorBranches, cache=cache)
+    allbranches <- suppressWarnings(sapply(1:nrow(tree$edge), function(x) .branchRegime(x, abranches, chain, "theta", seq1, summary=TRUE)))
+    plot(tree, edge.color=.colorRamp(allbranches, pal, 100), ...)
+  }
+  if(edge.type == "pp"){
+   plot(tree, edge.color=.colorRamp(L$pp, pal, 100), ...)
+  }
+  if(circles){
+    #theta2 <- L$magnitude.of.theta2
+    #root.median <- median(sapply(chain$theta[postburn], function(x) x[1]))
+    #theta2[is.na(theta2)] <- root.median
+    #theta2 <- theta2 - root.median
+    #circle.cols <- sapply(colorRamp(theta2, circle.pal, 100), function(x) makeTransparent(x, circle.alpha))
+    circle.cexs <- seq(0, circle.cex.max, length.out=100)[.colorRamp(L$pp, NULL, 100)]
+    edgelabels(pch=circle.pch, lwd=circle.lwd, bg=makeTransparent(circle.col, circle.alpha), cex=circle.cexs)
+  }
+  if(pp.labels){
+    edgelabels(round(L$pp,2), col=makeTransparent(pp.col, pp.alpha), cex=pp.cex, frame = "none")
+  }
+>>>>>>> master
     
   
 }
@@ -478,6 +527,7 @@ plotRegimes <- function(tree, col=NULL, lwd=1, pal=rainbow, ...){
 }
 
 
+<<<<<<< HEAD
 #' A function for summarizing the state of a model after a shift
 #' 
 #' @param chain A bayouMCMC chain
@@ -642,3 +692,5 @@ plotShiftSummaries <- function(summaries, pal=rainbow, ask=FALSE, single.plot=FA
   suppressWarnings(par(px))
 }
 
+=======
+>>>>>>> master

@@ -243,7 +243,7 @@ powerPosteriorFn <- function(k, Bk, lik, prior, ref){
     tr <- .toSimmap(.pars2map(oldpar, cache),cache)
     tcols <- makeTransparent(grDevices::rainbow(oldpar$ntheta),alpha=100)
     names(tcols)<- 1:oldpar$ntheta
-    phenogram(tr,dat,colors=tcols,ftype="off")
+    phenogram(tr,dat,colors=tcols,ftype="off", spread.labels=FALSE)
     plot.dim <- list(par('usr')[1:2],par('usr')[3:4])
   }
   #tuning.int <- round(tuning.int*ngen,0)
@@ -288,7 +288,7 @@ powerPosteriorFn <- function(k, Bk, lik, prior, ref){
         mtext(paste("gens = ",i," lnL = ",round(oll,2)),3)
         #regime.plot probably doesn't work for simmaps
         #try(regime.plot(oldpar,tr$tree,tcols,type="density",model=model),silent=TRUE)
-        phenogram(tr,dat,colors=tcols,ftype="off",add=TRUE)
+        phenogram(tr,dat,colors=tcols,ftype="off",add=TRUE, spread.labels=FALSE)
       }
     }
     #if(i %in% tuning.int){

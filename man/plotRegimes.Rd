@@ -26,3 +26,4 @@ This function uses plot.phylo to generate coordinates and plot the tree, but plo
 the ape package. Currently, only types 'phylogram', 'unrooted', 'radial', and 'cladogram' are allowed. Phylogenies must
 have branch lengths.
 }
+

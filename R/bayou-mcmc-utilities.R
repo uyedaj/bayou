@@ -18,7 +18,8 @@
 #' tree <- chelonia$phy
 #' dat <- chelonia$dat
 #' prior <- make.prior(tree)
-#' fit <- bayou.mcmc(tree, dat, model="OU", prior=prior, new.dir=TRUE, ngen=5000)
+#' fit <- bayou.mcmc(tree, dat, model="OU", prior=prior, 
+#'                                  new.dir=TRUE, ngen=5000)
 #' chain <- load.bayou(fit, save.Rdata=FALSE, cleanup=TRUE)
 #' plot(chain)
 #' }
@@ -124,7 +125,8 @@ load.bayou <- function(bayouFit, saveRDS=TRUE, file=NULL, cleanup=FALSE, ref=FAL
 #' @param ... Optional arguments passed to \code{gelman.diag(...)} from the \code{coda} package
 #' 
 #' @export
-gelman.R <- function(parameter,chain1,chain2,freq=20,start=1,plot=TRUE, ...){
+gelman.R <- function(parameter,chain1,chain2,freq=20,start=1,
+                     plot=TRUE, ...){
   R <- NULL
   R.UCI <- NULL
   int <- seq(start,length(chain1[[parameter]]),freq)
@@ -228,12 +230,16 @@ Lposterior <- function(chain,tree,burnin=0, simpar=NULL,mag=TRUE){
 #' \dontrun{
 #' tree <- sim.bdtree(n=30)
 #' tree$edge.length <- tree$edge.length/max(branching.times(tree))
-#' prior <- make.prior(tree, dists=list(dk="cdpois", dsig2="dnorm", dtheta="dnorm"), 
-#'              param=list(dk=list(lambda=15, kmax=32), dsig2=list(mean=1, sd=0.01), 
-#'                  dtheta=list(mean=0, sd=3)), plot.prior=FALSE)
+#' prior <- make.prior(tree, dists=list(dk="cdpois", dsig2="dnorm", 
+#'              dtheta="dnorm"), 
+#'                param=list(dk=list(lambda=15, kmax=32), 
+#'                  dsig2=list(mean=1, sd=0.01), 
+#'                    dtheta=list(mean=0, sd=3)), 
+#'                      plot.prior=FALSE)
 #' pars <- priorSim(prior, tree, plot=FALSE, nsim=1)$pars[[1]]
 #' dat <- dataSim(pars, model="OU", phenogram=FALSE, tree)$dat
-#' fit <- bayou.mcmc(tree, dat, model="OU", prior=prior, new.dir=TRUE, ngen=5000, plot.freq=NULL)
+#' fit <- bayou.mcmc(tree, dat, model="OU", prior=prior, 
+#'              new.dir=TRUE, ngen=5000, plot.freq=NULL)
 #' chain <- load.bayou(fit, save.Rdata=TRUE, cleanup=TRUE)
 #' plotBayoupars(pull.pars(300, chain), tree)
 #' }

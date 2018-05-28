@@ -30,12 +30,18 @@ This function generates a prior function to be used for bayou according to user 
 }
 \details{
 Default distributions and parameter values are given as follows:
-OU: \code{list(dists=list("dalpha"="dlnorm","dsig2"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dunif"),
-   param=list("dalpha"=list(),"dsig2"=list(),"dtheta"=list(),"dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list()))}
-QG: \code{list(dists=list("dh2"="dbeta","dP"="dlnorm","dw2"="dlnorm","dNe"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dunif"),
-   param=list("dh2"=list(shape1=1,shape2=1),"dP"=list(),"dw2"=list(),"dNe"=list(),"dtheta"=list(),"dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list()))}
-OUrepar: \code{list(dists=list("dhalflife"="dlnorm","dVy"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dunif"),
-   param=list("dhalflife"=list("meanlog"=0.25,"sdlog"=1.5),"dVy"=list("meanlog"=1,"sdlog"=2),"dk"=list(lambda=1,kmax=2*ntips-2),"dtheta"=list(),"dloc"=list(min=0,max=1)),"dsb"=list())}
+OU: \code{list(dists=list("dalpha"="dlnorm","dsig2"="dlnorm",
+         "dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dunif"),
+   param=list("dalpha"=list(),"dsig2"=list(),"dtheta"=list(),
+         "dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list()))}
+QG: \code{list(dists=list("dh2"="dbeta","dP"="dlnorm","dw2"="dlnorm","dNe"="dlnorm",
+         "dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dunif"),
+   param=list("dh2"=list(shape1=1,shape2=1),"dP"=list(),"dw2"=list(),"dNe"=list(),"dtheta"=list(),
+         "dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list()))}
+OUrepar: \code{list(dists=list("dhalflife"="dlnorm","dVy"="dlnorm",
+         "dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dunif"),
+   param=list("dhalflife"=list("meanlog"=0.25,"sdlog"=1.5),"dVy"=list("meanlog"=1,"sdlog"=2),
+         "dk"=list(lambda=1,kmax=2*ntips-2),"dtheta"=list(),"dloc"=list(min=0,max=1)),"dsb"=list())}
 
 \code{dalpha, dsig2, dh2, dP, dw2, dNe, dhalflife},  and \code{dVy} must be positive continuous distributions and provide the parameters used to calculate alpha and sigma^2 of the OU model. 
 \code{dtheta} must be continuous and describes the prior distribution of the optima. dk is the prior distribution for the number of shifts. For Poisson and conditional Poisson (cdpois) are provided
@@ -55,7 +61,6 @@ prior <- make.prior(tree, dists=list(dalpha="dlnorm", dsig2="dlnorm",dsb="dsb", 
        dtheta="dnorm"), param=list(dalpha=list(meanlog=-5, sdlog=2), 
            dsig2=list(meanlog=-1, sdlog=5), dk=list(lambda=15, kmax=200), 
                dsb=list(bmax=1,prob=1), dtheta=list(mean=mean(dat), sd=2)))
-             
 #Evaluate some parameter sets
 pars1 <- list(alpha=0.1, sig2=0.1, k=5, ntheta=6, theta=rnorm(6, mean(dat), 2), 
                  sb=c(32, 53, 110, 350, 439), loc=rep(0.1, 5), t2=2:6)

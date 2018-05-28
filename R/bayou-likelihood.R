@@ -265,10 +265,11 @@ OU.lik <- function(pars,tree,X,SE=0,model="OU", invert=FALSE){
 #' @param X A named vector giving the tip data
 #' @param model Parameterization of the OU model. Either "OU", "QG" or "OUrepar".
 #' 
-#' @details This function implements the algorithm of Ho and Ane (2014) implemented in the package
-#' \code{phylolm} for the \code{OUfixedRoot} model. It is faster than the equivalent pruning algorithm in geiger,
-#' and can be used on non-ultrametric trees (unlike OU.lik, which is based on the pruning algorithm in
-#' geiger). 
+#' @details This function implements the algorithm of Ho and Ane (2014) implemented
+#'  in the package \code{phylolm} for the \code{OUfixedRoot} model. It is faster 
+#'  than the equivalent pruning algorithm in geiger, and can be used on non-
+#'  ultrametric trees (unlike OU.lik, which is based on the pruning algorithm in
+#'  geiger). 
 #' @export
 bayou.lik <- function(pars, cache, X, model="OU"){
   if(model=="QG"){
