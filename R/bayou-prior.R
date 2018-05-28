@@ -88,12 +88,14 @@ make.prior <- function(tree, dists=list(), param=list(), fixed=list(), plot.prio
   nH <- max(nodeHeights(tree))
   ntips <- length(tree$tip.label)
   TH <- sum(tree$edge.length)
-  default.OU <- list(dists=list("dalpha"="dlnorm","dsig2"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dunif"),param=list("dalpha"=list(),"dsig2"=list(),"dtheta"=list(),"dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list(ntips=ntips, bmax=1, prob=1)))
-  default.QG <- list(dists=list("dh2"="dbeta","dP"="dlnorm","dw2"="dlnorm","dNe"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dunif"),param=list("dh2"=list(shape1=1,shape2=1),"dP"=list(),"dw2"=list(),"dNe"=list(),"dtheta"=list(),"dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list(ntips=ntips, bmax=1, prob=1)))
-  default.OUrepar <- list(dists=list("dhalflife"="dlnorm","dVy"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dunif"),param=list("dhalflife"=list("meanlog"=0.25,"sdlog"=1.5),"dVy"=list("meanlog"=1,"sdlog"=2),"dk"=list(lambda=1,kmax=2*ntips-2),"dtheta"=list(),"dloc"=list(min=0,max=1),"dsb"=list(ntips=ntips, bmax=1, prob=1)))
+  default.OU <- list(dists=list("dalpha"="dlnorm","dsig2"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dloc"),param=list("dalpha"=list(),"dsig2"=list(),"dtheta"=list(),"dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list(ntips=ntips, bmax=1, prob=1)))
+  default.QG <- list(dists=list("dh2"="dbeta","dP"="dlnorm","dw2"="dlnorm","dNe"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dloc"),param=list("dh2"=list(shape1=1,shape2=1),"dP"=list(),"dw2"=list(),"dNe"=list(),"dtheta"=list(),"dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list(ntips=ntips, bmax=1, prob=1)))
+  default.OUrepar <- list(dists=list("dhalflife"="dlnorm","dVy"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dloc"),param=list("dhalflife"=list("meanlog"=0.25,"sdlog"=1.5),"dVy"=list("meanlog"=1,"sdlog"=2),"dk"=list(lambda=1,kmax=2*ntips-2),"dtheta"=list(),"dloc"=list(min=0,max=1),"dsb"=list(ntips=ntips, bmax=1, prob=1)))
+  #default.ffancova <- list(dists=list("dalpha"="dlnorm","dsig2"="dlnorm","dbeta1"="dnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dloc"),param=list("dalpha"=list(),"dsig2"=list(),"dbeta1"=list(),"dtheta"=list(),"dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list(ntips=ntips, bmax=1, prob=1)))
   #default.OUcpp <- list(dists=list("dalpha"="dlnorm","dsig2"="dlnorm","dsig2jump"="dlnorm","dk"="dpois","dtheta"="dnorm","dloc"="dunif"),param=list("dalpha"=NULL,"dsig2"=list(),"dsig2jump"=list(),"dtheta"=list(),"dk"=list(lambda=1),"dloc"=list(min=0,max=TH)))
   #default.QGcpp <- list(dists=list("dh2"="dbeta","dP"="dlnorm","dw2"="dlnorm","dNe"="dlnorm","dk"="dpois","dtheta"="dnorm","dloc"="dunif"),param=list("dh2"=list(shape1=1,shape2=1),"dP"=list(),"dw2"=list(),"dNe"=list(),"dsig2jump"=list(),"dtheta"=list(),"dk"=list(lambda=1),"dloc"=list(min=0,max=TH)))
   #default.OUreparcpp <- list(dists=list("dhalflife"="dlnorm","dVy"="dlnorm","dsig2jump"="dlnorm","dk"="dpois","dtheta"="dnorm","dloc"="dunif"),param=list("dhalflife"=list("meanlog"=0.25,"sdlog"=1.5),"dVy"=list("meanlog"=1,"sdlog"=2),"dk"=list(lambda=1),"dsig2jump"=list(),"dtheta"=list(),"dloc"=list(min=0,max=TH)))
+  
   default <- switch(model,"OU"=default.OU,"QG"=default.QG,"OUrepar"=default.OUrepar)#,"OUcpp"=default.OUcpp,"QGcpp"=default.QGcpp,"OUreparcpp"=default.OUreparcpp)
   notprovided <- setdiff(names(default$dist),names(dists))
   pars.notprovided <- setdiff(names(default$param),names(param))
@@ -114,6 +116,7 @@ make.prior <- function(tree, dists=list(), param=list(), fixed=list(), plot.prio
     fixed.param <- gsub('^[a-zA-Z]',"",names(remove)) 
     if("sb" %in% fixed.param & !("k" %in% names(fixed))) fixed$k <- length(fixed$sb)
     if("sb" %in% fixed.param & !("t2" %in% names(fixed)) & length(fixed$sb)>0) fixed$t2 <- 2:(length(fixed$sb)+1)
+    if("sb" %in% fixed.param & !("t2" %in% names(fixed)) & length(fixed$sb)==0) fixed$t2 <- numeric(0)
     missing.fixed <- fixed.param[!(fixed.param %in% names(fixed))]
     if(length(missing.fixed)>0){
       stop(paste("'", paste(missing.fixed, collapse="', '"), "' set as 'fixed' but not provided", sep=""))
@@ -132,26 +135,27 @@ make.prior <- function(tree, dists=list(), param=list(), fixed=list(), plot.prio
   #}
   par.names <- gsub('^[a-zA-Z]',"",names(dists2get))
   
+  rfx <- lapply(gsub('^[a-zA-Z]',"r",dists2get),function(x) try(get(x),silent=TRUE))
+  rprior.param <- prior.param[1:(length(prior.param))]
+  rprior.param <- lapply(rprior.param, function(x) x[-length(x)])
+  if(!is.null(dists2get$dsb) & !is.null(dists2get$dloc)){
+    if(dists2get$dsb=="dsb" & any(rprior.param$dsb$bmax==1)){rprior.param$dsb$bmax[rprior.param$dsb$bmax==1] <- Inf; rprior.param$dsb$prob <- 1}
+  }
+  rfx <- lapply(1:length(rprior.param),function(x) try(.set.defaults(rfx[[x]],defaults=rprior.param[[x]]),silent=TRUE))
+  plot.names<-par.names[sapply(rfx,class)=="function"]
+  rfx <- rfx[sapply(rfx,class)=="function"]
+  names(rfx) <- names(rprior.param)
+  
   if(plot.prior){
-    par(mfrow=c(ceiling(length(dists2get)/2),2))
-    rfx <- lapply(gsub('^[a-zA-Z]',"r",dists2get),function(x) try(get(x),silent=TRUE))
-    rprior.param <- prior.param[1:(length(prior.param))]
-    rprior.param <- lapply(rprior.param, function(x) x[-length(x)])
-    if(!is.null(dists2get$dsb) & !is.null(dists2get$dloc)){
-      if(dists2get$dsb=="dsb" & any(rprior.param$dsb$bmax==1)){rprior.param$dsb$bmax[rprior.param$dsb$bmax==1] <- Inf; rprior.param$dsb$prob <- 1}
-    }
-    rfx <- lapply(1:length(rprior.param),function(x) try(.set.defaults(rfx[[x]],defaults=rprior.param[[x]]),silent=TRUE))
-    plot.names<-par.names[sapply(rfx,class)=="function"]
-    rfx <- rfx[sapply(rfx,class)=="function"]
-    names(rfx) <- names(rprior.param)
+    graphics::par(mfrow=c(ceiling(length(dists2get)/2),2))
     nsim <-500000
     for(i in 1:length(rfx)){
       if(names(rfx)[i]=="dsb"){
-        curve(sapply(x,function(y) prior.fx$dsb(y,log=FALSE)),xlim=c(1,(2*ntips-2)),ylab="Density",main="branches")
+        graphics::curve(sapply(x,function(y) prior.fx$dsb(y,log=FALSE)),xlim=c(1,(2*ntips-2)),ylab="Density",main="branches")
       } else {
           x <- rfx[[i]](nsim)
-          qq <- quantile(x,c(0.001,0.999))
-          plot(density(x),xlim=qq, main=plot.names[i],lwd=2)
+          qq <- stats::quantile(x,c(0.001,0.999))
+          graphics::plot(stats::density(x),xlim=qq, main=plot.names[i],lwd=2)
           }
       }  
   }
@@ -165,34 +169,6 @@ make.prior <- function(tree, dists=list(), param=list(), fixed=list(), plot.prio
       return(lnprior)
   }
 
-#  if(type=="emap"){
-#    priorFUN <- function(pars,cache,emap){
-#      pars$sb <- which(emap$sh==1)
-#      pars$loc <- emap$r1[pars$sb]
-#      if(any(!(par.names %in% names(pars)))) stop(paste("Missing parameters: ", paste(par.names[!(par.names %in% names(pars))],collapse=" ")))
-#      pars.o <- pars[match(par.names,names(pars))]
-#      pars.o <- pars.o[!is.na(names(pars.o))]
-#      densities <- sapply(1:length(pars.o),function(x) prior.fx[[x]](pars.o[[x]]))
-#      names(densities) <- par.names
-#      lnprior <- sum(unlist(densities,F,F))
-#      return(lnprior)
-#    }
-#  }
-#  if(type=="simmap"){
-#    priorFUN <- function(pars,cache){
-#      pars$sb <- rep(1:length(cache$edge.length),sapply(cache$maps,length)-1)
-#      pars$loc <- sapply(pars$sb,function(x) cache$maps[[x]][-1])
-#      pars$t2 <- names(pars$loc)
-#      pars$loc <- unname(pars$loc)
-#      if(any(!(par.names %in% names(pars)))) stop(paste("Missing parameters: ", paste(par.names[!(par.names %in% names(pars))],collapse=" ")))
-#      pars.o <- pars[match(par.names,names(pars))]
-#      pars.o <- pars.o[!is.na(names(pars.o))]
-#      densities <- sapply(1:length(pars.o),function(x) prior.fx[[x]](pars.o[[x]]))
-#      names(densities) <- par.names
-#      lnprior <- sum(unlist(densities,F,F))
-#      return(lnprior)
-#    }
-#  }
   if(length(remove)>0){
     if("sb" %in% fixed.param){
       prior.param$dsb$bmax <- rep(0, nrow(tree$edge))
@@ -200,7 +176,7 @@ make.prior <- function(tree, dists=list(), param=list(), fixed=list(), plot.prio
       prior.param$dsb$prob <- prior.param$dsb$bmax
     }
   }
-  attributes(priorFUN) <- list("model"=model,"parnames"=par.names,"distributions"=dists,"parameters"=prior.param,"fixed"=fixed, "functions"=prior.fx)
+  attributes(priorFUN) <- list("model"=model,"parnames"=par.names,"distributions"=dists, "parameters"=prior.param,"fixed"=fixed, "functions"=prior.fx,"rfunctions"=rfx, "splitmergepars"="theta")
   class(priorFUN) <- c("priorFn","function")
   return(priorFUN)
 }

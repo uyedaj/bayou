@@ -1,16 +1,18 @@
 ^\.gitignore$
-^\.git/
-^\.git/.*$
-^\.git/.*
-^\.git/.
 ^bayOU_1.0\.Rproj$
 ^BuildingBayOU\.R$
 ^README\.md
+^README\.html
 ^R/deprecated\.R
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^figure/
 ^tutorial\.md
 ^\.travis\.yml
-^README\.html
+^\./R/birth-death\.R$
+^\.Rdata$
+^\.Rhistory$
+^\.travis\.yml$
+^R/\.Rhistory$
+^\.git/$
 

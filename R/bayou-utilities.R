@@ -53,7 +53,7 @@
 #' This is an internal function modified from geiger's function .prepare.bm.univariate for use with OU models.
 ##Merging .prepare.ou.phylolm and .prepare.ou.univariate
 ##Clean this up to make sure I actually need all this!!
-.prepare.ou.univariate <- function(tree,X, SE=0, ...){
+.prepare.ou.univariate <- function(tree,X, SE=0, pred=NULL, ...){
   ntips <- length(tree$tip.label)
   rownames(tree$edge) <- 1:(length(tree$edge[,1]))
   cache <- .prepare.bm.univariate(tree, X, SE=SE)#, ...)
@@ -61,6 +61,10 @@
   cache$n <- ntips
   cache$N <- nrow(cache$phy$edge)
   cache$nH <- phytools::nodeHeights(tree)[ind,1]
+  if(is.null(pred)){
+    pred <- cbind(rep(0, ntips))
+    rownames(pred) <-  cache$tip.label
+  }
   cache$maps <- tree$maps[ind]
   cache$mapped.edge <- tree$mapped.edge[ind,]
   cache$height <- max(phytools::nodeHeights(tree))
@@ -71,6 +75,9 @@
   cache$ordering <- "postorder"
   cache$ht <- .heights.cache(cache)
   cache$edge <- unname(cache$edge)
+  o <- match(tree$tip.label, cache$tip.label)
+  cache$pred <- cbind(pred[o,])
+  colnames(cache$pred) <- colnames(pred)
   plook <- function(x){mapply(paste,x[2:length(x)],x[1:(length(x)-1)],sep=",")}
   tB <- cache$desc$anc[1:ntips]
   tB <- mapply(c,1:ntips,tB, SIMPLIFY=FALSE)
@@ -504,4 +511,182 @@ identifyBranches <- function(tree, n, fixed.loc=TRUE, plot.simmap=TRUE){
 .whichorder <- function (x, y){ 
   sapply(x, function(x, y) which(x == y), y = y)
 }
+
+
+#' Internal function to determine tip regimes:
+.tipregime <- function(pars, tree){
+  ntips <- length(tree$tip.label)
+  tree <- reorder(tree, "postorder")
+  tr <- pars2simmap(pars, tree)
+  tip.reg <- as.numeric(sapply(tr$tree$map, function(x) names(x)[length(x)]))
+  tip.reg <- tip.reg[which(tr$tree$edge[,2] <= ntips)]
+  o <- order(tr$tree$edge[,2][which(tr$tree$edge[,2] <= ntips)])
+  tip.reg <- tip.reg[o]
+  tip.reg <- setNames(tip.reg, tr$tree$tip.label)
+  return(tip.reg)
+}
+
+
+#' Function for checking parameter lists, prior and models are consistent and error-free
+#' 
+#' @param pars A list of parameters that will be specified as starting parameter
+#' @param tree An object of class ``phylo''
+#' @param  dat A named data vector that matches the tip lables in the provided tree
+#' @param pred A matrix or data frame with named columns with predictor data represented 
+#' in the specified formula
+#' @param SE The standard error of the data. Either a single value applied to all the data, 
+#' or a vector of length(dat).
+#' @param prior A prior function made using make.prior
+#' @param model Either one of c("OU", "QG" or "OUrepar") or a list specifying the model
+#' to be used.
+#' @param autofix A logical that indicates whether certain errors should be automatically fixed.
+#' 
+#' @details A series of checks are performed, run internally within bayou.makeMCMC, but can also
+#' be run on provided inputs prior to this. Errors are reported. 
+#' 
+#' If autofix == TRUE, then the following errors will be automatically corrected:
+#' 
+#' Branch lengths == 0; any branches of length 0 will be given length .Machine$double.eps
+#' is.binary(tree) == FALSE; runs multi2di
+#' pars do not match prior$fixed; parameters are resimulated from prior
+#' 
+#' @return A list of results of the checks and if 'autofix==TRUE', then ..$autofixed returns a
+#' list of all the input elements, with corrections.
+#' 
+#' @export  
+bayou.checkModel <- function(pars=NULL, tree, dat, pred=NULL, SE=0, 
+                             prior, model="OU", autofix=TRUE){
+  checks <- list()
+  
+  ## Step 1. Check to see if the model already exists in bayou or is custom.
+  if(class(model)=="character"){
+    if(model %in% c("OU", "QG", "OUrepar")){
+      model.name <- model
+      model <- switch(model, "OU"=model.OU, "QG"=model.QG, "OUrepar"=model.OUrepar)
+    } else {stop("Specified model not recognized by bayou. Choose 'OU', 'QG', 'OUrepar'
+                 or provide a bayou model object (list) that fully specifies the 
+                 model to be run.")}
+  } else {
+    ## If custom, perform checks of each of the expected elements in the model specification list
+    model.name <- "custom"
+    expected_model_elements <- c("moves", "control.weights", "D", "parorder", "fixedpars", "rjpars",
+                        "shiftpars", "call" ,"expFn","prevalues" , "monitor.fn", "lik.fn")
+    checks$model.expected_elements <- assertthat::validate_that(all(names(model) %in% expected_model_elements))
+    checks$model.moves_type <- assertthat::validate_that(class(model$moves)=="list")
+    moves <- sapply(model$moves, function(x) ifelse(x=="fixed", "function", class(get(x))))
+    checks$model.moves_available <- assertthat::validate_that(all(moves == "function"))
+    checks$model.weights_list <- assertthat::validate_that(class(model$control.weights)=="list")
+    control_weights <- sapply(model$control.weights, function(x) class(x))
+    checks$model.weights_type <- assertthat::validate_that(all(control_weights=="numeric"))
+    checks$model.weights_moves <- assertthat::validate_that(length(model$control.weights[model$control.weights>0])==length(model$moves))
+    checks$model.weights_D <- assertthat::validate_that(length(model$control.weights)==length(model$D))
+    checks$model.D_list <- assertthat::validate_that(class(model$D)=="list")
+    D.type <- lapply(model$D, function(x) class(x))
+    checks$model.D_type <- assertthat::validate_that(all(D.type == "numeric"))
+    checks$model.parorder_type <- assertthat::validate_that(class(model$parorder)=="character")
+    checks$model.parorder_length <- assertthat::validate_that(length(model$parorder) >= length(model$moves))
+    if(!is.null(model$rjpars)) checks$model.rjpars_type <- assertthat::validate_that(class(model$rjpars)=="character")
+    checks$model.shiftpars_type <- assertthat::validate_that(identical(model$shiftpars,c('sb', 'loc', 't2')))
+    if(!is.null(model$monitor.fn)){
+      checks$model.monitor_type <- assertthat::validate_that(class(model$monitor.fn)=="function")
+      monitor_argnames <- names(formals(model$monitor.fn))
+      checks$model.monitor_args <- assertthat::validate_that(identical(monitor_argnames,
+                                                  c("i", "lik", "pr", "pars", "accept", "accept.type", "j")))
+    }
+    checks$model.likfn_type <- assertthat::validate_that(class(model$lik.fn)=="function")
+    likfn_argnames <- names(formals(model$lik.fn))
+    checks$model.likfn_args <- assertthat::validate_that(identical(likfn_argnames,
+                                                       c("pars", "cache", "X", "model")))
+    
+  }
+  ## Step 2. Check pars if provided.
+  expected_pars <- c(model$parorder, model$shiftpars)
+  if(is.null(pars)){
+    #checks$pars <- "No starting parameters provided, skipping parameter checks"
+  } else {
+    
+    rjpars <- model$rjpars
+    checks$pars.expected <- assertthat::validate_that(all(names(pars) %in% expected_pars))
+    checks$pars.k_sb <- assertthat::validate_that(pars$k == length(pars$sb))
+    checks$pars.k_loc <- assertthat::validate_that(pars$k == length(pars$loc))
+    checks$pars.k_t2 <- assertthat::validate_that(pars$k == length(pars$t2))
+    checks$pars.k_ntheta <- assertthat::validate_that(pars$k >= pars$ntheta-1)
+    checks$pars.ntheta_theta <- assertthat::validate_that(pars$ntheta == length(pars$theta))
+    if(length(rjpars)>0) checks$pars.rjnumber <- assertthat::validate_that(all(sapply(pars[rjpars], length) == pars$ntheta))
+  }
+  
+  ## Step 3. Check tree
+    checks$tree_binary <- assertthat::validate_that(is.binary(tree)==TRUE)
+    if(checks$tree_binary != TRUE & autofix==TRUE){
+      tree <- multi2di(tree)
+      checks$tree_binary <- paste(checks$tree_binary, "autofixed", sep="; ")
+    } 
+    checks$tree_branchLengths <- assertthat::validate_that(all(tree$edge.length > 0))
+  if(checks$tree_branchLengths != TRUE & autofix==TRUE){
+    tree$edge.length[tree$edge.length==0] <- .Machine$double.eps
+    checks$tree_branchLengths <- paste(checks$tree_branchLengths, "autofixed", sep="; ")
+  } 
+
+  ## Step 4. Check data
+      if(is.null(dat)){
+        checks$dat <- "No data provided, creating dummy dataset for further checks"
+        dat <- setNames(rep(0, length(tree$tip.label)), tree$tip.label)
+      }
+      checks$dat_type <- assertthat::validate_that(class(dat)=="numeric")
+      checks$dat_names <- assertthat::validate_that(all(names(dat) %in% tree$tip.label))
+  
+  ## Step 5. Check to see if cache object can be made
+      cache <- try(.prepare.ou.univariate(tree=tree, X=dat, SE=SE, pred=pred))
+      checks$cache_creation <- assertthat::validate_that(class(cache)=="list")
+      
+  ## Step 6. Check prior function
+      priorAttributes <- attributes(prior)
+      checks$prior.can_simulate <- assertthat::validate_that(class(try(priorSim(prior, tree, plot=FALSE)))=="list")
+      if(is.null(pars)){
+        pars <- priorSim(prior,tree,plot=FALSE)$pars[[1]]
+      } else {
+        if(length(priorAttributes$fixed)>0){
+          checks$prior.pars_fixed <- assertthat::validate_that(identical(priorAttributes$fixed, pars[names(priorAttributes$fixed)]))
+          if(checks$prior.pars_fixed != TRUE & autofix==TRUE){
+            checks$prior.pars_fixed <- paste0(checks$prior.pars_fixed, 
+                  "; starting parameters resimulated from the prior")
+            pars <- priorSim(prior, tree, plot=FALSE)$pars[[1]]
+          }
+        }
+      }
+      checks$prior.distFx_available <- assertthat::validate_that(all(sapply(priorAttributes$functions, class)=="function"))
+      if("dk" %in% names(priorAttributes$distributions)){
+        if(priorAttributes$distributions$dk=="fixed"){
+          checks$prior.k_fixed <- assertthat::validate_that(all(c("t2", "sb", "k") %in% names(priorAttributes$fixed)))
+        } else {
+          checks$prior.k_t2 <- assertthat::validate_that(sum(duplicated(pars$t2))==0, msg = "Cannot have convergent regimes with reversible-jump model")
+        }
+      } 
+      checks$prior.prior_finite <- assertthat::validate_that(is.finite(try(prior(pars))))
+      priorNames <- c(priorAttributes$parnames, names(priorAttributes$fixed))
+      checks$prior.model_prior <- assertthat::validate_that(all(priorNames %in% expected_pars))
+      
+  ## Step 7. Check likelihood function
+      checks$likfn_finite <- assertthat::validate_that(is.finite(try(model$lik.fn(pars, cache, dat, model=model.name)$loglik)))
+  
+  cat("Checking inputs for errors:")
+  sapply(checks, function(x) if(x==TRUE) cat(".") else cat("!"))
+  cat("\n")
+  warns <- which(sapply(checks, function(x) x!=TRUE))
+  if(length(warns)>0) {
+    cat("The following errors were found, proceed with caution\n")
+    dum <- lapply(1:length(warns), function(x) cat(paste(x,". ", checks[[warns[x]]],"\n", sep="")))
+  }
+  checks$autofixed <- list(pars=pars, tree=tree, dat=dat, pred=pred, SE=SE, prior=prior, model=model)
+  checks$autofixed$cache <- cache
+  return(checks)
+  
+  
+}
+
+
+
+
+
+
 

@@ -6,16 +6,18 @@
 #' @param tree A tree of class 'phylo'
 #' @param plot A logical indicating whether the simulated parameters should be plotted
 #' @param nsim The number of parameter sets to be simulated
+#' @param shiftpars A vector of parameters that split upon a shift, default is "theta"
 #' @param ... Parameters passed on to \code{plotSimmap(...)}
 #' 
 #' @return A list of bayou parameter lists
 #' 
 #' @export
-priorSim <- function(prior,tree,plot=TRUE,nsim=1, ...){
+priorSim <- function(prior, tree, plot=TRUE, nsim=1, shiftpars="theta", ...){
   tree <- reorder(tree,'postorder')
   model <- attributes(prior)$model
   dists <- attributes(prior)$dist
   fixed <- which(attributes(prior)$dist=="fixed")
+  allnames <- gsub('^[a-zA-Z]',"", names(attributes(prior)$dist))
   notfixed <- which(attributes(prior)$dist!="fixed")
   dists <- dists[notfixed]
   prior.params <- attributes(prior)$param
@@ -24,58 +26,67 @@ priorSim <- function(prior,tree,plot=TRUE,nsim=1, ...){
   rdists.fx <- lapply(rdists,get)
   rdists.fx <- lapply(1:length(rdists.fx),function(x) .set.defaults(rdists.fx[[x]],defaults=prior.params[[x]]))
   names(rdists.fx) <- gsub('^[a-zA-Z]',"r",names(rdists))
-  N <- sapply(names(rdists.fx),function(x) switch(x, ralpha=nsim, rsig2=nsim, rsig2jump=nsim, rhalflife=nsim, rVy=nsim, rh2=nsim, rP=nsim, rw2=nsim, rNe=nsim, rk=nsim, rtheta=NULL, rloc=NULL, rsb=NULL))
-  varN <- which(sapply(N,is.null))
-  N <- N[-varN]
-  simpar <- lapply(1:nsim,function(i){ y <- lapply(names(N), function(x) rdists.fx[[x]](1)); names(y) <- gsub('^[a-zA-Z]',"",names(N)); y})
-  if("dalpha" %in% names(fixed)){
-    simpar <- lapply(simpar, function(x){x$alpha <- 0; x})
-  }
-  if("dsig2" %in% names(fixed)){
-    simpar <- lapply(simpar, function(x){x$sig2 <- 0; x})
-  }
-  #if(model %in% c("OUcpp","QGcpp","OUreparcpp")){
-  #  T <- sum(tree$edge.length[!(1:length(tree$edge.length) %in% exclude.branches)])
-  #  pp <- tree$edge.length/T
-  #  pp[1:length(pp) %in% exclude.branches] <- 0
-  #  k <- lapply(simpar,function(x) x$k)
-  #  sb <- lapply(k,function(x) .sample(1:length(tree$edge.length),x,replace=TRUE,prob=pp))
-  #  loc <- lapply(sb,function(x) runif(length(x),min=0,max=tree$edge.length[x]))
-  #  t2 <- lapply(k,function(x) 2:(x+1))
-  #  simpar <- lapply(1:nsim,function(x) c(simpar[[x]],list(sb=sb[[x]],loc=loc[[x]],t2=t2[[x]])))
-  #  theta <- lapply(1:nsim,function(x) pars2simmap(simpar[[x]],tree,sim.theta=TRUE,root.theta=rdists.fx$rtheta(1))$pars$theta)
-  #  simpar <- lapply(1:nsim, function(x) c(simpar[[x]],list(theta=theta[[x]],ntheta=length(theta[[x]]))))
-  #}
-  #if(model %in% c("OU","QG","OUrepar")){
-  if("dk" %in% names(fixed)){
-    k <- rep(0,length(simpar))
-    simpar <- lapply(simpar, function(x){x$k <- 0; x})
-    sb <- lapply(k, function(x) numeric(x))
+  N <- setNames(rep(1, length(allnames)), allnames)
+  N[fixed] <- "fixed"
+  N[shiftpars] <- "ntheta"
+  N["loc"] <- "loc"
+  
+  simpar <- lapply(1:nsim, function(x){ll <- lapply(1:length(allnames), function(y) numeric(0)); names(ll) <- allnames; ll})
+  simpar <- lapply(simpar, function(x){names(x) <- allnames; x})
+  
+  if(N["k"]=="fixed"){
+    simpar <- lapply(1:nsim, function(x) {simpar[[x]][["k"]] <- attributes(prior)$fixed$k; simpar[[x]]})
   } else {
-    k <- sapply(simpar,function(x) x$k)
-    sb <- lapply(k,function(x) rdists.fx$rsb(x))
+    simpar <- lapply(1:nsim, function(x) {simpar[[x]][["k"]] <- rdists.fx[["rk"]](1); simpar[[x]]})
   }
-  if("dloc" %in% names(fixed)){
-    loc <- lapply(1:length(k), function(x) 0.5*tree$edge.length[sb[[x]]])
+  if(N["sb"]=="fixed"){
+    simpar <- lapply(1:nsim, function(x) {simpar[[x]][["sb"]] <- attributes(prior)$fixed$sb; simpar[[x]]})
   } else {
-    loc <- lapply(1:length(k),function(x) rdists.fx$rloc(k[x])*tree$edge.length[sb[[x]]])
+    simpar <- lapply(1:nsim, function(x) {simpar[[x]][["sb"]] <- rdists.fx[["rsb"]](simpar[[x]]$k); simpar[[x]]})
   }
-  if(k > 0){
-    t2 <- lapply(k,function(x) 2:(x+1))
-  } else {t2 <- lapply(1:length(k), function(x) numeric(0))}
-  theta <- lapply(k,function(x) rdists.fx$rtheta(x+1))
-  simpar <- lapply(1:nsim,function(x) c(simpar[[x]],list(ntheta=k[x]+1, theta=theta[[x]],sb=sb[[x]],loc=loc[[x]],t2=t2[[x]])))
-  #}
+  if(!"ntheta" %in% names(attributes(prior)$fixed)){
+    simpar <- lapply(1:nsim, function(x) {simpar[[x]][["ntheta"]] <- simpar[[x]]$k + 1; simpar[[x]]})
+  } else {
+    simpar <- lapply(1:nsim, function(x) {simpar[[x]][["ntheta"]] <- attributes(prior)$fixed$ntheta; simpar[[x]]})
+  }
+  if(!"t2" %in% names(attributes(prior)$fixed)){
+      simpar <- lapply(1:nsim, function(x) {
+        if(simpar[[x]]$k == 0){simpar[[x]][["t2"]] <- numeric(0)} else {simpar[[x]][["t2"]] <-  2:(simpar[[x]]$k+1)};
+        simpar[[x]]})
+  } else {
+    simpar <- lapply(1:nsim, function(x) {simpar[[x]][["t2"]] <- attributes(prior)$fixed$t2; simpar[[x]]})
+  }
+
+  for(i in 1:length(allnames)){
+    if(!allnames[i] %in% c("k", "sb")){
+      if(N[i]=="fixed"){
+        simpar <- lapply(1:nsim, function(x) {simpar[[x]][[allnames[i]]] <- attributes(prior)$fixed[[allnames[i]]]; simpar[[x]]})
+      } else {
+        rdistname <- paste("r", allnames[i], sep="")
+        if(N[i]=="loc"){
+          n <- sapply(simpar, function(x) x$k)
+          simpar <- lapply(1:nsim, function(x) {simpar[[x]][[allnames[i]]] <- rdists.fx[[rdistname]](n[x])*tree$edge.length[simpar[[x]]$sb]; simpar[[x]]})
+        } else {
+          if(N[i]=="1"){
+            n <- rep(1, nsim)
+          }
+          if(N[i]=="ntheta"){
+            n <- sapply(simpar, function(x) x$ntheta)
+          }
+          simpar <- lapply(1:nsim, function(x) {simpar[[x]][[allnames[i]]] <- rdists.fx[[rdistname]](n[x]); simpar[[x]]})
+        }
+      }
+    }
+  }
   if(plot){
-    if(nsim>1){
-      par(ask=TRUE)
-    }
     for(i in 1:nsim){
+      if(simpar[[i]]$k > 0){
       maps <- pars2simmap(simpar[[i]],tree)
-      col <- maps$col
-      plotSimmap(maps$tree,colors=col, ...)
+      plotRegimes(maps$tree, ...)
+      } else {
+        plot(tree, ...)
+      }
     }
-    
   }
   return(list(pars=simpar,tree=tree))
 }
@@ -129,7 +140,7 @@ dataSim <- function(pars, model, tree, map.type="pars", SE=0,
   if(phenogram){
     col <- c(1,rainbow(pars$k))
     names(col) <- 1:pars$ntheta
-    phenogram(cache$phy,X,colors=col,spread.labels=FALSE, ...)
+    phenogram(cache$phy,X,colors=col, spread.labels=FALSE, ...)
   }
   return(list(W=W, E.th=E.th,dat=X))
 }

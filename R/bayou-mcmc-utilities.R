@@ -3,9 +3,10 @@
 #' \code{load.bayou} loads a bayouFit object that was created using \code{bayou.mcmc()}
 #' 
 #' @param bayouFit An object of class \code{bayouFit} produced by the function \code{bayou.mcmc()}
-#' @param save.Rdata A logical indicating whether the resulting chains should be saved as an *.rds file
+#' @param saveRDS A logical indicating whether the resulting chains should be saved as an *.rds file
 #' @param file An optional filename (possibly including path) for the saved *.rds file
 #' @param cleanup A logical indicating whether the files produced by \code{bayou.mcmc()} should be removed. 
+#' @param ref A logical indicating whether a reference function is also in the output
 #' 
 #' @details If both \code{save.Rdata} is \code{FALSE} and \code{cleanup} is \code{TRUE}, then \code{load.bayou} will trigger a
 #' warning and ask for confirmation. In this case, if the results of \code{load.bayou()} are not stored in an object,
@@ -23,13 +24,16 @@
 #' plot(chain)
 #' }
 #' @export
-load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL, 
-                       cleanup=FALSE){#dir=NULL,outname="bayou",model="OU"){
+load.bayou <- function(bayouFit, saveRDS=TRUE, file=NULL, cleanup=FALSE, ref=FALSE){
   tree <- bayouFit$tree
   dat <- bayouFit$dat
   outname <- bayouFit$outname
   model <- bayouFit$model
+  model.pars <- bayouFit$model.pars
+  startpar <- bayouFit$startpar
   dir <- bayouFit$dir
+  outpars <- model.pars$parorder[!(model.pars$parorder %in% model.pars$rjpars)]
+  rjpars <- model.pars$rjpars
   #mapsr2 <- read.table(file="mapsr2.dta",header=FALSE)
   #mapsb <- read.table(file="mapsb.dta",header=FALSE)
   #mapst2 <- read.table(file="mapst2.dta",header=FALSE)
@@ -37,68 +41,61 @@ load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL,
   mapsb <- scan(file=paste(dir,outname,".sb",sep=""),what="",sep="\n",quiet=TRUE,blank.lines.skip=FALSE)
   mapst2 <- scan(file=paste(dir,outname,".t2",sep=""),what="",sep="\n",quiet=TRUE,blank.lines.skip=FALSE)
   pars.out <- scan(file=paste(dir,outname,".pars",sep=""),what="",sep="\n",quiet=TRUE,blank.lines.skip=FALSE)
+  rjpars.out <- scan(file=paste(dir,outname,".rjpars",sep=""),what="",sep="\n",quiet=TRUE,blank.lines.skip=FALSE)
+  rjpars.out <- lapply(strsplit(rjpars.out,"[[:space:]]+"),as.numeric)
   pars.out <- lapply(strsplit(pars.out,"[[:space:]]+"),as.numeric)
   mapsr2 <- lapply(strsplit(mapsr2,"[[:space:]]+"),as.numeric)
   mapsb <- lapply(strsplit(mapsb,"[[:space:]]+"),as.numeric)
   mapst2 <- lapply(strsplit(mapst2,"[[:space:]]+"),as.numeric)
   chain <- list()
-  if(model=="OU"){
-    chain$gen <- sapply(pars.out,function(x) x[1])
-    chain$lnL <- sapply(pars.out,function(x) x[2])
-    chain$prior <- sapply(pars.out,function(x) x[3])
-    chain$alpha <- sapply(pars.out,function(x) x[4])
-    chain$sig2 <- sapply(pars.out,function(x) x[5])
-    chain$k <- sapply(pars.out,function(x) x[6])
-    chain$ntheta <- sapply(pars.out,function(x) x[7])
-    chain$theta <- lapply(pars.out,function(x) x[-(1:7)])
-    chain$sb <- mapsb
-    chain$loc <- mapsr2
-    chain$t2 <- mapst2
+  chain$gen <- sapply(pars.out,function(x) x[1])
+  chain$lnL <- sapply(pars.out,function(x) x[2])
+  chain$prior <- sapply(pars.out,function(x) x[3])
+  if(ref==TRUE){
+    chain$ref <- sapply(pars.out, function(x) x[4])
   }
-  if(model=="QG"){
-    chain$gen <- sapply(pars.out,function(x) x[1])
-    chain$lnL <- sapply(pars.out,function(x) x[2])
-    chain$prior <- sapply(pars.out,function(x) x[3])
-    chain$h2 <- sapply(pars.out,function(x) x[4])
-    chain$P <- sapply(pars.out,function(x) x[5])
-    chain$w2 <- sapply(pars.out,function(x) x[6])
-    chain$Ne <- sapply(pars.out,function(x) x[7])
-    chain$k <- sapply(pars.out,function(x) x[8])
-    chain$ntheta <- sapply(pars.out,function(x) x[9])
-    chain$theta <- lapply(pars.out,function(x) x[-(1:9)])
-    chain$sb <- mapsb
-    chain$loc <- mapsr2
-    chain$t2 <- mapst2
+  parLs <- lapply(startpar, length)[outpars]
+  j=4+as.numeric(ref)
+  if(length(outpars) > 0){
+    for(i in 1:length(outpars)){
+      chain[[outpars[i]]] <- lapply(pars.out, function(x) as.vector(x[j:(j+parLs[[i]]-1)]))#unlist(res[[4]][,j:(j+parLs[[i]]-1)],F,F)
+      if(parLs[[i]]==1) chain[[outpars[i]]]=unlist(chain[[outpars[i]]])
+      j <- j+1+parLs[[i]]-1
+    }
   }
-  if(model=="OUrepar"){
-    chain$gen <- sapply(pars.out,function(x) x[1])
-    chain$lnL <- sapply(pars.out,function(x) x[2])
-    chain$prior <- sapply(pars.out,function(x) x[3])
-    chain$halflife <- sapply(pars.out,function(x) x[4])
-    chain$Vy <- sapply(pars.out,function(x) x[5])
-    chain$k <- sapply(pars.out,function(x) x[6])
-    chain$ntheta <- sapply(pars.out,function(x) x[7])
-    chain$theta <- lapply(pars.out,function(x) x[-(1:7)])
-    chain$sb <- mapsb
-    chain$loc <- mapsr2
-    chain$t2 <- mapst2
+  chain$sb <- mapsb
+  chain$loc <- mapsr2
+  chain$t2 <- mapst2
+  #j=4
+  #if(length(outpars) > 0){
+  #  for(i in 1:length(outpars)){
+  #    chain[[outpars[i]]] <- sapply(pars.out, function(x) x[j])
+  #    j <- j+1
+  #  }
+  #}
+  if(length(rjpars >0)){
+    nrjpars <- length(rjpars)
+    for(i in 1:length(rjpars)){
+      chain[[rjpars[i]]] <- lapply(rjpars.out, function(x) unlist((x[(1+length(x)/nrjpars*(i-1)):(1+i*length(x)/nrjpars-1)]),F,F))
+    }
   }
-  attributes(chain)$model <- bayouFit$model
+  attributes(chain)$model <- model
+  attributes(chain)$model.pars <- model.pars
   attributes(chain)$tree <- tree
   attributes(chain)$dat <- dat
   class(chain) <- c("bayouMCMC", "list")
-  if(save.Rdata==FALSE & cleanup==TRUE){
+  if(saveRDS==FALSE & cleanup==TRUE){
     ans <- toupper(readline("Warning: You have selected to delete all created MCMC files and not to save them as an .rds file. 
                     Your mcmc results will not be saved on your hard drive. If you do not output to a object, your results will be lost. 
                     Continue? (Y or N):"))
     cleanup <- ifelse(ans=="Y", TRUE, FALSE)
   }
-  if(save.Rdata){
+  if(saveRDS){
     if(is.null(file)){
-      save(chain, file=paste(bayouFit$dir,"../", outname, ".chain.rds",sep=""))
+      saveRDS(chain, file=paste(bayouFit$dir, outname, ".chain.rds",sep=""))
       cat(paste("file saved to", paste(bayouFit$dir,"/",outname,".chain.rds\n",sep="")))
     } else {
-      save(chain, file=file)
+      saveRDS(chain, file=file)
       cat(paste("file saved to", file))
     }
   }
@@ -111,6 +108,7 @@ load.bayou <- function(bayouFit, save.Rdata=TRUE, file=NULL,
       file.remove(paste(dir, outname, ".t2", sep=""))
       file.remove(paste(dir, outname, ".sb", sep=""))
       file.remove(paste(dir, outname, ".pars", sep=""))
+      file.remove(paste(dir, outname, ".rjpars", sep=""))
     }
     }
   return(chain)
@@ -247,7 +245,13 @@ Lposterior <- function(chain,tree,burnin=0, simpar=NULL,mag=TRUE){
 #' }
 #' @export
 pull.pars <- function(i,chain,model="OU"){
-  parorder <- switch(model,"QG"=c("h2","P","w2","Ne","k","ntheta","theta", "sb", "loc", "t2"), "OU"=c("alpha","sig2","k","ntheta","theta", "sb", "loc", "t2"),"OUrepar"=c("halflife","Vy","k","ntheta","theta", "sb", "loc", "t2"))
+  if(is.character(model)){
+    model.pars <- switch(model, "OU"=model.OU, "QG"=model.QG, "OUrepar"=model.OUrepar)#, "bd"=model.bd)
+  } else {
+    model.pars <- model
+    model <- "Custom"
+  }
+  parorder <- c(model.pars$parorder, model.pars$shiftpars)
   pars <- lapply(parorder,function(x) chain[[x]][[i]])
   names(pars) <- parorder
   return(pars)
@@ -256,31 +260,72 @@ pull.pars <- function(i,chain,model="OU"){
 
 #' Combine mcmc chains
 #' 
-#' @param chain1 The first chain to be combined
-#' @param chain2 The second chain to be combined
-#' @param burnin.prop The proportion of burnin from each chain to be discarded
+#' @param chain.list The first chain to be combined
+#' @param thin A number or vector specifying the thinning interval to be used. If a single value,
+#' then the same proportion will be applied to all chains.
+#' @param burnin.prop A number or vector giving the proportion of burnin from each chain to be 
+#' discarded. If a single value, then the same proportion will be applied to all chains.
 #' 
 #' @return A combined bayouMCMC chain
 #' 
 #' @export
-combine.chains <- function(chain1,chain2,burnin.prop=0){
-  nn <- names(chain1)
-  postburn <- (burnin.prop*(length(chain1$gen))+1):(length(chain1$gen))
-  chain1$gen <- chain1$gen + 0.1
-  chain2$gen <- chain2$gen + 0.2
-  chains <- lapply(nn,function(x) c(chain1[[x]][postburn],chain2[[x]][postburn]))
-  names(chains) <- nn
-  class(chains) <- c("bayouMCMC", "list")
+combine.chains <- function(chain.list, thin=1, burnin.prop=0){
+  nns <- lapply(chain.list, function(x) names(x))
+  if(length(burnin.prop) == 1){
+    burnins <- rep(burnin.prop, length(chain.list))
+  } else burnins <- burnin.prop
+  if(length(thin) == 1){
+    thins <- rep(thin, length(chain.list))
+  }
+  Ls <- sapply(chain.list, function(x) length(x$gen))
+  if(!all(sapply(nns, function(x) setequal(nns[[1]], x)))){
+    stop ("Not all chains have the same named elements and cannot be combined")
+  } else {
+    nn <- nns[[1]]
+  }
+  for(i in 1:length(chain.list)) chain.list[[i]]$gen <- chain.list[[i]]$gen + 0.1*i
+  postburns <- lapply(1:length(chain.list), function(x) seq(max(c(floor(burnins[x]*Ls[x]),1)), Ls[x], thins[x]))
+  chains <- setNames(vector("list", length(nns[[1]])), nns[[1]])
+  attributes(chains) <- attributes(chain.list[[1]])
+  for(i in 1:length(nn)){
+    chains[[nn[i]]] <- do.call(c, lapply(1:length(chain.list), function(x) chain.list[[x]][[nn[i]]][postburns[[x]]]))
+  }
+  attributes(chains)$burnin <- 0
   return(chains)
 }
 
-.buildControl <- function(pars, prior, move.weights=NULL){
-  model <- attributes(prior)$model
-  if(is.null(move.weights)){
-   move.weights <- switch(model, "OU"=list("alpha"=4,"sig2"=2,"theta"=4, "slide"=2,"k"=10),
-                                 "OUrepar" = list("halflife"=4, "Vy"=2, "theta"=4, "slide"=2, "k"=10),
-                                 "QG" = list("h2"=2, "P"=2, "w2"=3, "Ne"=3, "theta"=4, "slide"=2, "k"=10))
+
+#' S3 method for printing bayouMCMC objects
+#' 
+#' @param x A mcmc chain of class 'bayouMCMC' produced by the function bayou.mcmc and loaded into the environment using load.bayou
+#' @param ... Additional arguments
+#' 
+#' @export
+#' @method print bayouMCMC
+print.bayouMCMC <- function(x, ...){
+  cat("bayouMCMC object \n")
+  nn <- names(x)
+  if("model.pars" %in% names(attributes(x))){
+    model.pars <- attributes(x)$model.pars
+    cat("shift-specific/reversible-jump parameters: ", model.pars$rjpars, "\n", sep="")
+    o <- match(c("gen", "lnL", "prior", model.pars$parorder, model.pars$shiftpars), names(x))
+  } else {
+    cat("No model specification found in attributes", "\n")
+    o <- 1:length(x)
   }
+  for(i in o){
+    cat("$", nn[i], "     ", sep="")
+    cat(class(x[[i]]), " with ", length(x[[i]]), " elements", "\n", sep="")
+    if(class(x[[i]])=="numeric" & length(x[[i]]) > 0) cat(x[[i]][1:min(c(length(x[[i]]), 5))])
+    if(class(x[[i]])=="list" & length(x[[i]]) > 0) print(x[[i]][1:min(c(length(x[[i]]), 2))])
+    if(class(x[[i]])=="numeric" & length(x[[i]]) > 5) cat(" ...", "\n")
+    if(class(x[[i]])=="list" & length(x[[i]]) > 2) cat(" ...", "\n")
+    cat("\n")
+  }
+}
+
+.buildControl <- function(pars, prior, move.weights=list("alpha"=4,"sig2"=2,"theta"=4, "slide"=2,"k"=10)){
+  splitmergepars <- attributes(prior)$splitmergepars
   ct <- unlist(move.weights)
   total.weight <- sum(ct)
   ct <- ct/sum(ct)
@@ -303,7 +348,7 @@ combine.chains <- function(chain1,chain2,burnin.prop=0){
       maxK <- ifelse(is.null(maxK), attributes(prior)$parameters$dsb$ntips*2, maxK)
       maxK <- ifelse(!is.finite(maxK), attributes(prior)$parameters$dsb$ntips*2, maxK)
       bdFx <- attributes(prior)$functions$dk
-      bdk <- sqrt(cumsum(c(0,bdFx(0:maxK,log=FALSE))))*0.9
+      bdk <- 1-sqrt(cumsum(c(0,bdFx(0:maxK,log=FALSE))))*0.9
     }
     if(type==1){
       maxK <- nbranch-sum(bmax==0)
@@ -313,11 +358,14 @@ combine.chains <- function(chain1,chain2,burnin.prop=0){
     ct$dk <- (1-bdk)
     ct$sb <- list(bmax=bmax, prob=prob)
   } 
-  if(move.weights$slide > 0 & move.weights$k ==0){
-    bmax <- attributes(prior)$parameters$dsb$bmax
-    prob <- attributes(prior)$parameters$dsb$prob
-    ct$sb <- list(bmax=bmax, prob=prob)
+  if("k" %in% names(move.weights) & "slide" %in% names(move.weights)){
+    if(move.weights$slide > 0 & move.weights$k ==0){
+      bmax <- attributes(prior)$parameters$dsb$bmax
+      prob <- attributes(prior)$parameters$dsb$prob
+      ct$sb <- list(bmax=bmax, prob=prob)
+      }
   }
+  attributes(ct)$splitmergepars <- splitmergepars
   return(ct)
 }
 
@@ -434,6 +482,7 @@ set.burnin <- function(chain, burnin=0.3){
 summary.bayouMCMC <- function(object, ...){
   tree <- attributes(object)$tree
   model <- attributes(object)$model
+  model.pars <- attributes(object)$model.pars
   if(is.null(attributes(object)$burnin)){
     start <- 1
   } else {
@@ -443,13 +492,29 @@ summary.bayouMCMC <- function(object, ...){
   cat(length(object$gen), "samples, first", eval(start), "samples discarded as burnin\n")
   postburn <- start:length(object$gen)
   object <- lapply(object,function(x) x[postburn])
-  parorder <- switch(model,"QG"=c("lnL","prior", "h2","P","w2","Ne","k","ntheta"), "OU"=c("lnL","prior","alpha","sig2","k","ntheta"),"OUrepar"=c("lnL","prior","halflife","Vy","k","ntheta"))
-  summat <- matrix(unlist(object[parorder]),ncol=length(parorder))
-  colnames(summat) <- parorder
-  summat <- cbind(summat, "root"=sapply(object$theta,function(x) x[1]))
-  sum.1vars <- summary(mcmc(summat))
-  sum.theta <- summary(mcmc(unlist(object$theta)))
-  statistics <- rbind(cbind(sum.1vars$statistics, "Effective Size" = effectiveSize(summat)),"all theta"=c(sum.theta$statistics[1:2],rep(NA,3)))
+  parorder <- c("lnL", "prior", model.pars$parorder)
+  outpars <- parorder[!(parorder %in% model.pars$rjpars)]
+  summat <- matrix(unlist(object[outpars]),ncol=length(outpars))
+  colnames(summat) <- outpars
+  if(length(model.pars$rjpars) > 0){
+    for(i in model.pars$rjpars){
+      summat <- cbind(summat, sapply(object[[i]],function(x) x[1]))
+      colnames(summat)[ncol(summat)] <- paste("root.",i,sep="")
+    }
+    sum.rjpars <- lapply(model.pars$rjpars, function(x) summary(coda::mcmc(unlist(object[[x]]))))
+  } else {
+    sum.rjpars <- NULL
+  }
+  #summat <- cbind(summat, "root"=sapply(object$theta,function(x) x[1]))
+  sum.1vars <- summary(coda::mcmc(summat))
+  HPDs <- apply(summat,2,function(x) HPDinterval(mcmc(x), 0.95))
+  statistics <- rbind(cbind(sum.1vars$statistics, "Effective Size" = effectiveSize(summat), "HPD95Lower"=HPDs[1,], "HPD95Upper"=HPDs[2,]))
+  if(length(model.pars$rjpars) > 0){
+    for(i in 1:length(model.pars$rjpars)){
+      statistics <- rbind(statistics,c(sum.rjpars[[i]]$statistics[1:2],rep(NA,5)))
+      rownames(statistics)[nrow(statistics)] <- paste("all", model.pars$rjpars[i],sep=" ")
+    }
+  }
   cat("\n\nSummary statistics for parameters:\n")
   print(statistics, ...)
   Lpost <- Lposterior(object, tree)
@@ -460,32 +525,33 @@ summary.bayouMCMC <- function(object, ...){
   invisible(out)
 }
 
-#' Generate an overparameterized starting point for the MCMC
+#' Stores a flat file
 #' 
-#' This function takes a prior function and generates a starting point that can be entered for \code{startpar} 
-#' in the function \code{bayou.mcmc}
-#' 
-#' @param prior A prior function
-#' @param tree A phylogenetic tree of class 'phylo'
-#' @param dat A named data vector
-#' 
-#' @details This function creates an "overparameterized" starting point for running the mcmc. It gives n-1 tips a unique
-#' optimum close to the actual data value. This is useful if you expect steep likelihood peaks that may be hard to find, 
-#' as these often will be easier to access from this overparameterized model. Generally, the overparameterization will have 
-#' a very high likelihood and a very low prior.
-overparameterize.startingPoint <- function(prior, tree, dat){
-  tree <- reorder(tree, "postorder")
-  dat <- dat[tree$tip.label]
-  model <- attributes(prior)$model
-  ntips <- length(tree$tip.label)
-  startpar <- priorSim(prior, tree, plot=FALSE, nsim=1)[[1]][[1]]
-  theta <- rnorm(ntips, dat, 1e-5)
-  startpar$theta <- theta
-  startpar$k <- ntips-1
-  startpar$sb <- which(tree$edge[,2] < ntips)
-  startpar$loc <- rep(0, startpar$k)
-  startpar$t2 <- 2:ntips
-  startpar$ntheta <- startpar$k+1
-  plotBayoupars(startpar, tree, col=setNames(rainbow(startpar$ntheta), 1:startpar$ntheta))
-  return(startpar)  
+
+.store.bayou2 <- function(i, pars, outpars, rjpars, ll, pr, store, samp, chunk, parorder, files, ref=numeric(0)){
+  if(i%%samp==0){
+    j <- (i/samp)%%chunk
+    if(j!=0 & i>0){
+      store$sb[[j]] <- pars$sb
+      store$t2[[j]] <- pars$t2
+      store$loc[[j]] <- pars$loc
+      parline <- unlist(pars[outpars])
+      store$out[[j]] <- c("gen"=i, "lik"=ll, "prior"=pr, "ref"=ref, parline)
+      store$rjpars[[j]] <- unlist(pars[rjpars])
+    } else {
+      store$sb[[chunk]] <- pars$sb
+      store$t2[[chunk]] <- pars$t2
+      store$loc[[chunk]] <- pars$loc
+      parline <- unlist(pars[outpars])
+      store$out[[chunk]] <- c("gen"=i, "lik"=ll, "prior"=pr, "ref"=ref, parline)
+      store$rjpars[[chunk]] <- unlist(pars[rjpars])
+      lapply(store$out,function(x) cat(c(x,"\n"), file=files$pars.output,append=TRUE))
+      lapply(store$rjpars,function(x) cat(c(x,"\n"),file=files$rjpars,append=TRUE))
+      lapply(store$sb,function(x) cat(c(x,"\n"),file=files$mapsb,append=TRUE))
+      lapply(store$t2,function(x) cat(c(x,"\n"),file=files$mapst2,append=TRUE))
+      lapply(store$loc,function(x) cat(c(x,"\n"),file=files$mapsloc,append=TRUE))
+      store <- list()
+    }
+  }
+  return(store)
 }

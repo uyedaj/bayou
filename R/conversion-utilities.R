@@ -29,39 +29,43 @@ pars2simmap <- function(pars,tree){
   nbranch <- length(tree$edge.length)
   maps <- lapply(tree$edge.length,function(x){y <- x; names(y) <- 1; y})
   dup <- which(duplicated(sb))
-  if(length(dup)>0){
-    maps[sb[-dup]] <- lapply(1:length(sb[-dup]),.addshift2map,maps=maps,sb=sb[-dup],loc=loc[-dup],t2=t2[-dup])
-  } else {
-    maps[sb] <- lapply(1:length(sb),.addshift2map,maps=maps,sb=sb,loc=loc,t2=t2)
-  }
-  for(i in dup){
-    maps[[sb[i]]] <-.addshift2map(i,maps=maps,sb=sb,loc=loc,t2=t2)
-  }
-  nopt <- rep(1,nbranch)
-  for(i in nbranch:1){
-    if(i %in% sb){
-      opt <- as.integer(names(maps[[i]])[length(maps[[i]])])
-      nopt[tree$edge[i,2]] <- opt
-      names(maps[[i]])[1] <- nopt[tree$edge[i,1]]
+  if(pars$k > 0){
+    if(length(dup)>0){
+      maps[sb[-dup]] <- lapply(1:length(sb[-dup]),.addshift2map,maps=maps,sb=sb[-dup],loc=loc[-dup],t2=t2[-dup])
     } else {
-      names(maps[[i]])[1] <- nopt[tree$edge[i,1]] 
-      nopt[tree$edge[i,2]] <- nopt[tree$edge[i,1]]
+      maps[sb] <- lapply(1:length(sb),.addshift2map,maps=maps,sb=sb,loc=loc,t2=t2)
     }
-  }
-  shiftdown <- nopt[tree$edge[,1]]
-  new.maps <- lapply(1:nbranch,function(x){names(maps[[x]])[1] <- shiftdown[x]; maps[[x]]})
-  new.maps <- maps
-  for(j in 1:nbranch){
-    names(new.maps[[j]])[1] <-shiftdown[j]
-  }
-  anc.theta <- unlist(lapply(new.maps[sb],function(x) as.integer(names(x)[length(x)-1])),F,F)
-  o <- rev(order(sb,loc*-1))
-  shifted.maps <- new.maps[sb[o]]
-  t1 <- rep(NA,length(t2))
-  for(i in 1:length(t2)){
-    nm <- as.integer(names(maps[[sb[o][i]]]))
-    t1[nm[2:length(nm)]-1] <- nm[1:(length(nm)-1)]
-    Th[t2[o[i]]] <- Th[t1[o[i]]]
+    for(i in dup){
+      maps[[sb[i]]] <-.addshift2map(i,maps=maps,sb=sb,loc=loc,t2=t2)
+    }
+    nopt <- rep(1,nbranch)
+    for(i in nbranch:1){
+      if(i %in% sb){
+        opt <- as.integer(names(maps[[i]])[length(maps[[i]])])
+        nopt[tree$edge[i,2]] <- opt
+        names(maps[[i]])[1] <- nopt[tree$edge[i,1]]
+      } else {
+        names(maps[[i]])[1] <- nopt[tree$edge[i,1]] 
+        nopt[tree$edge[i,2]] <- nopt[tree$edge[i,1]]
+      }
+    }
+    shiftdown <- nopt[tree$edge[,1]]
+    new.maps <- lapply(1:nbranch,function(x){names(maps[[x]])[1] <- shiftdown[x]; maps[[x]]})
+    new.maps <- maps
+    for(j in 1:nbranch){
+      names(new.maps[[j]])[1] <-shiftdown[j]
+    }
+    anc.theta <- unlist(lapply(new.maps[sb],function(x) as.integer(names(x)[length(x)-1])),F,F)
+    o <- rev(order(sb,loc*-1))
+    shifted.maps <- new.maps[sb[o]]
+    t1 <- rep(NA,length(t2))
+    for(i in 1:length(t2)){
+      nm <- as.integer(names(maps[[sb[o][i]]]))
+      t1[nm[2:length(nm)]-1] <- nm[1:(length(nm)-1)]
+      Th[t2[o[i]]] <- Th[t1[o[i]]]
+    }
+  } else {
+    new.maps <- maps
   }
   new.tree <- tree
   new.tree$maps <- new.maps
@@ -71,6 +75,7 @@ pars2simmap <- function(pars,tree){
   return(list(tree=new.tree,pars=new.pars,col=col))
 }
 
+## New version of .pars2map is faster, returns 3 elements rather than 2 named elements
 .pars2map <- function(pars, cache){
   nbranch <- length(cache$edge.length)
   nshifts <- table(pars$sb)
@@ -79,15 +84,16 @@ pars2simmap <- function(pars,tree){
   irow <- rep(1:nbranch,shifts+1)
   segs <- c(cache$edge.length, pars$loc)
   tmp.o <- c(1:nbranch, pars$sb)
-  names(segs) <- tmp.o
+  #names(segs) <- tmp.o
   add.o <- order(tmp.o,segs)
   segs <- segs[add.o]
-  ind <- names(segs)
+  ind <- tmp.o[add.o]
+  #ind <- tmp.o
   t2index <- add.o[which(add.o > nbranch)]
   t2b <- c(rep(1,length(segs)))
   t2b[match(t2index,add.o)+1] <- pars$t2[t2index-nbranch]
   loc.o <- order(pars$loc,decreasing=TRUE)
-  sandwiches <- loc.o[duplicated(pars$sb[loc.o])]
+  sandwiches <- loc.o[which(duplicated(pars$sb[loc.o]))]
   if(length(sandwiches)>0){
     sb.down <- pars$sb[-sandwiches]
     t2.down <- pars$t2[-sandwiches]
@@ -97,19 +103,20 @@ pars2simmap <- function(pars,tree){
   t2.down <- t2.down[sb.o]
   sb.desc <- cache$bdesc[sb.down]
   desc.length <- unlist(lapply(sb.desc, length),F,F)
-  sb.desc <- sb.desc[desc.length>0]
-  names(t2b) <- names(segs)
+  sb.desc <- sb.desc[which(desc.length>0)]
+  #names(t2b) <- names(segs)
   sb.desc2 <- unlist(sb.desc,F,F)
   sb.dup <- duplicated(sb.desc2)
-  sb.desc3 <- sb.desc2[!sb.dup]
-  t2.names <- rep(t2.down[desc.length>0], unlist(lapply(sb.desc,length),F,F))
-  t2.names <- t2.names[!sb.dup]
-  t2b[as.character(unlist(sb.desc3,F,F))] <- t2.names
-  base <- duplicated(names(segs))*c(0,segs[1:(length(segs)-1)])
+  sb.desc3 <- sb.desc2[which(!sb.dup)]
+  t2.names <- rep(t2.down[which(desc.length>0)], unlist(lapply(sb.desc,length),F,F))
+  t2.names <- t2.names[which(!sb.dup)]
+  #t2b[as.character(unlist(sb.desc3,F,F))] <- t2.names
+  t2b[match(sb.desc3, ind)] <- t2.names
+  base <- duplicated(ind)*c(0,segs[1:(length(segs)-1)])
   segs <- segs-base
   #maps <- lapply(1:nbranch, function(x) segs[ind==x])
   #maps <- lapply(maps, function(x) if(length(x) >1) {c(x[1],diff(x[1:length(x)]))} else x)
-  return(list(segs=segs,theta=t2b))
+  return(list(segs=segs,theta=t2b, branch=ind))
 }
 
 #' Calculates the alpha parameter from a QG model
@@ -143,7 +150,7 @@ OU.repar <- function(pars){
 }
 
 .toSimmap <- function(map, cache){
-  maps <- lapply(1:length(cache$edge.length), function(x){ y <- map$segs[names(map$segs)==x]; names(y) <- map$theta[names(map$theta)==x]; y })  
+  maps <- lapply(1:length(cache$edge.length), function(x){ y <- map$segs[which(map$branch==x)]; names(y) <- map$theta[which(map$branch==x)]; y })  
   tree <- cache$phy
   tree$maps <- maps
   return(tree)

@@ -4,7 +4,8 @@
 #' estimation.
 #' 
 #' @param chain An mcmc chain produced by \code{bayou.mcmc()} and loaded with \code{load.bayou()}
-#' @param prior The prior function used to generate the mcmc chain
+#' @param model A string specifying the model ("OU", "QG", "OUrepar") or a model parameter list
+#' @param priorFn The prior function used to generate the mcmc chain
 #' @param burnin The proportion of the mcmc chain to be discarded when generating the reference function
 #' @param plot Logical indicating whether or not a plot should be created
 #' 
@@ -19,102 +20,98 @@
 #' @return Returns a reference function of class "refFn" that takes a parameter list and returns the log density 
 #' given the reference distribution. If \code{plot=TRUE}, a plot is produced showing the density of variable parameters
 #' and the fitted distribution from the reference function (in red).
-make.refFn <- function(chain, prior, burnin=0.3, plot=TRUE){
-  model <- attributes(prior)$model
+make.refFn <- function(chain, model, priorFn, burnin=0.3, plot=TRUE){
+  if(is.character(model)){
+    model.pars <- switch(model, "OU"=model.OU, "QG"=model.QG, "OUrepar"=model.OUrepar)#, "bd"=model.bd)
+  } else {
+    model.pars <- model
+    model <- "Custom"
+  }
   contdists <- c("norm", "cauchy", "logis")
   poscontdists <- c("lnorm", "exp", "gamma", "weibull")
   discdists <- c("nbinom", "pois", "geom")
   bounddists <- c("beta")
-  parorder <- switch(model,"QG"=c("dh2","dP","dw2","dNe","dsb","dk","dtheta","dloc"), "OU"=c("dalpha","dsig2","dsb","dk","dtheta","dloc"),"OUrepar"=c("dhalflife","dVy","dsb","dk","dtheta","dloc"))
-  postburn <- round(burnin*length(chain[[1]]),0):length(chain[[1]])
-  dists <- attributes(prior)$distributions
-  dists <- dists[parorder]
-  varDists <- dists[which(dists!="fixed")]
+  parorder <- model.pars$parorder
+  postburn <- max(c(1,round(burnin*length(chain[[1]]),0))):length(chain[[1]])
+  dists <- attributes(priorFn)$functions
+  dists <- dists[!(names(dists) %in% paste("d", model.pars$shiftpars, sep=""))]
+  distnames <- gsub('^[d]', "", names(dists))
+  
+  ## This code tests each prior for whether it's continuous, positive continuous, bounded or discrete...not perfect; only tests bounded
+  ## distributions between 0 and 1, etc....
+  test.dists <- suppressWarnings(apply(is.finite(sapply(dists, function(x) c(x(-0.5), x(1.5), x(0.5), x(1)))), 2, function(x) paste(as.numeric(x), collapse="")))
+  dist.types <- rep(NA, length(dists))
+  names(dist.types) <- names(dists)
+  dist.types[which(test.dists=="0111")] <- "pcdist"
+  dist.types[which(test.dists=="1111")]  <- "cdist"
+  dist.types[which(test.dists=="0010" |test.dists== "0011")] <- "bdist" 
+  dist.types[which(test.dists=="0001")] <- "ddist" 
   refFx <- list()
   refNames <- list()
   dists <- list()
   parameters <- list()
   x <- NULL
-  for(i in 1:length(varDists)){
-    parname <- gsub('^[a-zA-Z]',"",names(varDists)[i])
+  for(i in 1:length(dist.types)){
+    parname <- gsub('^[a-zA-Z]',"",names(dist.types)[i])
     xx <- unlist(chain[[parname]][postburn])
-    if(parname %in% c("P", "w2", "Ne", "alpha", "sig2", "halflife", "Vy")){
-      tmpFits <- lapply(poscontdists, function(x) suppressWarnings(try(fitdist(xx, x), silent=TRUE)))
+    fitdists <- switch(dist.types[i], "ddist"=discdists, "pcdist"=poscontdists, "bdist"=bounddists, "cdist"=contdists)
+    {
+      tmpFits <- lapply(fitdists, function(x) suppressWarnings(try(fitdistrplus::fitdist(xx, x), silent=TRUE)))
+      tmpFits[sapply(tmpFits, function(x) (class(x)=="try-error"))] <- lapply(which(sapply(tmpFits, function(x) (class(x)=="try-error"))), function(j) suppressWarnings(try(fitdistrplus::fitdist(xx, fitdists[j], method="mme"), silent=TRUE)))
       tmpFits <- tmpFits[sapply(tmpFits, function(x) !(class(x)=="try-error"))]
       aic <- sapply(tmpFits, function(x) x$aic)
       fit <- tmpFits[[which(aic==min(aic,na.rm=TRUE))]]
+      ## Fix for problem with negative binomial distribution
+      if(fit$distname == "nbinom"){fit$estimate <- c(fit$estimate, prob=unname(fit$estimate['size']/(fit$estimate['size']+fit$estimate['mu'])))}
       fitPars <- as.list(fit$estimate)
       fitPars$log <- TRUE
       fitName <- fit$distname
       fitfx <- get(paste("d",fitName, sep=""))
       refFx[[i]] <- .set.defaults(fitfx, defaults=fitPars)
     }
-    if(parname %in% c("h2")){
-      tmpFits <- lapply(bounddists, function(x) suppressWarnings(try(fitdist(xx, x), silent=TRUE)))
-      tmpFits <- tmpFits[sapply(tmpFits, function(x) !(class(x)=="try-error"))]
-      aic <- sapply(tmpFits, function(x) x$aic)
-      fit <- tmpFits[[which(aic==min(aic,na.rm=TRUE))]]
-      fitPars <- as.list(fit$estimate)
-      fitPars$log <- TRUE
-      fitName <- fit$distname
-      fitfx <- get(paste("d",fitName, sep=""))
-      refFx[[i]] <- .set.defaults(fitfx, defaults=fitPars)
-    }
-    if(parname %in% c("theta")){
-      tmpFits <- lapply(contdists, function(x) suppressWarnings(try(fitdist(xx, x), silent=TRUE)))
-      tmpFits <- tmpFits[sapply(tmpFits, function(x) !(class(x)=="try-error"))]
-      aic <- sapply(tmpFits, function(x) x$aic)
-      fit <- tmpFits[[which(aic==min(aic,na.rm=TRUE))]]
-      fitPars <- as.list(fit$estimate)
-      fitPars$log <- TRUE
-      fitName <- fit$distname
-      fitfx <- get(paste("d",fitName, sep=""))
-      refFx[[i]] <- .set.defaults(fitfx, defaults=fitPars)
-    }
-    if(parname %in% c("k")){
-      tmpFits <- lapply(discdists, function(x) fitdist(xx, x))
-      aic <- sapply(tmpFits, function(x) x$aic)
-      fit <- tmpFits[[which(aic==min(aic,na.rm=TRUE))]]
-      fitPars <- as.list(fit$estimate)
-      fitPars$log <- TRUE
-      fitName <- fit$distname
-      if(fitName=="nbinom") fitPars$prob=fitPars$size/(fitPars$size+fitPars$mu)
-      fitfx <- get(paste("d",fitName, sep=""))
-      refFx[[i]] <- .set.defaults(fitfx, defaults=fitPars)
-    }
-    if(parname %in% c("loc", "sb")){
-      fitName <- paste("d", parname,sep="")
-      refFx[[i]] <- attributes(prior)$functions[[fitName]]
-    }
-    dists[[i]] <- fitName
-    parameters[[i]] <- fitPars
+
+  dists[[i]] <- fitName
+  parameters[[i]] <- fitPars
   }
-  names(refFx) <- gsub('^[a-zA-Z]',"", names(varDists))
-  par.names <- names(refFx)
-  names(dists) <- par.names
-  names(parameters) <- par.names
-  if(plot){
-    pars2plot <- par.names[(par.names %in% c("h2", "P", "w2", "Ne", "alpha", "halflife","sig2","Vy", "k", "theta"))]
-    par(mfrow=c(ceiling(length(pars2plot)/2),2))
-    for(i in 1:length(pars2plot)){
-      plot(density(unlist(chain[[pars2plot[i]]][postburn])), main=pars2plot[i])
-      if(pars2plot[i]=="k"){
-        points(seq(ceiling(par('usr')[1]),floor(par('usr')[2]),1), refFx[[pars2plot[i]]](seq(ceiling(par('usr')[1]),floor(par('usr')[2]),1),log=FALSE),pch=21,bg="red")
-      } else {x <- NULL; curve(refFx[[pars2plot[i]]](x,log=FALSE), add=TRUE, col="red")}
-    }
+names(refFx) <- gsub('^[a-zA-Z]',"", names(dist.types))
+par.names <- names(refFx)
+names(dists) <- par.names
+names(parameters) <- par.names
+if(attributes(priorFn)$distributions$dsb!="fixed"){
+  dists$dsb <- "dsb"
+  parameters$dsb <- attributes(priorFn)$parameters$dsb
+  refFx$dsb <- attributes(priorFn)$functions$dsb 
+  par.names <- c(par.names, "sb")
+}
+if(attributes(priorFn)$distributions$dloc!="fixed"){
+  dists$dloc = "dloc"
+  parameters$dloc <- attributes(priorFn)$parameters$dloc
+  refFx$dloc <- attributes(priorFn)$functions$dloc
+  par.names <- c(par.names, "loc")
+}
+
+if(plot){
+  pars2plot <- par.names[!(par.names %in% c("sb", "loc"))]
+  par(mfrow=c(ceiling(length(pars2plot)/2),2))
+  for(i in 1:length(pars2plot)){
+    plot(density(unlist(chain[[pars2plot[i]]][postburn])), main=pars2plot[i])
+    if(pars2plot[i]=="k"){
+      points(seq(ceiling(par('usr')[1]),floor(par('usr')[2]),1), refFx[[pars2plot[i]]](seq(ceiling(par('usr')[1]),floor(par('usr')[2]),1),log=FALSE),pch=21,bg="red")
+    } else {x <- NULL; curve(refFx[[pars2plot[i]]](x,log=FALSE), add=TRUE, col="red")}
   }
-  refFUN <- function(pars,cache){
-    if(any(!(par.names %in% names(pars)))) stop(paste("Missing parameters: ", paste(par.names[!(par.names %in% names(pars))],collapse=" ")))
-    pars.o <- pars[match(par.names,names(pars))]
-    pars.o <- pars.o[!is.na(names(pars.o))]
-    densities <- sapply(1:length(pars.o),function(x) refFx[[x]](pars.o[[x]]))
-    names(densities) <- par.names
-    lnprior <- sum(unlist(densities,F,F))
-    return(lnprior)
-  }
-  attributes(refFUN) <- list("model"=model,"parnames"=par.names,"distributions"=dists,"parameters"=parameters,"functions"=refFx)
-  class(refFUN) <- c("refFn","function")
-  return(refFUN)
+}
+refFUN <- function(pars,cache){
+  if(any(!(par.names %in% names(pars)))) stop(paste("Missing parameters: ", paste(par.names[!(par.names %in% names(pars))],collapse=" ")))
+  pars.o <- pars[match(par.names,names(pars))]
+  pars.o <- pars.o[!is.na(names(pars.o))]
+  densities <- sapply(1:length(pars.o),function(x) refFx[[x]](pars.o[[x]]))
+  names(densities) <- par.names
+  lnprior <- sum(unlist(densities,F,F))
+  return(lnprior)
+}
+attributes(refFUN) <- list("model"=model,"parnames"=par.names,"distributions"=dists,"parameters"=parameters,"functions"=refFx)
+class(refFUN) <- c("refFn","function")
+return(refFUN)
 }
 
 
@@ -122,20 +119,27 @@ make.refFn <- function(chain, prior, burnin=0.3, plot=TRUE){
 #' 
 #' This function generates a power posterior function for estimation of marginal likelihood using the stepping stone method
 #' 
-#' @param k The step in the sequence being estimated
 #' @param Bk The sequence of steps to be taken from the reference function to the posterior
 #' @param priorFn The prior function to be used in marginal likelihood estimation
 #' @param refFn The reference function generated using \code{make.refFn()} from a preexisting mcmc chain
+#' @param model A string specifying the model type ("OU", "OUrepar", "QG") or a model parameter list
 #' 
 #' @details For use in stepping stone estimation of the marginal likelihood using the method of Fan et al. (2011).
 #' @export
 #' @return A function of class "powerposteriorFn" that returns a list of four values: \code{result} (the log density of the power posterior), 
 #' \code{lik} (the log likelihood), \code{prior} (the log prior), \code{ref} the log reference density. 
-make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
-  model <- attributes(priorFn)$model
-  if(model != attributes(refFn)$model) stop("Error: prior and reference function are not of same type")
-  powerposteriorFn <- function(k, Bk, pars, cache, dat, SE, model){
-    lik <- bayou.lik(pars, cache, dat, model=model)$loglik
+make.powerposteriorFn <- function(Bk, priorFn, refFn, model){
+  #Turn these off for now, need to add back in checks
+  #model <- attributes(priorFn)$model
+  #if(model != attributes(refFn)$model) stop("Error: prior and reference function are not of same type")
+  if(is.character(model)){
+    model.pars <- switch(model, "OU"=model.OU, "QG"=model.QG, "OUrepar"=model.OUrepar)#, "bd"=model.bd)
+  } else {
+    model.pars <- model
+    model <- "Custom"
+  }
+  powerposteriorFn <- function(k, Bk, pars, cache, dat, model=model.pars){
+    lik <- model$lik.fn(pars, cache, dat)$loglik
     prior <- priorFn(pars, cache)
     ref <- refFn(pars, cache)
     coeff <- c(Bk[k],Bk[k],(1-Bk[k]))
@@ -147,6 +151,15 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
   }
   class(powerposteriorFn) <- c("powerposteriorFn", "function")
   return(powerposteriorFn)
+}
+
+powerPosteriorFn <- function(k, Bk, lik, prior, ref){
+  coeff <- c(Bk[k],Bk[k],(1-Bk[k]))
+  result <- c(lik, prior, ref)
+  result[coeff==0] <- 0
+  result <- result*coeff
+  result <- sum(result)
+  return(result)
 }
 
 .steppingstone.mcmc <- function(k, Bk, powerposteriorFn, tree, dat, SE=0, prior, ngen=10000, samp=10, chunk=100, control=NULL, tuning=NULL, new.dir=TRUE, plot.freq=500, outname="bayou", ticker.freq=1000, tuning.int=c(0.1,0.2,0.3), startpar=NULL, moves=NULL, control.weights=NULL){
@@ -228,7 +241,7 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
   accept <- NULL
   if(!is.null(plot.freq)){
     tr <- .toSimmap(.pars2map(oldpar, cache),cache)
-    tcols <- makeTransparent(rainbow(oldpar$ntheta),alpha=100)
+    tcols <- makeTransparent(grDevices::rainbow(oldpar$ntheta),alpha=100)
     names(tcols)<- 1:oldpar$ntheta
     phenogram(tr,dat,colors=tcols,ftype="off", spread.labels=FALSE)
     plot.dim <- list(par('usr')[1:2],par('usr')[3:4])
@@ -269,7 +282,7 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
     if(!is.null(plot.freq)){
       if(i %% plot.freq==0){
         tr <- .toSimmap(.pars2map(oldpar, cache),cache)
-        tcols <- makeTransparent(rainbow(oldpar$ntheta),alpha=100)
+        tcols <- makeTransparent(grDevices::rainbow(oldpar$ntheta),alpha=100)
         names(tcols)<- 1:oldpar$ntheta
         plot(plot.dim[[1]],plot.dim[[2]],type="n",xlab="time",ylab="phenotype")
         mtext(paste("gens = ",i," lnL = ",round(oll,2)),3)
@@ -323,20 +336,25 @@ make.powerposteriorFn <- function(k, Bk, priorFn, refFn){
 #' @details This function estimates the marginal likelihood of a bayou model by using stepping stone estimation from a reference distribution to the posterior 
 #' distribution using the method of Fan et al. (2011). The vector \code{Bk} provides a sequence from 0 to 1. The length of this sequence determines the number
 #' of mcmc chains that will be run, and the values are used as the exponents of the power posterior function, stepping from purely the reference distribution (k=0)
-#' to purely the posterior distribution (k=1). These chains can be run in parallel if \code{parallel} is set to \code{TRUE}. The number of cores available is determined
-#' by a call to \code{detectCores}, and can be set by .... Note that when run in parallel, progress within each
-#' of the individual mcmc chains will not be reported, and if \code{ngen} is high, it may take a considerable amount of time to run. Furthermore, if many samples 
-#' are saved from each mcmc run, and a number of steps along \code{Bk} is large, the returned object may require a substantial amount of memory. 
+#' to purely the posterior distribution (k=1). These chains can be run in parallel if \code{parallel} is set to \code{TRUE}. The number of cores  can be set by 
+#' \code{registerDoMC} or \code{registerDoParallel}, for example as specified in the \code{foreach} package documentation. Note that when run in parallel, 
+#' progress within each of the individual mcmc chains will not be reported, and if \code{ngen} is high, it may take a 
+#' considerable amount of time to run. Furthermore, if many samples are saved from each mcmc run, and a number of steps along \code{Bk} is large, the returned 
+#' object may require a substantial amount of memory. 
 #' 
 #' @export
 #' @return A list of class "ssMCMC" that provides the log marginal likelihood \code{lnr}, a list of the individual normalizing constants estimated at each step \code{lnrk},
 #' a list of the mcmc chains used for importance sampling to estimating the marginal likelihood at each step \code{chains}, and mcmc fit data from each of the runs \code{fits}.
 #' Note that this object may become quite large if a number of chains are run for many generations. To reduce the number of samples taken, increase the parameter \code{samp} (default = 10)
 #' which sets the frequency at which samples are saved in the mcmc chain. 
-steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, 
-                          burnin=0.3, ngen=10000, powerposteriorFn=NULL, 
-                          parallel=FALSE, ...){
+steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burnin=0.3, ngen=10000, 
+                          powerposteriorFn=NULL, parallel=FALSE, ...){
     model <- attributes(prior)$model
+    if(parallel){
+      requireNamespace(foreach)
+      #require(doMC)
+      #registerDoMC(cores=cores)
+    }
     if(is.null(powerposteriorFn)){
       cat("Making power posterior function from provided mcmc chain...\n")
       ref <- suppressWarnings(make.refFn(chain, prior, plot=TRUE))
@@ -357,17 +375,17 @@ steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL,
   cat("Loading mcmc chains...\n")
   if(parallel){
     Kchains <- foreach(i = 1:length(Bk)) %dopar% {
-      load.bayou(ssfits[[i]], save.Rdata=FALSE, cleanup=FALSE)
+      load.bayou(ssfits[[i]], saveRDS=FALSE, cleanup=FALSE)
     }
   } else {
     Kchains <- list()
     for (i in 1:length(Bk)){
-      Kchains[[i]] <- load.bayou(ssfits[[i]], save.Rdata=FALSE, cleanup=FALSE)
+      Kchains[[i]] <- load.bayou(ssfits[[i]], saveRDS=FALSE, cleanup=FALSE)
     }
   }
   Kchains <- lapply(1:length(Kchains), function(x){Kchains[[x]]$ref <- ssfits[[x]]$ref; Kchains[[x]]})
   postburn <- round(burnin*length(Kchains[[1]][[1]]),0):length(Kchains[[1]][[1]])
-  lnr <- .computelnr(Kchains, ssfits, Bk, postburn)
+  lnr <- .computelnr(Kchains, Bk, postburn)
   out <- list(lnr= lnr$lnr, lnrk = lnr$lnrk, Bk=Bk, chains=Kchains, fits=ssfits)
   class(out) <- c("ssMCMC", "list")
   return(out)
@@ -431,10 +449,10 @@ plot.ssMCMC <- function(x, ...){
   lines(x$Bk, c(0,cumsum(x$lnrk)))
 }
 
-.pull.rsample <- function(samp, chain, fit, refFn){
+.pull.rsample <- function(samp, chain){
   #pars.list <- lapply(samp,function(y) pull.pars(y,chain,model=model))
   #emap.list <- lapply(samp,function(y) read.emap(chain$branch.shift[[y]],chain$location[[y]],chain$t2[[y]],cache$phy)$emap)
-  L <- chain$lnL[samp]+chain$prior[samp]-fit$ref[samp]
+  L <- chain$lnL[samp]+chain$prior[samp]-chain$ref[samp]
   Lmax <- max(L)
   Lfactored <- L-Lmax
   return(list(Lmax=Lmax,Lfactored=Lfactored))
@@ -444,11 +462,15 @@ plot.ssMCMC <- function(x, ...){
 #' 
 #' \code{computelnr} computes the marginal likelihood of a set of chains estimated via stepping stone
 #' sampling and produced by the function \code{steppingstone}
-.computelnr <- function(Kchains,ssfits,Bk,samp){
+.computelnr <- function(Kchains,Bk,samp){
   lnr <- list()
   for(i in 1:(length(Bk)-1)){
-    Lk <- .pull.rsample(samp, Kchains[[i]],ssfits[[i]])
+    Lk <- .pull.rsample(samp, Kchains[[i]])
     lnr[[i]] <- (Bk[i+1]-Bk[i])*Lk$Lmax+log(1/length(Lk$Lfactored)*sum(exp(Lk$Lfactored)^(Bk[i+1]-Bk[i])))
   }
   return(list("lnr"=sum(unlist(lnr)),"lnrk"=lnr))
 } 
+
+
+
+

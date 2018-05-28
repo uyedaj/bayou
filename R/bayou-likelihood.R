@@ -124,13 +124,13 @@
     }
     cache$attb = attb
     lik <- function(pars, ...) {
-      recache = function(nodes = NULL, root = 6, #ROOT.MAX=6
+      recache = function(nodes = NULL, root = 6, 
                          cache) {
         r.cache = cache
-        if (root == 6) { #ROOT.MAX=6
+        if (root == 6) {
           rtmx = TRUE
         }
-        else if (root %in% c(3,4)) {#ROOT.OBS=3; ROOT.GIVEN=4
+        else if (root %in% c(3, 4)) { ## ROOT.OBS & ROOT.GIVEN from geiger.
           rtmx = FALSE
           r.cache$attb = c(cache$attb, "z0")
         }
@@ -180,19 +180,23 @@
   return(likfx)
 }
 
-#' Function for calculating likelihood of an OU model in bayou using pruning algorithm or matrix inversion
+#' Function for calculating likelihood of an OU model in bayou using pruning algorithm 
+#' or matrix inversion
 #' 
 #' @param pars A list of parameters to calculate the likelihood
 #' @param tree A phylogenetic tree of class 'phylo'
 #' @param X A named vector giving the tip data
 #' @param SE A named vector or single number giving the standard errors of the data
 #' @param model Parameterization of the OU model. Either "OU", "QG" or "OUrepar".
-#' @param invert A logical indicating whether the likelihood should be solved by matrix inversion, rather than
-#' the pruning algorithm. This is primarily present to test that calculation of the likelihood is correct. 
+#' @param invert A logical indicating whether the likelihood should be solved by matrix 
+#' inversion, rather than
+#' the pruning algorithm. This is primarily present to test that calculation of the likelihood 
+#' is correct. 
 #' 
-#' @details This function can be used for calculating single likelihoods using previously implemented methods. It is
-#' likely to become deprecated and replaced by \code{bayou.lik} in the future, which is based on \code{phylolm}'s threepoint
-#' algorithm, which works on non-ultrametric trees and is substantially faster.
+#' @details This function can be used for calculating single likelihoods using previously 
+#' implemented methods. It is likely to become deprecated and replaced by \code{bayou.lik} 
+#' in the future, which is based on \code{phylolm}'s threepoint algorithm, which works on 
+#' non-ultrametric trees and is substantially faster.
 #' 
 #' @return A list returning the log likelihood ("loglik"), the weight matrix ("W"), the optima ("theta"),
 #' the residuals ("resid") and the expected values ("Exp").
@@ -228,7 +232,7 @@ OU.lik <- function(pars,tree,X,SE=0,model="OU", invert=FALSE){
   } else {
     lnL.fx<-.fastbm.lik(cache,X.c,SE=TRUE,model="OU")
   #lnL.fx<-bm.lik(cache$phy,X.c,SE=NA,model="OU")
-    loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=4)#ROOT.GIVEN=4
+    loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=4) #ROOT.GIVEN=4
     return(list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th))
   }
 }
@@ -249,7 +253,7 @@ OU.lik <- function(pars,tree,X,SE=0,model="OU", invert=FALSE){
   } else {E.th=W*pars$theta}
   X.c<-X-as.vector(E.th)
   lnL.fx<-.fastbm.lik(cache,X.c,SE=TRUE,model="OU")
-  loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=4)#ROOT.GIVEN=4
+  loglik <- lnL.fx(pars=c(pars$alpha,pars$sig2,0),root=4)
   list(loglik=loglik,W=W,theta=pars$theta,resid=X.c,Exp=E.th)
 }
 
@@ -278,7 +282,11 @@ bayou.lik <- function(pars, cache, X, model="OU"){
     pars$sig2 <- repar$sig2
   }
   n <- cache$n
-  X <- cache$dat
+  if(model=="ffancova"){
+    X <- cache$dat
+    X = X - apply(cache$pred, 1, function(x) sum(pars$beta1*x))
+    cache$dat <- X
+  }
   #W <- C_weightmatrix(cache,pars)$W
   #if(pars$ntheta>1){
   #  E.th=W%*%pars$theta
@@ -327,3 +335,102 @@ bayou.lik <- function(pars, cache, X, model="OU"){
   names(xx) <- if (is.null(phy$node.label)) 1:(n + phy$Nnode) else phy$node.label
   return(xx)
 }
+
+#bdSplit.lik <- function(pars, cache, X=NULL, model="bd"){
+#  splitBranch <- pars$sb
+#  splitNode <- cache$edge[splitBranch,2]
+#  r <- exp(pars$r)
+#  eps <- exp(pars$eps)
+#  r2 <- c(0, pars$t2-1)
+#  loglik <- getSplitLikelihood(cache$phy, splitNode, r, eps, r2)
+#  return(list(loglik=loglik))
+#}
+
+
+
+#' Bayou Models
+#' 
+#' @description Default bayou models. New models may be specified by providing a set of moves, control weights,
+#' tuning parameters, parameter names, RJ parameters and a likelihood function. 
+
+model.OU <- list(moves = list(alpha=".multiplierProposal",sig2=".multiplierProposal",k=".splitmergePrior",theta=".adjustTheta",slide=".slide"),
+                 control.weights = list("alpha"=4,"sig2"=2,"theta"=4,"slide"=2,"k"=10),
+                 D = list(alpha=1, sig2= 1, k = 4,theta=2,slide=1),
+                 parorder = c("alpha","sig2","k","ntheta","theta"),
+                 fixedpars = c(),
+                 rjpars = "theta",
+                 shiftpars = c("sb", "loc", "t2"),
+                 monitor.fn = function(i, lik, pr, pars, accept, accept.type, j){
+                   names <- c("gen", "lnL", "prior", "alpha", "sig2","rtheta", "k")
+                   format <- c("%-8i",rep("%-8.2f", 5),"%-8i")
+                   acceptratios <- tapply(accept, accept.type, mean)
+                   names <- c(names, names(acceptratios))
+                   if(j==0){
+                     cat(sprintf("%-7.7s", names), "\n", sep=" ") 
+                     
+                   }
+                   item <- c(i, lik, pr, pars$alpha, pars$sig2, pars$theta[1], pars$k)
+                   cat(sapply(1:length(item), function(x) sprintf(format[x], item[x])), sprintf("%-8.2f", acceptratios),"\n", sep="")
+                 },
+                 lik.fn = bayou.lik)
+
+model.QG <- list(moves = list(h2=".multiplierProposal",P=".multiplierProposal",w2=".multiplierProposal",Ne=".multiplierProposal",k=".splitmergePrior",theta=".adjustTheta",slide=".slide"),
+                 control.weights = list("h2"=5,"P"=2,"w2"=5,"Ne"=5,"theta"=5,"slide"=3,"k"=20),
+                 D = list(h2=1, P=1, w2=1, Ne=1, k = 4, theta=2, slide=1),
+                 parorder = c("h2","P","w2","Ne","k","ntheta","theta"),
+                 fixedpars = c(),
+                 rjpars = "theta",
+                 shiftpars = c("sb", "loc", "t2"),
+                 monitor.fn = function(i, lik, pr, pars, accept, accept.type, j){
+                   names <- c("gen", "lnL", "prior", "h2", "P", "w2", "Ne","rtheta", "k")
+                   format <- c("%-8i",rep("%-8.2f", 7),"%-8i")
+                   acceptratios <- tapply(accept, accept.type, mean)
+                   names <- c(names, names(acceptratios))
+                   if(j==0){
+                     cat(sprintf("%-7.7s", names), "\n", sep=" ") 
+                     
+                   }
+                   item <- c(i, lik, pr, pars$h2, pars$P, pars$w2, pars$Ne, pars$theta[1], pars$k)
+                   cat(sapply(1:length(item), function(x) sprintf(format[x], item[x])), sprintf("%-8.2f", acceptratios),"\n", sep="")
+                 },
+                 lik.fn = bayou.lik)
+
+model.OUrepar <- list(moves = list(halflife=".multiplierProposal",Vy=".multiplierProposal",k=".splitmergePrior",theta=".adjustTheta",slide=".slide"),
+                      control.weights = list(halflife=5,"Vy"=3,theta=5,slide=3,k=20),
+                      D = list(halflife=1, Vy=1, k=4, theta=2, slide=1),
+                      parorder = c("halflife","Vy","k","ntheta","theta"),
+                      fixedpars = c(),
+                      rjpars = "theta",
+                      shiftpars = c("sb", "loc", "t2"),
+                      monitor.fn = function(i, lik, pr, pars, accept, accept.type, j){
+                        names <- c("gen", "lnL", "prior", "halflife", "Vy","rtheta", "k")
+                        format <- c("%-8i",rep("%-8.2f", 5),"%-8i")
+                        acceptratios <- tapply(accept, accept.type, mean)
+                        names <- c(names, names(acceptratios))
+                        if(j==0){
+                          cat(sprintf("%-7.7s", names), "\n", sep=" ") 
+                          
+                        }
+                        item <- c(i, lik, pr, pars$halflife, pars$Vy, pars$theta[1], pars$k)
+                        cat(sapply(1:length(item), function(x) sprintf(format[x], item[x])), sprintf("%-8.2f", acceptratios),"\n", sep="")
+                        },
+                      lik.fn = bayou.lik)
+
+#model.bd <- list(moves = list(r=".vectorMultiplier", eps=".vectorMultiplier", k=".splitmergebd"),
+#                 control.weights = list("r"=2, "eps"=1, "k"=5, slide=0),
+#                 D = list(r=1, eps=1, k=4),
+#                 parorder = c("r", "eps", "k", "ntheta"),
+#                 rjpars = c("r", "eps"),
+#                 shiftpars = c("sb", "loc", "t2"),
+#                 monitor.fn = function(i, lik, pr, pars){
+#                   names <- c("gen", "lnL", "prior", "r", "eps", "k")
+#                   string <- "%-8i%-8.2f%-8.2f%-8.2f%-8.2f%-8i"
+#                   acceptratios <- tapply(accept, accept.type, mean)
+##                   names <- c(names, names(acceptratios))
+#                   if(i %% 100*ticker.freq == 0 | i == 1){
+#                     cat(sprintf("%-7s", names))                     
+#                   }
+#                    cat(sprintf(string, i, lnL, pr, pars$r, pars$eps, pars$k), sprintf("%-8.2f", acceptratios), sep="")
+##                 },
+#                 lik.fn = bdSplit.lik)
+
