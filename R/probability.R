@@ -1,6 +1,8 @@
 #' Conditional Poisson distribution
 #' 
-#' \code{cdpois} calculates the probability density of a value \code{k} from a Poisson distribution with a maximum \code{kmax}. \code{rdpois} draws random numbers from a conditional Poisson distribution.
+#' \code{cdpois} calculates the probability density of a value \code{k} from a 
+#' Poisson distribution with a maximum \code{kmax}. \code{rdpois} draws random 
+#' numbers from a conditional Poisson distribution.
 #' 
 #' @rdname cdpois
 #' @param k random variable value
@@ -39,21 +41,29 @@ rdpois <- function(n,lambda,kmax, ...){
 }
 #' Probability density functions for bayou
 #' 
-#' \code{dsb} calculates the probability of a particular arrangement of shifts for a given set of assumptions. 
+#' \code{dsb} calculates the probability of a particular arrangement of shifts 
+#' for a given set of assumptions. 
 #' 
 #' @rdname dsb
 #' @param sb A vector giving the branch numbers (for a post-ordered tree)
 #' @param ntips The number of tips in the phylogeny
-#' @param bmax A single integer or a vector of integers equal to the number of branches in the phylogeny indicating the
+#' @param bmax A single integer or a vector of integers equal to the number of 
+#' branches in the phylogeny indicating the
 #' maximum number of shifts allowable in the phylogeny. Can take values 0, 1 and Inf.
-#' @param prob A single value or a vector of values equal to the number of branches in the phylogeny indicating the probability that
-#' a randomly selected shift will lie on this branch. Can take any positive value, values need not sum to 1 (they will be scaled to sum to 1)
-#' @param log A logical indicating whether the log probability should be returned. Default is 'TRUE'
+#' @param prob A single value or a vector of values equal to the number of branches 
+#' in the phylogeny indicating the probability that
+#' a randomly selected shift will lie on this branch. Can take any positive value, 
+#' values need not sum to 1 (they will be scaled to sum to 1)
+#' @param log A logical indicating whether the log probability should be returned. 
+#' Default is 'TRUE'
 #' @param k The number of shifts to randomly draw from the distribution
 #' 
-#' @description This function provides a means to specify the prior for the location of shifts across the phylogeny. Certain combinations are not
-#' allowed. For example, a maximum shift number of Inf on one branch cannot be combined with a maximum shift number of 1 on another. Thus, bmax must be
-#' either a vector of 0's and Inf's or a vector of 0's and 1's. Also, if bmax == 1, then all probabilities must be equal, as bayou cannot sample unequal 
+#' @description This function provides a means to specify the prior for the location 
+#' of shifts across the phylogeny. Certain combinations are not
+#' allowed. For example, a maximum shift number of Inf on one branch cannot be combined 
+#' with a maximum shift number of 1 on another. Thus, bmax must be
+#' either a vector of 0's and Inf's or a vector of 0's and 1's. Also, if bmax == 1, 
+#' then all probabilities must be equal, as bayou cannot sample unequal 
 #' probabilities without replacement. 
 #' 
 #' @return The log density of the particular number and arrangement of shifts.
@@ -65,20 +75,18 @@ rdpois <- function(n,lambda,kmax, ...){
 #' nbranch <- 2*n-2
 #' sb <- c(1,2, 2, 3)
 #' 
-#' # Allow any number of shifts on each branch, with 
-#' # probability proportional to branch length
+#' # Allow any number of shifts on each branch, with probability 
+#' # proportional to branch length
 #' dsb(sb, ntips=n, bmax=Inf, prob=tree$edge.length)
 #' 
-#' # Disallow shifts on the first branch, returns -Inf 
-#' # because sb[1] = 1
-#' dsb(sb, ntips=n, bmax=c(0, rep(1, nbranch-1)), 
-#'                              prob=tree$edge.length)
+#' # Disallow shifts on the first branch, returns -Inf because sb[1] = 1
+#' dsb(sb, ntips=n, bmax=c(0, rep(1, nbranch-1)), prob=tree$edge.length)
 #' 
-#' # Set maximum number of shifts to 1, returns -Inf 
-#' # because two shifts are on branch 2
+#' # Set maximum number of shifts to 1, returns -Inf because two shifts 
+#' # are on branch 2
 #' dsb(sb, ntips=n, bmax=1, prob=1)
 #' 
-#' #Generate a random set of k branches
+#' # Generate a random set of k branches
 #' rsb(5, ntips=n, bmax=Inf, prob=tree$edge.length)
 #' @export
 dsb <- function(sb, ntips=ntips, bmax=1, prob=1, log=TRUE){
@@ -128,7 +136,8 @@ rsb <- function(k, ntips=ntips, bmax=1, prob=1, log=TRUE){
   
 #' Probability density function for the location of the shift along the branch
 #' 
-#' \code{dloc} calculates the probability of a shift occuring at a given location along the branch assuming a uniform distribution of unit length
+#' \code{dloc} calculates the probability of a shift occuring at a given 
+#' location along the branch assuming a uniform distribution of unit length
 #' \code{rloc} randomly generates the location of a shift along the branch
 #' 
 #' @param loc The location of the shift along the branch
@@ -137,7 +146,8 @@ rsb <- function(k, ntips=ntips, bmax=1, prob=1, log=TRUE){
 #' @param log A logical indicating whether the log density should be returned
 #' @param k The number of shifts to return along a branch
 #' 
-#' @description Since unequal probabilities are incorporated in calculating the density via \code{dsb}, all branches are assumed to be of unit length. 
+#' @description Since unequal probabilities are incorporated in calculating the 
+#' density via \code{dsb}, all branches are assumed to be of unit length. 
 #' Thus, the \code{dloc} function simply returns 0 if \code{log=TRUE} and 1 if \code{log=FALSE}. 
 #' @rdname dloc
 #' @export
@@ -164,12 +174,16 @@ rloc <- function(k,min=0,max=1){
 #'@export
 dhalfcauchy <- function(x, scale=25, log=FALSE)
 {
-  x <- as.vector(x); scale <- as.vector(scale)
-  if(any(scale <= 0)) stop("The scale parameter must be positive.")
-  NN <- max(length(x), length(scale))
-  x <- rep(x, len=NN); scale <- rep(scale, len=NN)
-  dens <- log(2*scale) - log(pi*{x*x + scale*scale})
-  if(log == FALSE) dens <- exp(dens)
+  if(all(x > 0)){
+    x <- as.vector(x); scale <- as.vector(scale)
+    if(any(scale <= 0)) stop("The scale parameter must be positive.")
+    NN <- max(length(x), length(scale))
+    x <- rep(x, len=NN); scale <- rep(scale, len=NN)
+    dens <- log(2*scale) - log(pi*{x*x + scale*scale})
+    if(log == FALSE) dens <- exp(dens)
+  } else {
+    if(log == FALSE){ dens <- 0 } else {dens=-Inf}
+  }
   return(dens)
 }
 #' @rdname dhalfcauchy
