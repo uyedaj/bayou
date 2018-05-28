@@ -1,6 +1,5 @@
-#' @export
 getPreValues <- function(cache, col){
-  V <- vcvPhylo(cache$phy, anc.nodes=FALSE)
+  V <- phytools::vcvPhylo(cache$phy, anc.nodes=FALSE)
   X <- cache$pred[,col]
   unknown <- is.na(X)
   known <- !unknown
@@ -9,26 +8,26 @@ getPreValues <- function(cache, col){
   Vku <- V[known, unknown]
   Vuk <- V[unknown, known]
   iVkk <- solve(Vkk)
-  sigmabar <- as.matrix(forceSymmetric(Vuu - Vuk%*%iVkk%*%Vku))
+  sigmabar <- as.matrix(Matrix::forceSymmetric(Vuu - Vuk%*%iVkk%*%Vku))
   cholSigmabar <- chol(sigmabar)
   mubarmat <- Vuk%*%iVkk
   return(list(V=V, X=X, unknown=unknown, known=known, Vkk=Vkk, Vuu=Vuu, Vku=Vku, Vuk=Vuk, iVkk=iVkk, sigmabar=sigmabar, mubarmat=mubarmat, cholSigmabar=cholSigmabar))
 }
 
-#' @export
-cMVNorm <- function(cache, pars, prevalues=pv, known=FALSE){
-  X <- prevalues$X
-  known <- prevalues$known
-  unknown <- prevalues$unknown
-  mu <- rep(pars$pred.root, cache$n)
-  muk <- mu[known]
-  muu <- mu[unknown]
-  mubar <- t(muu + prevalues$mubarmat%*%(X[known]-muk))
-  #sigmabar <- pars$pred.sig2*prevalues$sigmabar
-  myChol <-sqrt(pars$pred.sig2)*prevalues$cholSigmabar
-  res <- dmvn(pars$missing.pred, mu=mubar, sigma = myChol, log=TRUE, isChol=TRUE)
-  return(res)
-}
+# 
+#cMVNorm <- function(cache, pars, prevalues=pv, known=FALSE){
+#  X <- prevalues$X
+#  known <- prevalues$known
+#  unknown <- prevalues$unknown
+#  mu <- rep(pars$pred.root, cache$n)
+#  muk <- mu[known]
+#  muu <- mu[unknown]
+#  mubar <- t(muu + prevalues$mubarmat%*%(X[known]-muk))
+#  #sigmabar <- pars$pred.sig2*prevalues$sigmabar
+#  myChol <-sqrt(pars$pred.sig2)*prevalues$cholSigmabar
+#  res <- dmvn(pars$missing.pred, mu=mubar, sigma = myChol, log=TRUE, isChol=TRUE)
+#  return(res)
+#}
 
 ## Proposal function to simulate conditional draws from a multivariate normal distribution
 .imputePredBM <- function(cache, pars, d, move,ct=NULL, prevalues=pv, prior=prior){
@@ -53,8 +52,7 @@ cMVNorm <- function(cache, pars, prevalues=pv, known=FALSE){
   return(list(pars=pars.new, hr=hr, decision = type))
 }
 
-#' @export
-make.monitorFn <- function(model, noMonitor=c("missing.pred", "ntheta"), integers=c("gen","k")){
+.make.monitorFn <- function(model, noMonitor=c("missing.pred", "ntheta"), integers=c("gen","k")){
   parorder <- model$parorder
   rjpars <- model$rjpars
   exclude <- which(parorder %in% noMonitor)
@@ -82,8 +80,7 @@ make.monitorFn <- function(model, noMonitor=c("missing.pred", "ntheta"), integer
   }
 }
 
-#' @export
-getTipMap <- function(pars, cache){
+.getTipMap <- function(pars, cache){
   map <- .pars2map(pars,cache)
   tipreg <- rev(map$theta)
   ntipreg <- rev(map$branch)
@@ -95,15 +92,14 @@ getTipMap <- function(pars, cache){
   betaID <- tipreg[o]
 }
 
-#' @export
-colorRamp <- function(trait, pal, nn){
+
+.colorRamp <- function(trait, pal, nn){
   strait <- (trait-min(trait))/max(trait-min(trait))
   itrait <- round(strait*nn, 0)+1
   return(pal(nn+1)[itrait])
 }
 
-#' @export
-addColorBar <- function(x, y, height, width, pal, trait, ticks, adjx=0, n=100,cex.lab=1,pos=2, text.col="black"){
+.addColorBar <- function(x, y, height, width, pal, trait, ticks, adjx=0, n=100,cex.lab=1,pos=2, text.col="black"){
   legend_image <- as.raster(matrix(rev(pal(n)),ncol = 1))
   #text(x = 1.5, y = round(seq(range(ave.Div)[1], range(ave.Div)[2], l = 5), 2), labels = seq(range(ave.Div)[1], range(ave.Div)[2], l = 5))
   seqtrait <- seq(min(trait), max(trait), length.out=nrow(legend_image))
@@ -126,19 +122,29 @@ addColorBar <- function(x, y, height, width, pal, trait, ticks, adjx=0, n=100,ce
 #' @param nn The number of discrete categories to divide the variable into
 #' @param pal A color palette function that produces nn colors
 #' @param legend_ticks The sequence of values to display a legend for
-#' @param legend_settings A list of legend attributes (passed to addColorBar)
+#' @param legend_settings A list of legend attributes (passed to bayou:::.addColorBar)
 #' @param ... Additional options passed to plot.phylo
 #' 
 #' @details legend_settings is an optional list of any of the following:
+#' 
 #' legend - a logical indicating whether a legend should be plotted
+#' 
 #' x - the x location of the legend
+#' 
 #' y - the y location of the legend
+#' 
 #' height - the height of the legend
+#' 
 #' width - the width of the legend
+#' 
 #' n - the number of gradations in color to plot from the palette
+#' 
 #' adjx - an x adjustment for placing text next to the legend bar
+#' 
 #' cex.lab - the size of text labels next to the legend bar
+#' 
 #' text.col - The color of text labels
+#' 
 #' locator - if TRUE, then x and y coordinates are ignored and legend is placed
 #' interactively.
 #' 
@@ -155,7 +161,7 @@ plotBranchHeatMap <- function(tree, chain, variable, burnin=0, nn=NULL, pal=heat
   if(length(nn) > length(chain$gen)) stop("Number of samples greater than chain length, lower nn")
   abranches <- lapply(1:nrow(tree$edge), .ancestorBranches, cache=cache)
   allbranches <- suppressWarnings(sapply(1:nrow(tree$edge), function(x) .branchRegime(x, abranches, chain, variable, seq1, summary=TRUE)))
-  plot(tree, edge.color=colorRamp(allbranches, pal, 100), ...)
+  plot(tree, edge.color=.colorRamp(allbranches, pal, 100), ...)
   lastPP<-get("last_plot.phylo",envir=.PlotPhyloEnv)
   legend_stuff <- list(x=0.01* lastPP$x.lim[2], 
                        y=0, 
@@ -180,8 +186,8 @@ plotBranchHeatMap <- function(tree, chain, variable, burnin=0, nn=NULL, pal=heat
       lc <- locator(1)
       legend_stuff$x <- lc$x
       legend_stuff$y <- lc$y
-      addColorBar(x=legend_stuff$x, y=legend_stuff$y, height=legend_stuff$height, width=legend_stuff$width, pal=pal, n=legend_stuff$n, trait=allbranches, ticks=legend_ticks, adjx=legend_stuff$adjx, cex.lab=legend_stuff$cex.lab, text.col=legend_stuff$text.col)
-    } else addColorBar(x=legend_stuff$x, y=legend_stuff$y, height=legend_stuff$height, width=legend_stuff$width, pal=pal, n=legend_stuff$n, trait=allbranches, ticks=legend_ticks, adjx=legend_stuff$adjx, cex.lab=legend_stuff$cex.lab, text.col=legend_stuff$text.col)
+      .addColorBar(x=legend_stuff$x, y=legend_stuff$y, height=legend_stuff$height, width=legend_stuff$width, pal=pal, n=legend_stuff$n, trait=allbranches, ticks=legend_ticks, adjx=legend_stuff$adjx, cex.lab=legend_stuff$cex.lab, text.col=legend_stuff$text.col)
+    } else .addColorBar(x=legend_stuff$x, y=legend_stuff$y, height=legend_stuff$height, width=legend_stuff$width, pal=pal, n=legend_stuff$n, trait=allbranches, ticks=legend_ticks, adjx=legend_stuff$adjx, cex.lab=legend_stuff$cex.lab, text.col=legend_stuff$text.col)
   }
 }
 
@@ -252,7 +258,7 @@ makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, slopechange=
     rj <- which(colnames(MM) %in% rjpars2)-1
     if(slopechange=="alphaWeighted"){
       expFn <- function(pars, cache){
-        W <- bayou:::C_weightmatrix(cache, pars)$W
+        W <- C_weightmatrix(cache, pars)$W
         if(length(impute)>0){
           MF[is.na(MF[,impute]),impute] <- pars$missing.pred #$impute
           MM <- model.matrix(f, MF)
@@ -264,7 +270,7 @@ makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, slopechange=
       }
     } else {
       expFn <- function(pars, cache){
-        betaID <- getTipMap(pars, cache)    
+        betaID <- .getTipMap(pars, cache)    
         if(length(impute)>0){
           MF[is.na(MF[,impute]),impute] <- pars$missing.pred #$impute
           MM <- model.matrix(f, MF)
@@ -345,7 +351,7 @@ makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, slopechange=
     item <- c(i, lik, pr, pars[[varnames[1]]], pars[[varnames[2]]], sapply(pars[parnames], function(x) x[1]), pars$theta[1], pars$k)
     cat(sapply(1:length(item), function(x) sprintf(format[x], item[x])), sprintf("%-8.2f", acceptratios),"\n", sep="")
   }
-  rdists <- getSimDists(prior)
+  rdists <- .getSimDists(prior)
   ## Set default moves if not specified. 
   if(length(rjpars) > 0){
     if(is.null(moves)){
@@ -468,8 +474,7 @@ makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, slopechange=
 }
 
 
-#' @export
-getSimDists <- function(prior){
+.getSimDists <- function(prior){
   dists <- attributes(prior)$dist
   fixed <- which(attributes(prior)$dist=="fixed")
   notfixed <- which(attributes(prior)$dist!="fixed")

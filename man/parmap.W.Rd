@@ -22,4 +22,3 @@ generally run internally.
 \details{
 \code{.parmap.W} is more computationally efficient within a mcmc and is used internally.
 }
-

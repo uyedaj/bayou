@@ -504,7 +504,7 @@ plotRegimes <- function(tree, col=NULL, lwd=1, pal=rainbow, ...){
 #' \code{descendents} = A list providing the taxa that belong to each regime 
 #' \code{regressions} = A matrix providing the regression coefficients for each regime.
 #' @export
-shiftSummaries <- function(chain, mcmc, pp.cutoff=0.3, branches=NULL, ...){
+shiftSummaries <- function(chain, mcmc, pp.cutoff=0.3, branches=NULL){
   cache <- .prepare.ou.univariate(mcmc$tree,mcmc$dat, SE=mcmc$SE, pred=mcmc$pred)
   tree <- cache$phy
   dat <- cache$dat

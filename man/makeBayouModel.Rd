@@ -4,9 +4,10 @@
 \alias{makeBayouModel}
 \title{This function makes a bayou model object that can be used for customized allometric regression models.}
 \usage{
-makeBayouModel(f, rjpars, tree, dat, pred, prior, SE = 0, impute = NULL,
-  startpar = NULL, moves = NULL, control.weights = NULL, D = NULL,
-  shiftpars = c("sb", "loc", "t2"), model = "OU")
+makeBayouModel(f, rjpars, tree, dat, pred, prior, SE = 0,
+  slopechange = "immediate", impute = NULL, startpar = NULL,
+  moves = NULL, control.weights = NULL, D = NULL, shiftpars = c("sb",
+  "loc", "t2"), model = "OU")
 }
 \arguments{
 \item{f}{A formula describing the relationship between the data and one or more predictors (use 'dat' 
@@ -24,6 +25,8 @@ formula}
 \item{prior}{A prior function made by the 'make.prior' function}
 
 \item{SE}{A single value or vector of measurement error estimates}
+
+\item{slopechange}{"immediate", "alphaWeighted" or "fullPGLS"}
 
 \item{impute}{The name of a single predictor for which missing values will be imputed using BM (see details).
 Default is NULL.}
@@ -55,4 +58,3 @@ One predictor variable may include missing data (coded as "NA"). The model will 
 best-fit BM model and simulate the missing predictor values throughout the course of the MCMC. These values will
 then be used to calculate the likelihood given the parameters for each MCMC step.
 }
-

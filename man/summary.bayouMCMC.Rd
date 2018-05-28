@@ -19,4 +19,3 @@ branch specific data from a bayouMCMC chain.
 \description{
 S3 method for summarizing bayouMCMC objects
 }
-

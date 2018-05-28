@@ -4,7 +4,8 @@
 #' estimation.
 #' 
 #' @param chain An mcmc chain produced by \code{bayou.mcmc()} and loaded with \code{load.bayou()}
-#' @param prior The prior function used to generate the mcmc chain
+#' @param model A string specifying the model ("OU", "QG", "OUrepar") or a model parameter list
+#' @param priorFn The prior function used to generate the mcmc chain
 #' @param burnin The proportion of the mcmc chain to be discarded when generating the reference function
 #' @param plot Logical indicating whether or not a plot should be created
 #' 
@@ -21,7 +22,7 @@
 #' and the fitted distribution from the reference function (in red).
 make.refFn <- function(chain, model, priorFn, burnin=0.3, plot=TRUE){
   if(is.character(model)){
-    model.pars <- switch(model, "OU"=model.OU, "QG"=model.QG, "OUrepar"=model.OUrepar, "bd"=model.bd, "ffancova"=model.ffancova)
+    model.pars <- switch(model, "OU"=model.OU, "QG"=model.QG, "OUrepar"=model.OUrepar)#, "bd"=model.bd)
   } else {
     model.pars <- model
     model <- "Custom"
@@ -118,10 +119,10 @@ return(refFUN)
 #' 
 #' This function generates a power posterior function for estimation of marginal likelihood using the stepping stone method
 #' 
-#' @param k The step in the sequence being estimated
 #' @param Bk The sequence of steps to be taken from the reference function to the posterior
 #' @param priorFn The prior function to be used in marginal likelihood estimation
 #' @param refFn The reference function generated using \code{make.refFn()} from a preexisting mcmc chain
+#' @param model A string specifying the model type ("OU", "OUrepar", "QG") or a model parameter list
 #' 
 #' @details For use in stepping stone estimation of the marginal likelihood using the method of Fan et al. (2011).
 #' @export
@@ -132,7 +133,7 @@ make.powerposteriorFn <- function(Bk, priorFn, refFn, model){
   #model <- attributes(priorFn)$model
   #if(model != attributes(refFn)$model) stop("Error: prior and reference function are not of same type")
   if(is.character(model)){
-    model.pars <- switch(model, "OU"=model.OU, "QG"=model.QG, "OUrepar"=model.OUrepar, "bd"=model.bd, "ffancova"=model.ffancova)
+    model.pars <- switch(model, "OU"=model.OU, "QG"=model.QG, "OUrepar"=model.OUrepar)#, "bd"=model.bd)
   } else {
     model.pars <- model
     model <- "Custom"
@@ -346,7 +347,8 @@ powerPosteriorFn <- function(k, Bk, lik, prior, ref){
 #' a list of the mcmc chains used for importance sampling to estimating the marginal likelihood at each step \code{chains}, and mcmc fit data from each of the runs \code{fits}.
 #' Note that this object may become quite large if a number of chains are run for many generations. To reduce the number of samples taken, increase the parameter \code{samp} (default = 10)
 #' which sets the frequency at which samples are saved in the mcmc chain. 
-steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burnin=0.3, ngen=10000, powerposteriorFn=NULL, parallel=FALSE, ...){
+steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burnin=0.3, ngen=10000, 
+                          powerposteriorFn=NULL, parallel=FALSE, ...){
     model <- attributes(prior)$model
     if(parallel){
       requireNamespace(foreach)
@@ -361,7 +363,7 @@ steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burn
     cat("Running mcmc chains...\n")
     if(parallel==TRUE){
       k <- NULL; i <- NULL
-      ssfits <- foreach::foreach(k = 1:length(Bk)) %dopar% {
+      ssfits <- foreach(k = 1:length(Bk)) %dopar% {
         .steppingstone.mcmc(k=k, Bk=Bk, tree=tree, dat=dat, SE=SE, prior=prior, powerposteriorFn=ppost, startpar=startpar, plot.freq=NULL, ngen=ngen,  ...)
       }
     } else {
@@ -372,18 +374,18 @@ steppingstone <- function(Bk, chain, tree, dat, SE=0, prior, startpar=NULL, burn
     }
   cat("Loading mcmc chains...\n")
   if(parallel){
-    Kchains <- foreach::foreach(i = 1:length(Bk)) %dopar% {
-      load.bayou(ssfits[[i]], save.Rdata=FALSE, cleanup=FALSE)
+    Kchains <- foreach(i = 1:length(Bk)) %dopar% {
+      load.bayou(ssfits[[i]], saveRDS=FALSE, cleanup=FALSE)
     }
   } else {
     Kchains <- list()
     for (i in 1:length(Bk)){
-      Kchains[[i]] <- load.bayou(ssfits[[i]], save.Rdata=FALSE, cleanup=FALSE)
+      Kchains[[i]] <- load.bayou(ssfits[[i]], saveRDS=FALSE, cleanup=FALSE)
     }
   }
   Kchains <- lapply(1:length(Kchains), function(x){Kchains[[x]]$ref <- ssfits[[x]]$ref; Kchains[[x]]})
   postburn <- round(burnin*length(Kchains[[1]][[1]]),0):length(Kchains[[1]][[1]])
-  lnr <- .computelnr(Kchains, ssfits, Bk, postburn)
+  lnr <- .computelnr(Kchains, Bk, postburn)
   out <- list(lnr= lnr$lnr, lnrk = lnr$lnrk, Bk=Bk, chains=Kchains, fits=ssfits)
   class(out) <- c("ssMCMC", "list")
   return(out)

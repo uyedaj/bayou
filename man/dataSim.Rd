@@ -28,4 +28,3 @@ This function simulates data for a given set of parameter values.
 \details{
 \code{dataSim} Simulates data for a given bayou model and parameter set
 }
-

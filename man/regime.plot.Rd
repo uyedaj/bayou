@@ -22,4 +22,3 @@ from the stationary distribution. "lines" plots lines for the mean and 95\% CI's
 \description{
 Adds visualization of regimes to a plot
 }
-

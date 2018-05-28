@@ -24,4 +24,3 @@ generally run internally.
 of \code{TotExp} is supplied to speed computation and reduce redundancy, and cache objects must be supplied as
 the phylogeny, and the parameter \code{ntheta} must be present in the list \code{pars}.
 }
-

@@ -55,4 +55,3 @@ computationally intensive, this enables you to downsample the chain.}
 \description{
 Plot a phylogenetic tree with posterior probabilities from a bayouMCMC chain (function adapted from phytools' plotSimmap)
 }
-

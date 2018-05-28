@@ -23,11 +23,12 @@ rdpois(n, lambda, kmax, ...)
 \item{...}{additional parameters passed to \code{dpois} or \code{rpois}}
 }
 \description{
-\code{cdpois} calculates the probability density of a value \code{k} from a Poisson distribution with a maximum \code{kmax}. \code{rdpois} draws random numbers from a conditional Poisson distribution.
+\code{cdpois} calculates the probability density of a value \code{k} from a 
+Poisson distribution with a maximum \code{kmax}. \code{rdpois} draws random 
+numbers from a conditional Poisson distribution.
 }
 \examples{
 cdpois(10,1,10)
 cdpois(11,1,10)
 #rdpois(5,10,10)
 }
-

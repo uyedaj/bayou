@@ -17,4 +17,3 @@ A bayou formatted parameter list
 \description{
 \code{OUwie2bayou} Converts OUwie formatted data into a bayou formatted parameter list
 }
-

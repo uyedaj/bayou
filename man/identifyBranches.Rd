@@ -27,4 +27,3 @@ cursor is clicked on the plot and records the branch number and the location sel
 \code{identifyBranches} opens an interactive phylogeny plot that allows the user to specify the location
 of shifts in a phylogenetic tree.
 }
-

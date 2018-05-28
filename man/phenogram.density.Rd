@@ -30,4 +30,3 @@ all samples that have 1 vs. 2 shifts in the posterior.}
 \description{
 Plots a phenogram and the posterior density for optima values
 }
-

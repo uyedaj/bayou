@@ -24,4 +24,3 @@ This function implements the algorithm of Ho and Ane (2014) implemented in the p
 and can be used on non-ultrametric trees (unlike OU.lik, which is based on the pruning algorithm in
 geiger).
 }
-

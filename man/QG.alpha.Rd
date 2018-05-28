@@ -15,4 +15,3 @@ An alpha value according to the equation \code{alpha = h2*P/(P+w2+P)}.
 \description{
 Calculates the alpha parameter from a QG model
 }
-

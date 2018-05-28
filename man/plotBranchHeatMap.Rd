@@ -23,7 +23,7 @@ plotBranchHeatMap(tree, chain, variable, burnin = 0, nn = NULL,
 
 \item{legend_ticks}{The sequence of values to display a legend for}
 
-\item{legend_settings}{A list of legend attributes (passed to addColorBar)}
+\item{legend_settings}{A list of legend attributes (passed to bayou:::.addColorBar)}
 
 \item{...}{Additional options passed to plot.phylo}
 }
@@ -56,4 +56,3 @@ interactively.
 
 #' @export
 }
-

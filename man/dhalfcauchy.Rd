@@ -31,4 +31,3 @@ rhalfcauchy(n, scale = 25)
 \description{
 \code{dhalfcauchy} returns the probability density for a half-Cauchy distribution
 }
-

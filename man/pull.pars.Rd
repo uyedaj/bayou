@@ -33,4 +33,3 @@ chain <- load.bayou(fit, save.Rdata=TRUE, cleanup=TRUE)
 plotBayoupars(pull.pars(300, chain), tree)
 }
 }
-

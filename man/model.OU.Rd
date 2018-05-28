@@ -13,4 +13,3 @@ Default bayou models. New models may be specified by providing a set of moves, c
 tuning parameters, parameter names, RJ parameters and a likelihood function.
 }
 \keyword{datasets}
-

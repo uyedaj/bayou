@@ -3,41 +3,56 @@
 #startpar=list(alpha=0.1, sig2=3, beta1=1, k=1, ntheta=2, theta=c(4,4), sb=200, loc=0, t2=2)
 #' Bayesian sampling of multi-optima OU models 
 #' 
-#' @description Runs a reversible-jump Markov chain Monte Carlo on continuous phenotypic data on a phylogeny, sampling possible shift locations and 
-#' shift magnitudes, and shift numbers.
+#' @description Runs a reversible-jump Markov chain Monte Carlo on continuous phenotypic data on a phylogeny, 
+#' sampling possible shift locations and shift magnitudes, and shift numbers.
 #' 
 #' @param tree a phylogenetic tree of class 'phylo'
 #' @param dat a named vector of continuous trait values matching the tips in tree
-#' @param SE The standard error of the data. Either a single value applied to all the data, or a vector of length(dat).
-#' @param model The parameterization of the OU model used. Either "OU" for standard parameterization with alpha and sigma^2; "OUrepar" for phylogenetic half-life and stationary variance (Vy), or 
-#' "QG" for the Lande model, with parameters h^2 (heritability), P (phenotypic variance), omega^2 (width of adaptive landscape), and Ne (effective population size)
+#' @param SE The standard error of the data. Either a single value applied to all 
+#' the data, or a vector of length(dat).
+#' @param model The parameterization of the OU model used. Either "OU" for standard parameterization with 
+#' alpha and sigma^2; "OUrepar" for phylogenetic half-life and stationary variance (Vy), or "QG" for the 
+#' Lande model, with parameters h^2 (heritability), P (phenotypic variance), omega^2 (width of adaptive 
+#' landscape), and Ne (effective population size)
 #' @param prior A prior function of class 'priorFn' that gives the prior distribution of all parameters
 #' @param ngen The number of generations to run the Markov Chain
 #' @param samp The frequency at which Markov samples are retained
 #' @param chunk The number of samples retained in memory before being written to a file
 #' @param control A list providing a control object governing how often and which proposals are used
-#' @param tuning A named vector that governs how liberal or conservative proposals are that equals the number of proposal mechanisms.
-#' @param new.dir If TRUE, then results are stored in a new temporary directory. If FALSE, results are written to the current working directory. If a character string,
+#' @param tuning A named vector that governs how liberal or conservative proposals are that equals the 
+#' number of proposal mechanisms.
+#' @param new.dir If TRUE, then results are stored in a new temporary directory. If FALSE, results are 
+#' written to the current working directory. If a character string,
 #' then results are written to that working directory. 
 #' @param plot.freq How often plots should be made during the mcmc. If NULL, then plots are not produced
 #' @param outname The prefix given to files created by the mcmc
+#' @param plot.fn Function used in plotting, defaults to phytools::phenogram
 #' @param ticker.freq How often a summary log should be printed to the screen
-#' @param tuning.int How often the tuning parameters should be adjusted as a fraction of the total number of generations (currently ignored)
-#' @param startpar A list with the starting parameters for the mcmc. If NULL, starting parameters are simulated from the prior distribution
-#' @param moves A named list providing the proposal functions to be used in the mcmc. Names correspond to the parameters to be modified in the parameter list. See 'details' for default values.
-#' @param control.weights A named vector providing the relative frequency each proposal mechanism is to be used during the mcmc
+#' @param tuning.int How often the tuning parameters should be adjusted as a fraction of the total 
+#' number of generations (currently ignored)
+#' @param startpar A list with the starting parameters for the mcmc. If NULL, starting parameters are 
+#' simulated from the prior distribution
+#' @param moves A named list providing the proposal functions to be used in the mcmc. Names correspond to 
+#' the parameters to be modified in the parameter list. See 'details' for default values.
+#' @param control.weights A named vector providing the relative frequency each proposal mechanism is to 
+#' be used during the mcmc
 #' @param lik.fn Likelihood function to be evaluated. Defaults to \code{bayou.lik}.
 #' 
 #' @useDynLib bayou
 #' @export
 #' @details 
-#' By default, the alpha, sig2 (and various reparameterizations of these parameters) are adjusted with multiplier proposals, theta are adjusted with sliding window proposals,
-#' and the number of shifts is adjusted by splitting and merging, as well as sliding the shifts both within and between branches. Allowed shift locations are specified by the 
+#' By default, the alpha, sig2 (and various reparameterizations of these parameters) are adjusted with 
+#' multiplier proposals, theta are adjusted with sliding window proposals,
+#' and the number of shifts is adjusted by splitting and merging, as well as sliding the shifts both 
+#' within and between branches. Allowed shift locations are specified by the 
 #' prior function (see make.prior()). 
 
 #model="bd"; tree <- phy; SE=0; ngen=1000; samp=10; chunk=100; control=NULL;tuning=NULL; new.dir=TRUE;plot.freq=100; outname="bayou";ticker.freq=1000; tuning.int=c(0.1,0.2,0.3); startpar=pars; moves=NULL; control.weights=NULL; lik.fn <- bdSplit.lik; plot.fn <- plotSimmap
 
-bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, chunk=100, control=NULL, tuning=NULL, new.dir=FALSE, plot.freq=500, outname="bayou", plot.fn=phenogram, ticker.freq=1000, tuning.int=c(0.1,0.2,0.3), startpar=NULL, moves=NULL, control.weights=NULL, lik.fn=NULL){
+bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, chunk=100, 
+                       control=NULL, tuning=NULL, new.dir=FALSE, plot.freq=500, outname="bayou", 
+                       plot.fn=phenogram, ticker.freq=1000, tuning.int=c(0.1,0.2,0.3), startpar=NULL, 
+                       moves=NULL, control.weights=NULL, lik.fn=NULL){
   fixed <- gsub('^[a-zA-Z]',"",names(attributes(prior)$distributions)[which(attributes(prior)$distributions=="fixed")])
   if("loc" %in% fixed){
     fixed <- c(fixed,"slide")
@@ -187,64 +202,106 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
 
 #' Revision of bayou.mcmc that only makes the mcmc loop function, rather than running it itself. 
 #' 
-#' @description Runs a reversible-jump Markov chain Monte Carlo on continuous phenotypic data on a phylogeny, sampling possible shift locations and 
+#' @description Runs a reversible-jump Markov chain Monte Carlo on continuous phenotypic data 
+#' on a phylogeny, sampling possible shift locations and 
 #' shift magnitudes, and shift numbers.
 #' 
 #' @param tree a phylogenetic tree of class 'phylo'
 #' @param dat a named vector of continuous trait values matching the tips in tree
-#' @param SE The standard error of the data. Either a single value applied to all the data, or a vector of length(dat).
-#' @param model The parameterization of the OU model used. Either "OU" for standard parameterization with alpha and sigma^2; "OUrepar" for phylogenetic half-life and stationary variance (Vy), or 
-#' "QG" for the Lande model, with parameters h^2 (heritability), P (phenotypic variance), omega^2 (width of adaptive landscape), and Ne (effective population size)
-#' @param prior A prior function of class 'priorFn' that gives the prior distribution of all parameters
+#' @param pred A matrix or data frame with named columns with predictor data represented in the 
+#' specified
+#' formula
+#' @param SE The standard error of the data. Either a single value applied to all the data, or a 
+#' vector of length(dat).
+#' @param model The parameterization of the OU model used. Either "OU" for standard parameterization 
+#' with alpha and sigma^2; "OUrepar" for phylogenetic half-life and stationary variance (Vy), or 
+#' "QG" for the Lande model, with parameters h^2 (heritability), P (phenotypic variance), omega^2 
+#' (width of adaptive landscape), and Ne (effective population size) 
+#' @param prior A prior function of class 'priorFn' that gives the prior distribution of all 
+#' parameters
 #' @param samp The frequency at which Markov samples are retained
 #' @param chunk The number of samples retained in memory before being written to a file
 #' @param control A list providing a control object governing how often and which proposals are used
-#' @param tuning A named vector that governs how liberal or conservative proposals are that equals the number of proposal mechanisms.
-#' @param new.dir If TRUE, then results are stored in a new temporary directory. If FALSE, results are written to the current working directory. If a character string,
+#' @param tuning A named vector that governs how liberal or conservative proposals are that equals 
+#' the number of proposal mechanisms.
+#' @param new.dir If TRUE, then results are stored in a new temporary directory. If FALSE, results 
+#' are written to the current working directory. If a character string,
 #' then results are written to that working directory. 
-#' @param plot.freq How often plots should be made during the mcmc. If NULL, then plots are not produced
+#' @param plot.freq How often plots should be made during the mcmc. If NULL, then plots are not 
+#' produced
 #' @param outname The prefix given to files created by the mcmc
 #' @param ticker.freq How often a summary log should be printed to the screen
-#' @param tuning.int How often the tuning parameters should be adjusted as a fraction of the total number of generations (currently ignored)
-#' @param startpar A list with the starting parameters for the mcmc. If NULL, starting parameters are simulated from the prior distribution
-#' @param moves A named list providing the proposal functions to be used in the mcmc. Names correspond to the parameters to be modified in the parameter list. See 'details' for default values.
-#' @param control.weights A named vector providing the relative frequency each proposal mechanism is to be used during the mcmc
+#' @param plot.fn Function used in plotting, defaults to phytools::phenogram
+#' @param tuning.int How often the tuning parameters should be adjusted as a fraction of the total 
+#' number of generations (currently ignored)
+#' @param startpar A list with the starting parameters for the mcmc. If NULL, starting parameters 
+#' are simulated from the prior distribution
+#' @param moves A named list providing the proposal functions to be used in the mcmc. Names correspond
+#'  to the parameters to be modified in the parameter list. See 'details' for default values.
+#' @param control.weights A named vector providing the relative frequency each proposal mechanism is 
+#' to be used during the mcmc
 #' @param lik.fn Likelihood function to be evaluated. Defaults to \code{bayou.lik}.
+#' @param perform.checks A logical indicating whether to use bayou.checkModel to validate model inputs.
 #' 
 #' @useDynLib bayou
 #' @export
 #' @details 
-#' By default, the alpha, sig2 (and various reparameterizations of these parameters) are adjusted with multiplier proposals, theta are adjusted with sliding window proposals,
-#' and the number of shifts is adjusted by splitting and merging, as well as sliding the shifts both within and between branches. Allowed shift locations are specified by the 
+#' By default, the alpha, sig2 (and various reparameterizations of these parameters) are adjusted 
+#' with multiplier proposals, theta are adjusted with sliding window proposals,
+#' and the number of shifts is adjusted by splitting and merging, as well as sliding the shifts 
+#' both within and between branches. Allowed shift locations are specified by the 
 #' prior function (see make.prior()). 
 
 #model="bd"; tree <- phy; SE=0; ngen=1000; samp=10; chunk=100; control=NULL;tuning=NULL; new.dir=TRUE;plot.freq=100; outname="bayou";ticker.freq=1000; tuning.int=c(0.1,0.2,0.3); startpar=pars; moves=NULL; control.weights=NULL; lik.fn <- bdSplit.lik; plot.fn <- plotSimmap
-bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=10, chunk=100, control=NULL, tuning=NULL, new.dir=TRUE, plot.freq=500, outname="bayou", plot.fn=phenogram, ticker.freq=1000, tuning.int=c(0.1,0.2,0.3), startpar=NULL, moves=NULL, control.weights=NULL, lik.fn=NULL){
-  fixed <- gsub('^[a-zA-Z]',"",names(attributes(prior)$distributions)[which(attributes(prior)$distributions=="fixed")])
-  if("loc" %in% fixed){
-    fixed <- c(fixed,"slide")
-  }
+bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=10, chunk=100, 
+                           control=NULL, tuning=NULL, new.dir=TRUE, plot.freq=500, outname="bayou", 
+                           plot.fn=phenogram, ticker.freq=1000, tuning.int=c(0.1,0.2,0.3), 
+                           startpar=NULL, moves=NULL, control.weights=NULL, lik.fn=NULL, 
+                           perform.checks=TRUE){
+  
   if(is.character(model)){
-    model.pars <- switch(model, "OU"=model.OU, "QG"=model.QG, "OUrepar"=model.OUrepar, "bd"=model.bd, "ffancova"=model.ffancova)
+    model.pars <- switch(model, "OU"=model.OU, "QG"=model.QG, "OUrepar"=model.OUrepar)
   } else {
     model.pars <- model
     model <- "Custom"
   }
+  
+  if(perform.checks == TRUE){
+    if(model=="Custom") {
+      checks <- bayou.checkModel(pars=startpar, tree=tree, dat=dat, pred=pred, SE=SE, prior=prior, model=model.pars, autofix=TRUE)
+    } else {
+      checks <- bayou.checkModel(pars=startpar, tree=tree, dat=dat, pred=pred, SE=SE, prior=prior, model=model, autofix=TRUE)
+    }
+    cache <- checks$autofixed$cache
+    startpar <- checks$autofixed$pars
+    tree <- checks$autofixed$cache$phy
+    dat <- checks$autofixed$cache$dat
+    pred <- checks$autofixed$pred
+    model.pars <- checks$autofixed$model
+    if(all(sapply(checks[-length(checks)], function(x) x)==TRUE)) cat("seems fine...\n")
+  } else {
+    cache <- .prepare.ou.univariate(tree, dat, SE=SE, pred=pred)
+    dat <- cache$dat
+    if(is.null(startpar)){
+      startpar <- priorSim(prior, cache$phy, model, nsim=1, plot=FALSE, shiftpars=model.pars$rjpars, exclude.branches=NULL)$pars[[1]]
+    } 
+  }
+  
+  fixed <- gsub('^[a-zA-Z]',"",names(attributes(prior)$distributions)[which(attributes(prior)$distributions=="fixed")])
+  if("loc" %in% fixed){
+    fixed <- c(fixed,"slide")
+  }
+  
   if(is.null(moves)){
     moves <- model.pars$moves
     moves <- moves[which(!(names(moves) %in% fixed))]
   }
   
-  cache <- .prepare.ou.univariate(tree, dat, SE=SE, pred=pred)
-  dat <- cache$dat
   pv <- model.pars$prevalues 
   parorder <- model.pars$parorder
   rjpars <- model.pars$rjpars
   outpars <- parorder[which(!(parorder %in% rjpars | parorder %in% model.pars$shiftpars))]
   
-  if(is.null(startpar)){
-      startpar <- priorSim(prior, cache$phy, model, nsim=1, plot=FALSE, shiftpars=rjpars, exclude.branches=NULL)$pars[[1]]
-    } 
   if(length(fixed)==0 & is.null(control.weights)){
     control.weights <- model.pars$control.weights
     ct <- .buildControl(startpar, prior, control.weights)
@@ -255,9 +312,11 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     } else {control.weights <- control.weights}
     ct <- .buildControl(startpar, prior, move.weights=control.weights)
   }
+  
   if(is.null(tuning)){
     D <- model.pars$D
   } else {D <- tuning}
+  
   if(is.logical(new.dir)){
     if(new.dir){
       dir.name <- paste(sample(LETTERS,10),collapse="")
@@ -274,11 +333,12 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
       dir.create(new.dir)
     }
   } 
+  
   .lastpar <- function(files){
     fLs <- sapply(files, function(x) countL(summary(x)$description))
     fL <- min(fLs[fLs > 0])
     if(fL==1){skipL <- 0} else {skipL=fL-1}
-    res <- lapply(1:length(files), function(x) try(read.table(summary(files[[x]])$description, skip=skipL), silent=TRUE))
+    res <- lapply(1:length(files), function(x) try(utils::read.table(summary(files[[x]])$description, skip=skipL), silent=TRUE))
     res <- lapply(1:length(files), function(x) if(class(res[[x]])=="try-error"){numeric(0)}else{res[[x]]})
     pars <- list()
     parLs <- lapply(startpar, length)[outpars]
@@ -309,7 +369,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     fLs <- sapply(files, function(x) countL(summary(x)$description))
     fL <- min(fLs[fLs > 0])
     if(fL==1){skipL <- 0} else {skipL=fL-1}
-    res <- lapply(1:length(files), function(x) try(read.table(summary(files[[x]])$description, skip=skipL), silent=TRUE))
+    res <- lapply(1:length(files), function(x) try(utils::read.table(summary(files[[x]])$description, skip=skipL), silent=TRUE))
     res <- lapply(1:length(files), function(x) if(class(res[[x]])=="try-error"){numeric(0)}else{res[[x]]})
     pars <- list()
     parLs <- lapply(startpar, length)[outpars]
@@ -347,6 +407,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
                     mapst2=paste(dir, outname,".t2",sep=""),
                     pars.output=paste(dir, outname,".pars",sep=""),
                     rjpars=paste(dir, outname,".rjpars", sep=""))
+  
   if(any(sapply(filenames, file.exists))){
     warning("Files with given outname already exist in directory '", dir, "'. Runs will be appended to existing files.")
     #ans <- "X"
@@ -614,6 +675,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
       return(out)
     }
   run.mcmc <- function(ngen, prior.only=FALSE){
+    closeAllConnections()
     files <- list(mapsb=file(filenames$mapsb,open="a"), 
                   mapsloc=file(filenames$mapsloc,open="a"),
                   mapst2=file(filenames$mapst2,open="a"),
@@ -627,6 +689,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     gbg <- lapply(files, close)
   }
   run.steppingstone <- function(ngen, chain, Bk, burnin=0.3, plot=TRUE){
+    closeAllConnections()
     ssfilenames <- lapply(1:length(Bk), function(y) lapply(filenames, function(x) gsub(paste(outname, ".", sep=""), paste(outname, "_ss", y,".", sep=""), x)))
     ssfiles <- list(); 
     postburn <- floor(max(c(1,burnin*length(chain$gen)))):length(chain$gen)
@@ -647,7 +710,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
       gbg <- lapply(ssfiles[[x]], close) #lapply(1:length(Bk), function(x) lapply(ssfiles[[x]], close))
     }
     
-    ssfits <- foreach::foreach(j=1:length(Bk), .export = c("steppingstone.loop")) %dopar% steppingstone.loop(j, Bk, ngen, ssfilenames, ref)
+    ssfits <- foreach(j=1:length(Bk), .export = c("steppingstone.loop")) %dopar% steppingstone.loop(j, Bk, ngen, ssfilenames, ref)
     outs <- lapply(1:length(Bk), function(x){out$outname <- paste(outname, "_ss", x, sep=""); out})
     chains <- lapply(1:length(Bk), function(x) load.bayou(outs[[x]], saveRDS=FALSE, file=NULL, cleanup=FALSE, ref=TRUE))
     postburn <- floor(max(c(1, burnin*length(chains[[1]]$gen)))):( min(sapply(chains, function(x) length(x$gen))) )
@@ -727,3 +790,4 @@ set.runpars <- function(fun, runpars = list()){
   }
 }
 #set.runpars(mymcmc, list(samp=20))
+utils::globalVariables(c("j","pv"))

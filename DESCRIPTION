@@ -1,8 +1,8 @@
 Package: bayou
 Type: Package
-Title: Bayesian fitting of Ornstein-Uhlenbeck models to phylogenies
-Version: 1.0
-Date: 2013-09-12
+Title: Bayesian Fitting of Ornstein-Uhlenbeck Models to Phylogenies
+Version: 2.1
+Date: 2018-05-28
 Author: Josef C. Uyeda, Jon Eastman and Luke Harmon
 Maintainer: Josef C. Uyeda <josef.uyeda@gmail.com>
 Description: Tools for fitting and simulating multi-optima Ornstein-Uhlenbeck
@@ -20,9 +20,14 @@ Imports:
     MASS,
     mnormt,
     fitdistrplus,
-    denstrip
+    denstrip,
+    assertthat,
+    foreach,
+    Matrix,
+    graphics,
+    grDevices,
+    stats
 Suggests:
-    doParallel,
-    foreach
+    doParallel
 LinkingTo: Rcpp, RcppArmadillo
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1

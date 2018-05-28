@@ -88,4 +88,3 @@ attributes(prior)$functions
 ##Return parameter values used in prior distribution
 attributes(prior)$parameters
 }
-

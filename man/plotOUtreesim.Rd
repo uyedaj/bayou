@@ -23,4 +23,3 @@ plotOUtreesim(pars, tree, ptsperunit = 100, pal = rainbow, aph = 255,
 \description{
 A function to visualize a multi-optimum OU process evolving on a phylogeny
 }
-

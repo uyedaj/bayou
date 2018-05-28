@@ -15,4 +15,3 @@ An sig2 value according to the equation \code{alpha = h2*P/(Ne)}.
 \description{
 Calculates the sigma^2 parameter from a QG model
 }
-

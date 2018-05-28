@@ -19,4 +19,3 @@ Produces 4 plots. The first 3 plot the prior, reference function and likelihood.
 indicate different power posteriors for each. These chains should appear to be well mixed. The final plot
 shows the sum of the marginal likelihood across each of the steps in the stepping stone algorithm.
 }
-

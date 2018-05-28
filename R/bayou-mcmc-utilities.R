@@ -6,6 +6,7 @@
 #' @param saveRDS A logical indicating whether the resulting chains should be saved as an *.rds file
 #' @param file An optional filename (possibly including path) for the saved *.rds file
 #' @param cleanup A logical indicating whether the files produced by \code{bayou.mcmc()} should be removed. 
+#' @param ref A logical indicating whether a reference function is also in the output
 #' 
 #' @details If both \code{save.Rdata} is \code{FALSE} and \code{cleanup} is \code{TRUE}, then \code{load.bayou} will trigger a
 #' warning and ask for confirmation. In this case, if the results of \code{load.bayou()} are not stored in an object,
@@ -239,7 +240,7 @@ Lposterior <- function(chain,tree,burnin=0, simpar=NULL,mag=TRUE){
 #' @export
 pull.pars <- function(i,chain,model="OU"){
   if(is.character(model)){
-    model.pars <- switch(model, "OU"=model.OU, "QG"=model.QG, "OUrepar"=model.OUrepar, "bd"=model.bd, "ffancova"=model.ffancova)
+    model.pars <- switch(model, "OU"=model.OU, "QG"=model.QG, "OUrepar"=model.OUrepar)#, "bd"=model.bd)
   } else {
     model.pars <- model
     model <- "Custom"
@@ -266,7 +267,7 @@ combine.chains <- function(chain.list, thin=1, burnin.prop=0){
   nns <- lapply(chain.list, function(x) names(x))
   if(length(burnin.prop) == 1){
     burnins <- rep(burnin.prop, length(chain.list))
-  }
+  } else burnins <- burnin.prop
   if(length(thin) == 1){
     thins <- rep(thin, length(chain.list))
   }

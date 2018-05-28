@@ -50,7 +50,7 @@ plotOUtreesim <- function(pars, tree, ptsperunit=100, pal=rainbow, aph=255, lwd=
   theta <- pars$theta
   x0 <- pars$theta[1]
   cols <- setNames(pal(pars$ntheta), 1:pars$ntheta)
-  brcols <- cols[sapply(1:length(maps), function(x) names(tail(maps[[x]], 1)))]
+  brcols <- cols[sapply(1:length(maps), function(x) names(utils::tail(maps[[x]], 1)))]
   nH <- nodeHeights(tree)
   history <- list()
   Xi <- x0

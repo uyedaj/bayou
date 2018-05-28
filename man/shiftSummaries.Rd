@@ -4,7 +4,7 @@
 \alias{shiftSummaries}
 \title{A function for summarizing the state of a model after a shift}
 \usage{
-shiftSummaries(chain, mcmc, pp.cutoff = 0.3, branches = NULL, ...)
+shiftSummaries(chain, mcmc, pp.cutoff = 0.3, branches = NULL)
 }
 \arguments{
 \item{chain}{A bayouMCMC chain}
@@ -39,4 +39,3 @@ shiftSummaries summarizes the immediate parameter values after a shift on a part
 branch. Parameters are summarized only for the duration that the particular shift exists. Thus,
 even global parameters will be different for particular shifts.
 }
-

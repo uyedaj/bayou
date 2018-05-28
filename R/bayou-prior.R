@@ -80,12 +80,12 @@ make.prior <- function(tree, dists=list(), param=list(), fixed=list(), plot.prio
   default.OU <- list(dists=list("dalpha"="dlnorm","dsig2"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dloc"),param=list("dalpha"=list(),"dsig2"=list(),"dtheta"=list(),"dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list(ntips=ntips, bmax=1, prob=1)))
   default.QG <- list(dists=list("dh2"="dbeta","dP"="dlnorm","dw2"="dlnorm","dNe"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dloc"),param=list("dh2"=list(shape1=1,shape2=1),"dP"=list(),"dw2"=list(),"dNe"=list(),"dtheta"=list(),"dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list(ntips=ntips, bmax=1, prob=1)))
   default.OUrepar <- list(dists=list("dhalflife"="dlnorm","dVy"="dlnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dloc"),param=list("dhalflife"=list("meanlog"=0.25,"sdlog"=1.5),"dVy"=list("meanlog"=1,"sdlog"=2),"dk"=list(lambda=1,kmax=2*ntips-2),"dtheta"=list(),"dloc"=list(min=0,max=1),"dsb"=list(ntips=ntips, bmax=1, prob=1)))
-  default.ffancova <- list(dists=list("dalpha"="dlnorm","dsig2"="dlnorm","dbeta1"="dnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dloc"),param=list("dalpha"=list(),"dsig2"=list(),"dbeta1"=list(),"dtheta"=list(),"dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list(ntips=ntips, bmax=1, prob=1)))
+  #default.ffancova <- list(dists=list("dalpha"="dlnorm","dsig2"="dlnorm","dbeta1"="dnorm","dk"="cdpois","dtheta"="dnorm","dsb"="dsb","dloc"="dloc"),param=list("dalpha"=list(),"dsig2"=list(),"dbeta1"=list(),"dtheta"=list(),"dk"=list(lambda=1,kmax=2*ntips-2),"dloc"=list(min=0,max=1),"dsb"=list(ntips=ntips, bmax=1, prob=1)))
   #default.OUcpp <- list(dists=list("dalpha"="dlnorm","dsig2"="dlnorm","dsig2jump"="dlnorm","dk"="dpois","dtheta"="dnorm","dloc"="dunif"),param=list("dalpha"=NULL,"dsig2"=list(),"dsig2jump"=list(),"dtheta"=list(),"dk"=list(lambda=1),"dloc"=list(min=0,max=TH)))
   #default.QGcpp <- list(dists=list("dh2"="dbeta","dP"="dlnorm","dw2"="dlnorm","dNe"="dlnorm","dk"="dpois","dtheta"="dnorm","dloc"="dunif"),param=list("dh2"=list(shape1=1,shape2=1),"dP"=list(),"dw2"=list(),"dNe"=list(),"dsig2jump"=list(),"dtheta"=list(),"dk"=list(lambda=1),"dloc"=list(min=0,max=TH)))
   #default.OUreparcpp <- list(dists=list("dhalflife"="dlnorm","dVy"="dlnorm","dsig2jump"="dlnorm","dk"="dpois","dtheta"="dnorm","dloc"="dunif"),param=list("dhalflife"=list("meanlog"=0.25,"sdlog"=1.5),"dVy"=list("meanlog"=1,"sdlog"=2),"dk"=list(lambda=1),"dsig2jump"=list(),"dtheta"=list(),"dloc"=list(min=0,max=TH)))
   
-  default <- switch(model,"OU"=default.OU,"QG"=default.QG,"OUrepar"=default.OUrepar, "ffancova"=default.ffancova)#,"OUcpp"=default.OUcpp,"QGcpp"=default.QGcpp,"OUreparcpp"=default.OUreparcpp)
+  default <- switch(model,"OU"=default.OU,"QG"=default.QG,"OUrepar"=default.OUrepar)#,"OUcpp"=default.OUcpp,"QGcpp"=default.QGcpp,"OUreparcpp"=default.OUreparcpp)
   notprovided <- setdiff(names(default$dist),names(dists))
   pars.notprovided <- setdiff(names(default$param),names(param))
   dists[notprovided] <- default$dists[notprovided]
@@ -105,6 +105,7 @@ make.prior <- function(tree, dists=list(), param=list(), fixed=list(), plot.prio
     fixed.param <- gsub('^[a-zA-Z]',"",names(remove)) 
     if("sb" %in% fixed.param & !("k" %in% names(fixed))) fixed$k <- length(fixed$sb)
     if("sb" %in% fixed.param & !("t2" %in% names(fixed)) & length(fixed$sb)>0) fixed$t2 <- 2:(length(fixed$sb)+1)
+    if("sb" %in% fixed.param & !("t2" %in% names(fixed)) & length(fixed$sb)==0) fixed$t2 <- numeric(0)
     missing.fixed <- fixed.param[!(fixed.param %in% names(fixed))]
     if(length(missing.fixed)>0){
       stop(paste("'", paste(missing.fixed, collapse="', '"), "' set as 'fixed' but not provided", sep=""))

@@ -21,11 +21,12 @@ rloc(k, min = 0, max = 1)
 \item{k}{The number of shifts to return along a branch}
 }
 \description{
-Since unequal probabilities are incorporated in calculating the density via \code{dsb}, all branches are assumed to be of unit length. 
+Since unequal probabilities are incorporated in calculating the 
+density via \code{dsb}, all branches are assumed to be of unit length. 
 Thus, the \code{dloc} function simply returns 0 if \code{log=TRUE} and 1 if \code{log=FALSE}.
 }
 \details{
-\code{dloc} calculates the probability of a shift occuring at a given location along the branch assuming a uniform distribution of unit length
+\code{dloc} calculates the probability of a shift occuring at a given 
+location along the branch assuming a uniform distribution of unit length
 \code{rloc} randomly generates the location of a shift along the branch
 }
-

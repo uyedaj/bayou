@@ -15,4 +15,3 @@ A list with values for alpha and sig2.
 \description{
 Calculates the alpha and sigma^2 from a parameter list with supplied phylogenetic half-life and stationary variance
 }
-

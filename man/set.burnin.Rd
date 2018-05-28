@@ -17,4 +17,3 @@ A bayouMCMC chain or ssMCMC chain with burnin proportion stored in the attribute
 \description{
 Set the burnin proportion for bayouMCMC objects
 }
-

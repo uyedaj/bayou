@@ -4,14 +4,16 @@
 \alias{combine.chains}
 \title{Combine mcmc chains}
 \usage{
-combine.chains(chain1, chain2, burnin.prop = 0)
+combine.chains(chain.list, thin = 1, burnin.prop = 0)
 }
 \arguments{
-\item{chain1}{The first chain to be combined}
+\item{chain.list}{The first chain to be combined}
 
-\item{chain2}{The second chain to be combined}
+\item{thin}{A number or vector specifying the thinning interval to be used. If a single value,
+then the same proportion will be applied to all chains.}
 
-\item{burnin.prop}{The proportion of burnin from each chain to be discarded}
+\item{burnin.prop}{A number or vector giving the proportion of burnin from each chain to be 
+discarded. If a single value, then the same proportion will be applied to all chains.}
 }
 \value{
 A combined bayouMCMC chain
@@ -19,4 +21,3 @@ A combined bayouMCMC chain
 \description{
 Combine mcmc chains
 }
-

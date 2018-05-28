@@ -9,11 +9,13 @@ make.refFn(chain, model, priorFn, burnin = 0.3, plot = TRUE)
 \arguments{
 \item{chain}{An mcmc chain produced by \code{bayou.mcmc()} and loaded with \code{load.bayou()}}
 
+\item{model}{A string specifying the model ("OU", "QG", "OUrepar") or a model parameter list}
+
+\item{priorFn}{The prior function used to generate the mcmc chain}
+
 \item{burnin}{The proportion of the mcmc chain to be discarded when generating the reference function}
 
 \item{plot}{Logical indicating whether or not a plot should be created}
-
-\item{prior}{The prior function used to generate the mcmc chain}
 }
 \value{
 Returns a reference function of class "refFn" that takes a parameter list and returns the log density 
@@ -32,4 +34,3 @@ distributions are fit. For continuous distributions \code{theta}, Normal, Cauchy
 are fit. For discrete distributions, \code{k}, negative binomial, poisson and geometric distributions are fit.
 Best-fitting distributions are determined by AIC.
 }
-

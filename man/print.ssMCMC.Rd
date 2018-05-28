@@ -14,4 +14,3 @@
 \description{
 S3 method for printing ssMCMC objects
 }
-

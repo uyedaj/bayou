@@ -16,4 +16,3 @@ plotBayoupars(pars, tree, ...)
 \description{
 Plot parameter list as a simmap tree
 }
-

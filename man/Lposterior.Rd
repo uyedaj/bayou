@@ -27,4 +27,3 @@ of the shift on the branch (between 0 and 1 for each branch).
 \description{
 Return a posterior of shift locations
 }
-

@@ -21,4 +21,3 @@ A list with an OUwie formatted tree with mapped regimes and an OUwie formatted d
 \description{
 \code{bayou2OUwie} Converts a bayou formatted parameter list into OUwie formatted tree and data table that can be analyzed in OUwie
 }
-

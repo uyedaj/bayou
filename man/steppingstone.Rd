@@ -55,4 +55,3 @@ progress within each of the individual mcmc chains will not be reported, and if 
 considerable amount of time to run. Furthermore, if many samples are saved from each mcmc run, and a number of steps along \code{Bk} is large, the returned 
 object may require a substantial amount of memory.
 }
-

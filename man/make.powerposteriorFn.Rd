@@ -13,7 +13,7 @@ make.powerposteriorFn(Bk, priorFn, refFn, model)
 
 \item{refFn}{The reference function generated using \code{make.refFn()} from a preexisting mcmc chain}
 
-\item{k}{The step in the sequence being estimated}
+\item{model}{A string specifying the model type ("OU", "OUrepar", "QG") or a model parameter list}
 }
 \value{
 A function of class "powerposteriorFn" that returns a list of four values: \code{result} (the log density of the power posterior), 
@@ -25,4 +25,3 @@ This function generates a power posterior function for estimation of marginal li
 \details{
 For use in stepping stone estimation of the marginal likelihood using the method of Fan et al. (2011).
 }
-

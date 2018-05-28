@@ -25,4 +25,3 @@ A list of bayou parameter lists
 \description{
 \code{priorSim} Simulates parameters from the prior distribution specified by \code{make.prior}
 }
-

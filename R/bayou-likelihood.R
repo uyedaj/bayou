@@ -180,19 +180,23 @@
   return(likfx)
 }
 
-#' Function for calculating likelihood of an OU model in bayou using pruning algorithm or matrix inversion
+#' Function for calculating likelihood of an OU model in bayou using pruning algorithm 
+#' or matrix inversion
 #' 
 #' @param pars A list of parameters to calculate the likelihood
 #' @param tree A phylogenetic tree of class 'phylo'
 #' @param X A named vector giving the tip data
 #' @param SE A named vector or single number giving the standard errors of the data
 #' @param model Parameterization of the OU model. Either "OU", "QG" or "OUrepar".
-#' @param invert A logical indicating whether the likelihood should be solved by matrix inversion, rather than
-#' the pruning algorithm. This is primarily present to test that calculation of the likelihood is correct. 
+#' @param invert A logical indicating whether the likelihood should be solved by matrix 
+#' inversion, rather than
+#' the pruning algorithm. This is primarily present to test that calculation of the likelihood 
+#' is correct. 
 #' 
-#' @details This function can be used for calculating single likelihoods using previously implemented methods. It is
-#' likely to become deprecated and replaced by \code{bayou.lik} in the future, which is based on \code{phylolm}'s threepoint
-#' algorithm, which works on non-ultrametric trees and is substantially faster.
+#' @details This function can be used for calculating single likelihoods using previously 
+#' implemented methods. It is likely to become deprecated and replaced by \code{bayou.lik} 
+#' in the future, which is based on \code{phylolm}'s threepoint algorithm, which works on 
+#' non-ultrametric trees and is substantially faster.
 #' 
 #' @return A list returning the log likelihood ("loglik"), the weight matrix ("W"), the optima ("theta"),
 #' the residuals ("resid") and the expected values ("Exp").
@@ -331,15 +335,15 @@ bayou.lik <- function(pars, cache, X, model="OU"){
   return(xx)
 }
 
-bdSplit.lik <- function(pars, cache, X=NULL, model="bd"){
-  splitBranch <- pars$sb
-  splitNode <- cache$edge[splitBranch,2]
-  r <- exp(pars$r)
-  eps <- exp(pars$eps)
-  r2 <- c(0, pars$t2-1)
-  loglik <- getSplitLikelihood(cache$phy, splitNode, r, eps, r2)
-  return(list(loglik=loglik))
-}
+#bdSplit.lik <- function(pars, cache, X=NULL, model="bd"){
+#  splitBranch <- pars$sb
+#  splitNode <- cache$edge[splitBranch,2]
+#  r <- exp(pars$r)
+#  eps <- exp(pars$eps)
+#  r2 <- c(0, pars$t2-1)
+#  loglik <- getSplitLikelihood(cache$phy, splitNode, r, eps, r2)
+#  return(list(loglik=loglik))
+#}
 
 
 
@@ -411,21 +415,21 @@ model.OUrepar <- list(moves = list(halflife=".multiplierProposal",Vy=".multiplie
                         },
                       lik.fn = bayou.lik)
 
-model.bd <- list(moves = list(r=".vectorMultiplier", eps=".vectorMultiplier", k=".splitmergebd"),
-                 control.weights = list("r"=2, "eps"=1, "k"=5, slide=0),
-                 D = list(r=1, eps=1, k=4),
-                 parorder = c("r", "eps", "k", "ntheta"),
-                 rjpars = c("r", "eps"),
-                 shiftpars = c("sb", "loc", "t2"),
-                 monitor.fn = function(i, lik, pr, pars){
-                   names <- c("gen", "lnL", "prior", "r", "eps", "k")
-                   string <- "%-8i%-8.2f%-8.2f%-8.2f%-8.2f%-8i"
-                   acceptratios <- tapply(accept, accept.type, mean)
-                   names <- c(names, names(acceptratios))
-                   if(i %% 100*ticker.freq == 0 | i == 1){
-                     cat(sprintf("%-7s", names))                     
-                   }
-                    cat(sprintf(string, i, lnL, pr, pars$r, pars$eps, pars$k), sprintf("%-8.2f", acceptratios), sep="")
-                 },
-                 lik.fn = bdSplit.lik)
+#model.bd <- list(moves = list(r=".vectorMultiplier", eps=".vectorMultiplier", k=".splitmergebd"),
+#                 control.weights = list("r"=2, "eps"=1, "k"=5, slide=0),
+#                 D = list(r=1, eps=1, k=4),
+#                 parorder = c("r", "eps", "k", "ntheta"),
+#                 rjpars = c("r", "eps"),
+#                 shiftpars = c("sb", "loc", "t2"),
+#                 monitor.fn = function(i, lik, pr, pars){
+#                   names <- c("gen", "lnL", "prior", "r", "eps", "k")
+#                   string <- "%-8i%-8.2f%-8.2f%-8.2f%-8.2f%-8i"
+#                   acceptratios <- tapply(accept, accept.type, mean)
+##                   names <- c(names, names(acceptratios))
+#                   if(i %% 100*ticker.freq == 0 | i == 1){
+#                     cat(sprintf("%-7s", names))                     
+#                   }
+#                    cat(sprintf(string, i, lnL, pr, pars$r, pars$eps, pars$k), sprintf("%-8.2f", acceptratios), sep="")
+##                 },
+#                 lik.fn = bdSplit.lik)
 

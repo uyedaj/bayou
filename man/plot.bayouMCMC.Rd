@@ -14,4 +14,3 @@
 \description{
 S3 method for plotting bayouMCMC objects
 }
-

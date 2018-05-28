@@ -14,4 +14,3 @@ makeTransparent(someColor, alpha = 100)
 \description{
 Make a color transparent (Taken from an answer on StackOverflow by Nick Sabbe)
 }
-

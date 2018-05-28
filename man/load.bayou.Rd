@@ -15,6 +15,8 @@ load.bayou(bayouFit, saveRDS = TRUE, file = NULL, cleanup = FALSE,
 \item{file}{An optional filename (possibly including path) for the saved *.rds file}
 
 \item{cleanup}{A logical indicating whether the files produced by \code{bayou.mcmc()} should be removed.}
+
+\item{ref}{A logical indicating whether a reference function is also in the output}
 }
 \description{
 \code{load.bayou} loads a bayouFit object that was created using \code{bayou.mcmc()}
@@ -35,4 +37,3 @@ chain <- load.bayou(fit, save.Rdata=FALSE, cleanup=TRUE)
 plot(chain)
 }
 }
-

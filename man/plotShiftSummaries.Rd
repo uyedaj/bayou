@@ -30,4 +30,3 @@ they are sometimes in another tipward shift with low posterior probability). The
 of phenotypic states and the predicted regression line, as well as density plots for the intercept and any regression
 coefficients in the model.
 }
-

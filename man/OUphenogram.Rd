@@ -42,4 +42,3 @@ dat <- dataSim(pars, model="OU", phenogram=FALSE, tree)$dat
 OUphenogram(pars, tree, dat, ftype="off")
 }
 }
-

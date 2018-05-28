@@ -30,4 +30,3 @@ pars <- list(k=5, sb=c(195, 196, 184, 138, 153), loc=rep(0, 5), t2=2:6)
 tr <- pars2simmap(pars, tree)
 plotSimmap(tr$tree, col=tr$col)
 }
-
