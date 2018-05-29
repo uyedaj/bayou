@@ -304,8 +304,8 @@ bayou.lik <- function(pars, cache, X, model="OU"){
   comp <- C_threepoint(list(n=n, N=cache$N, anc=cache$phy$edge[, 1], des=cache$phy$edge[, 2], diagMatrix=transf.phy$diagMatrix, P=X.c, root=transf.phy$root.edge, len=transf.phy$edge.length))
   #t(y) %*% inv.ouV %*% (y)*1/pars$sig2
   if(pars$alpha==0){
-    inv.yVy <- comp$PP
-    detV <- comp$logd
+    inv.yVy <- comp$PP/pars$sig2
+    detV <- comp$logd + n*log(pars$sig2)
   } else {
     inv.yVy <- comp$PP*(2*pars$alpha)/(pars$sig2)
     detV <- comp$logd+n*log(pars$sig2/(2*pars$alpha))
