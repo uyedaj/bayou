@@ -2,7 +2,7 @@
 #include <cmath>
 #include <vector>
 
-RcppExport SEXP bm_direct (SEXP dat, SEXP pars) 
+RcppExport SEXP bm_direct2 (SEXP dat, SEXP pars) 
 {
   /* 
   * all objects ordered from 1:(Nnode(phy)+Ntip(phy)) unless noted otherwise

@@ -97,7 +97,7 @@
                 descRight = as.integer(n.cache$children[, 1]), descLeft = as.integer(n.cache$children[, 
                                                                                                       2]), drift = as.numeric(dd))
     parsC = as.numeric(rep(sigsq, n.cache$z))
-    out = .Call("bm_direct", dat = datC, pars = parsC, PACKAGE = "bayou")
+    out = .Call("bm_direct2", dat = datC, pars = parsC, PACKAGE = "bayou")
     loglik <- sum(out$lq)
     if (is.na(loglik)) 
       loglik = -Inf
