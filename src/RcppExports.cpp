@@ -44,14 +44,14 @@ BEGIN_RCPP
 END_RCPP
 }
 
-RcppExport SEXP bm_direct(SEXP, SEXP);
+RcppExport SEXP bm_direct2(SEXP, SEXP);
 RcppExport SEXP cache_descendants(SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
     {"_bayou_C_threepoint", (DL_FUNC) &_bayou_C_threepoint, 1},
     {"_bayou_C_transf_branch_lengths", (DL_FUNC) &_bayou_C_transf_branch_lengths, 4},
     {"_bayou_C_weightmatrix", (DL_FUNC) &_bayou_C_weightmatrix, 2},
-    {"bm_direct",                      (DL_FUNC) &bm_direct,                      2},
+    {"bm_direct2",                     (DL_FUNC) &bm_direct2,                     2},
     {"cache_descendants",              (DL_FUNC) &cache_descendants,              2},
     {NULL, NULL, 0}
 };
