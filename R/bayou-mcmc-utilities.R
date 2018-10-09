@@ -243,7 +243,7 @@ Lposterior <- function(chain,tree,burnin=0, simpar=NULL,mag=TRUE){
 #' chain <- load.bayou(fit, save.Rdata=TRUE, cleanup=TRUE)
 #' plotBayoupars(pull.pars(300, chain), tree)
 #' }
-#' @export
+#' @export pull.pars
 pull.pars <- function(i,chain,model="OU"){
   if(is.character(model)){
     model.pars <- switch(model, "OU"=model.OU, "QG"=model.QG, "OUrepar"=model.OUrepar)#, "bd"=model.bd)
