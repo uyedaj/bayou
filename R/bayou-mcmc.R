@@ -38,14 +38,16 @@
 #' be used during the mcmc
 #' @param lik.fn Likelihood function to be evaluated. Defaults to \code{bayou.lik}.
 #' 
-#' @useDynLib bayou
+#' @name bayou-deprecated
+#' @section \code{bayou.mcmc}: This function is deprecated, please use \code{\link{bayou.makeMCMC}}.
 #' @export
-#' @details 
-#' By default, the alpha, sig2 (and various reparameterizations of these parameters) are adjusted with 
-#' multiplier proposals, theta are adjusted with sliding window proposals,
-#' and the number of shifts is adjusted by splitting and merging, as well as sliding the shifts both 
-#' within and between branches. Allowed shift locations are specified by the 
-#' prior function (see make.prior()). 
+# @useDynLib bayou
+# @details 
+# By default, the alpha, sig2 (and various reparameterizations of these parameters) are adjusted with 
+# multiplier proposals, theta are adjusted with sliding window proposals,
+# and the number of shifts is adjusted by splitting and merging, as well as sliding the shifts both 
+# within and between branches. Allowed shift locations are specified by the 
+# prior function (see make.prior()). 
 
 #model="bd"; tree <- phy; SE=0; ngen=1000; samp=10; chunk=100; control=NULL;tuning=NULL; new.dir=TRUE;plot.freq=100; outname="bayou";ticker.freq=1000; tuning.int=c(0.1,0.2,0.3); startpar=pars; moves=NULL; control.weights=NULL; lik.fn <- bdSplit.lik; plot.fn <- plotSimmap
 
@@ -53,6 +55,8 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
                        control=NULL, tuning=NULL, new.dir=FALSE, plot.freq=500, outname="bayou", 
                        plot.fn=phenogram, ticker.freq=1000, tuning.int=c(0.1,0.2,0.3), startpar=NULL, 
                        moves=NULL, control.weights=NULL, lik.fn=NULL){
+  .Deprecated("bayou.makeMCMC")
+  if(FALSE){
   fixed <- gsub('^[a-zA-Z]',"",names(attributes(prior)$distributions)[which(attributes(prior)$distributions=="fixed")])
   if("loc" %in% fixed){
     fixed <- c(fixed,"slide")
@@ -198,6 +202,7 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
   out <- list('model'=model, 'dir.name'=dir.name,'dir'=dir, 'outname'=outname, 'accept'=accept,'accept.type'=accept.type, 'tree'=tree, 'dat'=dat, 'tmpdir'=ifelse(new.dir==TRUE, TRUE, FALSE), 'startpar'=startpar)
   class(out) <- c("bayouFit", "list")
   return(out)
+  }
 }
 
 #' Revision of bayou.mcmc that only makes the mcmc loop function, rather than running it itself. 

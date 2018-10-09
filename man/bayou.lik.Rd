@@ -20,7 +20,7 @@ Function for calculating likelihood of an OU model in bayou using the threepoint
 }
 \details{
 This function implements the algorithm of Ho and Ane (2014) implemented
- in the package \code{phylolm} for the \code{OUfixedRoot} model. It is faster
+ in the package \code{phylolm} for the \code{OUfixedRoot} model. It is faster 
  than the equivalent pruning algorithm in geiger, and can be used on non-
  ultrametric trees (unlike OU.lik, which is based on the pruning algorithm in
  geiger).
