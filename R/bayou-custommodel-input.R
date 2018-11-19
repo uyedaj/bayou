@@ -71,7 +71,7 @@ getPreValues <- function(cache, col){
     names <- pars2monitor
     #names <- c("gen", "lnL", "prior", "alpha" , "sig2", "rbeta1", "endo", "k")
     #string <- "%-8i%-8.2f%-8.2f%-8.2f%-8.2f%-8.2f%-8.2f%-8i"
-    acceptratios <- tapply(accept, accept.type, mean)
+    acceptratios <- unlist(accept/accept.type) #tapply(accept, accept.type, mean)
     names <- c(names, names(acceptratios))
     if(j==0){
       cat(sprintf("%-7.7s", names), "\n", sep=" ")                           
@@ -343,7 +343,7 @@ makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, slopechange=
   monitorFn <- function(i, lik, pr, pars, accept, accept.type, j){
     names <- c("gen", "lnL", "prior", varnames, parnames, "rtheta", "k")
     format <- c("%-8i",rep("%-8.2f",4), rep("%-8.2f", length(parnames)), "%-8.2f","%-8i")
-    acceptratios <- tapply(accept, accept.type, mean)
+    acceptratios <- unlist(accept/accept.type) #tapply(accept, accept.type, mean)
     names <- c(names, names(acceptratios))
     if(j==0){
       cat(sprintf("%-7.7s", names), "\n", sep=" ")                           

@@ -37,6 +37,7 @@
   #prior2 <- .prior(pars.new,emap,cache)
   return(list("pars"=pars.new, "hr"=lnHastingsRatio))
 }
+attributes(.multiplierProposal)$types <- NULL 
 
 .slidingWindowProposal <- function(cache, pars, d, move, ct=NULL, prior=NULL){
   prop <- d*(stats::runif(1)-0.5)+pars[[move]]
@@ -46,6 +47,7 @@
   #pr <- .prior(pars.new,emap,cache)-.prior(pars,emap,cache)
   return(list("pars" = pars.new, "hr"=lnHastingsRatio))
 }
+attributes(.slidingWindowProposal)$types <- NULL
 
 ##Adjust a randomly selected theta parameter
 .adjustTheta <- function(cache, pars, d, type="slidingwindow",move=NULL,ct=NULL, prior=NULL){
@@ -70,6 +72,7 @@
     return(list("pars" = pars.new, "hr"=lnHastingsRatio, "theta" = j))
   }
 }
+attributes(.adjustTheta)$types <- NULL
 
 ##Adjust a randomly selected theta parameter
 .vectorMultiplier <- function(cache, pars, d, move,ct=NULL, prior=NULL){
@@ -83,6 +86,7 @@
   #pr <- .prior(pars.new,emap,cache)-.prior(pars,emap,cache)
   return(list("pars" = pars.new, "hr"=lnHastingsRatio, "theta" = j))
 }
+attributes(.vectorMultiplier)$types <- NULL
 
 .vectorSlidingWindow <- function(cache, pars, d, move,ct=NULL, prior=NULL){
   j <- sample(1:length(pars[[move]]),1)
@@ -93,6 +97,8 @@
   #pr <- .prior(pars.new,emap,cache)-.prior(pars,emap,cache)
   return(list("pars" = pars.new, "hr"=lnHastingsRatio, "j" = j))
 }
+attributes(.vectorSlidingWindow)$types <- NULL
+
 
 #' MCMC move for sliding a shift up or down to neighboring branches, or within a branch
 .slidespace <- function(j, pars, cache, ct, map){
@@ -192,6 +198,7 @@
   hr <- log(1/sum(space.new$pp))-log(1/(sum(space$pp)))
   return(list(pars=pars.new, hr=hr, decision = type))
 }
+attributes(.slide)$types <- c("U0", "U1", "U2","D0", "D1", "R1")
 
 
 #' MCMC move for splitting or collapsing a shift on phylogeny
@@ -251,6 +258,8 @@
   }
   return(list(pars=pars.new, hr=hr, decision=decision, sb.prob=sb.prob))
 }
+attributes(.splitmerge)$types <- c("birth", "death")
+
 #.add2map <- function(map, cache, pars, sb.j, loc.j, t2.j){
 #    j <- which(names(map$segs)==sb.j)
 #    m <- map$segs[j]
@@ -345,6 +354,7 @@
   }
   return(list(pars=pars.new, hr=hr, decision=decision, sb.prob=sb.prob))
 }
+attributes(.splitmergebd)$types <- c("birth","death")
 
 .slide2 <- function(pars, cache, d, ct, move=NULL, prior=NULL){
   splitmergepars <- attributes(ct)$splitmergepars
@@ -385,6 +395,7 @@
   hr <- log(1/sum(space.new$pp))-log(1/(sum(space$pp)))
   return(list(pars=pars.new, hr=hr, decision = type))
 }
+attributes(.slide2)$types <- c("U0","U1","U2","D0","D1","R1")
 
 .jointHalflifeVyProposal <- function(move, cache, pars, d, ct = NULL, prior=NULL){
   dSig <- matrix(c(d[1], d[2]*d[1], d[2]*d[1], d[1]), ncol=2)
@@ -403,6 +414,7 @@
   lnHastingsRatio <- mnormt::dmnorm(m, c(1,1), dSig, log = TRUE) - mnormt::dmnorm(1/m, c(1,1), dSig, log=TRUE) 
   return(list(pars = pars.new, hr=lnHastingsRatio))
 }
+attributes(.jointHalflifeVyProposal)$types <- NULL
 
 .vectorSlidingWindowSplit <- function(move, cache, pars, d, ct=NULL, prior=NULL){
   j <- sample(1:length(pars[[move]]),1)
@@ -423,6 +435,7 @@
     return(list("pars" = pars.new, "hr"=lnHastingsRatio, "j" = j))
   }
 }
+attributes(.vectorSlidingWindowSplit)$types <- NULL
 
 ## Split merge proposal from Green 1995, only works for positive parameters
 .splitmergeGreen <- function(pars, cache, d, ct, move=NULL, prior=NULL){
@@ -493,6 +506,7 @@
   }
   return(list(pars=pars.new, hr=hr, decision=decision, sb.prob=sb.prob))
 }
+attributes(.splitmergeGreen)$types <- c("birth", "death")
 
 ## Split merge proposal where new value is drawn from the prior
 .splitmergePrior <- function(pars, cache, d, ct, move=NULL, prior){
@@ -570,4 +584,4 @@
   }
   return(list(pars=pars.new, hr=hr, decision=decision, sb.prob=sb.prob))
 }
-
+attributes(.splitmergePrior)$types <- c("birth", "death")
