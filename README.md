@@ -12,7 +12,7 @@ require(bayou)
 
 A tutorial is available at:
 
-https://github.com/uyedaj/bayou/blob/master/tutorial.md
+https://github.com/uyedaj/bayou/blob/master/tutorial.Rmd
 
 The manuscript describing the method can be found at:
 
