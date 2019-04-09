@@ -518,7 +518,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     startinf <- .lastpar(files)
     oldpar <- startinf$pars
     i <- startinf$i
-    oll <- 0#startinf$oll
+    oll <- startinf$oll
     pr1 <- startinf$pr1
     iseq <- (i+1):(i+ngen)
     acceptNames <- unlist(lapply(1:length(moves), function(x) paste(attr(get(moves[[x]]), "types"), names(moves)[x], sep=".")),F,F)

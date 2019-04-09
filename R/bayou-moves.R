@@ -518,12 +518,13 @@ attributes(.splitmergeGreen)$types <- c("birth", "death")
   sb.taken <- rep(0,2*cache$ntips-2)
   sb.table <- table(pars$sb)
   sb.taken[as.numeric(names(sb.table))] <- sb.table
-  sb.prob <- ct$sb$prob
-  sb.prob[sb.max <= sb.taken] <- 0
+  .sb.prob <- ct$sb$prob
+  .sb.prob[sb.max <= sb.taken] <- 0
+  sb.prob <- .sb.prob/sum(.sb.prob)
   if(v < ct$bk[pars$ntheta]/(ct$bk[pars$ntheta]+ct$dk[pars$ntheta])){
     decision <- "birth"
     sb.j <- sample(1:(2*cache$ntips-2),1,prob=sb.prob)
-    loc.j <- 0 #runif(1,min=0,max=cache$edge.length[sb.j])
+    loc.j <- runif(1,min=0,max=cache$edge.length[sb.j])
     t2.j <- pars$ntheta+1
     pars.new <- pars
     pars.new$sb <- c(pars$sb, sb.j)
@@ -550,7 +551,7 @@ attributes(.splitmergeGreen)$types <- c("birth", "death")
     pars.new$sb <- c(pars$sb,sb.j)
     pars.new$loc <- c(pars$loc,loc.j)
     pars.new$t2 <- c(pars$t2,t2.j)
-    hr <- sum(.hr)
+    hr <- sum(.hr) + log(ct$dk[pars.new$k+1]*(sb.taken[sb.j]+1)/pars.new$k) - log(ct$bk[pars$k+1]*sb.prob[sb.j])
   } else {
     decision <- "death"
     j <- sample(1:pars$k,1)
@@ -579,9 +580,169 @@ attributes(.splitmergeGreen)$types <- c("birth", "death")
       pars.new[[splitmergepars[i]]][t1-(t1>t2.j)] <- pars[[splitmergepars[i]]][t1]*(1-r)+pars[[splitmergepars[i]]][t2.j]*r
       .hr <- c(.hr, dfx(pars[[splitmergepars[i]]][t2.j]))
     }
-    sb.prob[sb.j] <- ct$sb$prob[sb.j]
-    hr <- sum(.hr)
+    sb.taken[sb.j] <- sb.taken[sb.j]-1
+    .sb.prob <- ct$sb$prob
+    .sb.prob[sb.max <= sb.taken] <- 0
+    sb.prob <- .sb.prob/sum(.sb.prob)
+    hr <- sum(.hr) + log(ct$bk[pars.new$k+1]*sb.prob[sb.j]) - log(ct$dk[pars$k+1]*(sb.taken[sb.j]+1)/(pars$k))
   }
   return(list(pars=pars.new, hr=hr, decision=decision, sb.prob=sb.prob))
 }
 attributes(.splitmergePrior)$types <- c("birth", "death")
+
+
+## Split merge proposal where new value is a combination of a new value drawn from
+## the prior and a multiplier proposal
+.splitmergePriorMultiplier <- function(pars, cache, d, ct, move=NULL, prior){
+  splitmergepars <- attributes(ct)$splitmergepars
+  nbranch <- length(cache$edge.length)
+  TH <- sum(cache$edge.length)
+  v <- stats::runif(1)
+  sb.max <- ct$sb$bmax
+  sb.taken <- rep(0,2*cache$ntips-2)
+  sb.table <- table(pars$sb)
+  sb.taken[as.numeric(names(sb.table))] <- sb.table
+  sb.prob <- ct$sb$prob
+  sb.prob[sb.max <= sb.taken] <- 0
+  if(v < ct$bk[pars$ntheta]/(ct$bk[pars$ntheta]+ct$dk[pars$ntheta])){
+    decision <- "birth"
+    sb.j <- sample(1:(2*cache$ntips-2),1,prob=sb.prob)
+    loc.j <- stats::runif(1,min=0,max=cache$edge.length[sb.j])
+    t2.j <- pars$ntheta+1
+    pars.new <- pars
+    pars.new$sb <- c(pars$sb, sb.j)
+    pars.new$loc <- c(pars$loc, loc.j)
+    pars.new$t2 <- c(pars$t2, t2.j)
+    map.new <- .pars2map(pars.new, cache)
+    t1 <- map.new$theta[max(which(map.new$theta==t2.j))-1]
+    t2W <- sum(map.new$segs[map.new$theta==t2.j])
+    t1W <- sum(map.new$segs[map.new$theta==t1])
+    #r <- t2W/(t1W+t2W)
+    .hr <- NULL
+    for(i in 1:length(splitmergepars)){
+      rfx <- attributes(prior)$rfunctions[[paste("d", splitmergepars[i], sep="")]]
+      dfx <- attributes(prior)$functions[[paste("d", splitmergepars[i], sep="")]]
+      u <- rfx(1)
+      pars.new[[splitmergepars[i]]][t1] <- pars[[splitmergepars[i]]][t1]*exp((pars[[splitmergepars[i]]][t1] - u)/d[i])#pars[[splitmergepars[i]]][t1]-u*r
+      pars.new[[splitmergepars[i]]][t2.j] <- pars[[splitmergepars[i]]][t1]*exp(-1*(pars[[splitmergepars[i]]][t1] - u)/d[i])#pars[[splitmergepars[i]]][t1]+u*(1-r)
+      .hr <- c(.hr, -1*dfx(u) + log(2) - log(d[i]))
+    }
+    pars.new$k <- pars$k+1
+    pars.new$ntheta <- pars$ntheta + 1
+    pars.new$sb <- c(pars$sb,sb.j)
+    pars.new$loc <- c(pars$loc,loc.j)
+    pars.new$t2 <- c(pars$t2,t2.j)
+    hr <- sum(.hr)
+  } else {
+    decision <- "death"
+    j <- sample(1:pars$k,1)
+    pars.new <- pars
+    pars.new$k <- pars$k-1
+    pars.new$ntheta <- pars$ntheta-1
+    pars.new$sb <- pars$sb[-j]
+    pars.new$loc <- pars$loc[-j]
+    pars.new$t2 <- pars$t2[-pars$k]
+    for(i in 1:length(splitmergepars)){
+      pars.new[[splitmergepars[i]]] <- pars[[splitmergepars[i]]][-(j+1)]
+    }
+    map <- .pars2map(pars, cache)
+    t2.j <- pars$t2[j]
+    sb.j <- pars$sb[j]
+    t1 <- map$theta[max(which(map$theta==t2.j))-1]
+    t2W <- sum(map$segs[map$theta==t2.j])
+    t1W <- sum(map$segs[map$theta==t1])
+    #r <- t2W/(t1W+t2W)
+    .hr <- NULL
+    for(i in 1:length(splitmergepars)){
+      rfx <- attributes(prior)$rfunctions[[paste("d", splitmergepars[i], sep="")]]
+      dfx <- attributes(prior)$functions[[paste("d", splitmergepars[i], sep="")]]
+      pars.new[[splitmergepars[i]]][t1-(t1>t2.j)] <- (pars[[splitmergepars[i]]][t1]+pars[[splitmergepars[i]]][t2.j])/2
+      #oldvals <- sort(c(pars[[splitmergepars[i]]][t1],pars[[splitmergepars[i]]][t2.j]), decreasing=TRUE)
+      u <- rfx(1) #(oldvals[1] + oldvals[2] + d[i]*(log(oldvals[1])  - log(oldvals[2])))/2
+      .hr <- c(.hr, dfx(u) + log(d[i]) - log(2))
+    }
+    sb.prob[sb.j] <- ct$sb$prob[sb.j]
+    hr <- sum(.hr) #log(ct$bk[pars.new$ntheta]*sb.prob[sb.j]/sum(sb.prob))-log(ct$dk[pars$ntheta]*1/pars$k*prod(d))
+  }
+  return(list(pars=pars.new, hr=hr, decision=decision, sb.prob=sb.prob))
+}
+attributes(.splitmergePriorMultiplier)$types <- c("birth", "death")
+
+
+## Split merge proposal where new value is a combination of a new value drawn from
+## the prior and a sliding window proposal
+.splitmergePriorSlidingWindow <- function(pars, cache, d, ct, move=NULL, prior){
+  splitmergepars <- attributes(ct)$splitmergepars
+  nbranch <- length(cache$edge.length)
+  TH <- sum(cache$edge.length)
+  v <- stats::runif(1)
+  sb.max <- ct$sb$bmax
+  sb.taken <- rep(0,2*cache$ntips-2)
+  sb.table <- table(pars$sb)
+  sb.taken[as.numeric(names(sb.table))] <- sb.table
+  sb.prob <- ct$sb$prob
+  sb.prob[sb.max <= sb.taken] <- 0
+  if(v < ct$bk[pars$ntheta]/(ct$bk[pars$ntheta]+ct$dk[pars$ntheta])){
+    decision <- "birth"
+    sb.j <- sample(1:(2*cache$ntips-2),1,prob=sb.prob)
+    loc.j <- stats::runif(1,min=0,max=cache$edge.length[sb.j])
+    t2.j <- pars$ntheta+1
+    pars.new <- pars
+    pars.new$sb <- c(pars$sb, sb.j)
+    pars.new$loc <- c(pars$loc, loc.j)
+    pars.new$t2 <- c(pars$t2, t2.j)
+    map.new <- .pars2map(pars.new, cache)
+    t1 <- map.new$theta[max(which(map.new$theta==t2.j))-1]
+    t2W <- sum(map.new$segs[map.new$theta==t2.j])
+    t1W <- sum(map.new$segs[map.new$theta==t1])
+    #r <- t2W/(t1W+t2W)
+    .hr <- NULL
+    for(i in 1:length(splitmergepars)){
+      rfx <- attributes(prior)$rfunctions[[paste("d", splitmergepars[i], sep="")]]
+      dfx <- attributes(prior)$functions[[paste("d", splitmergepars[i], sep="")]]
+      u <- rfx(1)
+      pars.new[[splitmergepars[i]]][t1] <- pars[[splitmergepars[i]]][t1]+ (pars[[splitmergepars[i]]][t1] - u)/d[i]#pars[[splitmergepars[i]]][t1]-u*r
+      pars.new[[splitmergepars[i]]][t2.j] <- pars[[splitmergepars[i]]][t1]-1*(pars[[splitmergepars[i]]][t1] - u)/d[i]#pars[[splitmergepars[i]]][t1]+u*(1-r)
+      .hr <- c(.hr, -1*dfx(u) + log(2) - log(d[i]))
+    }
+    pars.new$k <- pars$k+1
+    pars.new$ntheta <- pars$ntheta + 1
+    pars.new$sb <- c(pars$sb,sb.j)
+    pars.new$loc <- c(pars$loc,loc.j)
+    pars.new$t2 <- c(pars$t2,t2.j)
+    hr <- sum(.hr)
+  } else {
+    decision <- "death"
+    j <- sample(1:pars$k,1)
+    pars.new <- pars
+    pars.new$k <- pars$k-1
+    pars.new$ntheta <- pars$ntheta-1
+    pars.new$sb <- pars$sb[-j]
+    pars.new$loc <- pars$loc[-j]
+    pars.new$t2 <- pars$t2[-pars$k]
+    for(i in 1:length(splitmergepars)){
+      pars.new[[splitmergepars[i]]] <- pars[[splitmergepars[i]]][-(j+1)]
+    }
+    map <- .pars2map(pars, cache)
+    t2.j <- pars$t2[j]
+    sb.j <- pars$sb[j]
+    t1 <- map$theta[max(which(map$theta==t2.j))-1]
+    t2W <- sum(map$segs[map$theta==t2.j])
+    t1W <- sum(map$segs[map$theta==t1])
+    #r <- t2W/(t1W+t2W)
+    .hr <- NULL
+    for(i in 1:length(splitmergepars)){
+      rfx <- attributes(prior)$rfunctions[[paste("d", splitmergepars[i], sep="")]]
+      dfx <- attributes(prior)$functions[[paste("d", splitmergepars[i], sep="")]]
+      pars.new[[splitmergepars[i]]][t1-(t1>t2.j)] <- (pars[[splitmergepars[i]]][t1]+pars[[splitmergepars[i]]][t2.j])/2
+      #oldvals <- sort(c(pars[[splitmergepars[i]]][t1],pars[[splitmergepars[i]]][t2.j]), decreasing=TRUE)
+      u <- ((1- d[1])*pars[[splitmergepars[i]]][t1] + (1 + d[1])*pars[[splitmergepars[i]]][t2.j])/2 #rfx(1) #(oldvals[1] + oldvals[2] + d[i]*(log(oldvals[1])  - log(oldvals[2])))/2
+      .hr <- c(.hr, dfx(u) + log(d[i]) - log(2))
+    }
+    sb.prob[sb.j] <- ct$sb$prob[sb.j]
+    hr <- sum(.hr) #log(ct$bk[pars.new$ntheta]*sb.prob[sb.j]/sum(sb.prob))-log(ct$dk[pars$ntheta]*1/pars$k*prod(d))
+  }
+  return(list(pars=pars.new, hr=hr, decision=decision, sb.prob=sb.prob))
+}
+attributes(.splitmergePriorSlidingWindow)$types <- c("birth", "death")
+

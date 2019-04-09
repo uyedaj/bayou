@@ -1,8 +1,8 @@
 Package: bayou
 Type: Package
 Title: Bayesian Fitting of Ornstein-Uhlenbeck Models to Phylogenies
-Version: 2.1.2
-Date: 2018-11-18
+Version: 2.1.3
+Date: 2019-4-9
 Author: Josef C. Uyeda, Jon Eastman and Luke Harmon
 Maintainer: Josef C. Uyeda <josef.uyeda@gmail.com>
 Description: Tools for fitting and simulating multi-optima Ornstein-Uhlenbeck
