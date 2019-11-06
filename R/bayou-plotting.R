@@ -95,30 +95,6 @@ plotSimmap.mcmc <- function(chain, burnin=NULL, lwd=1, edge.type = c("regimes", 
   }
   if(edge.type=="none"){
     plot(tr, edge.color=edge.color, lwd=lwd, ...)
-<<<<<<< HEAD
-  }
-  if(edge.type == "regimes"){
-    plotRegimes(tr, col=colors, lwd=lwd, pal=pal, ...)
-  }
-  if(edge.type == "theta"){
-    plotBranchHeatMap(tree, chain, "theta", burnin=burnin, pal=heat.colors, ...)
-  }
-  if(edge.type == "pp"){
-   plot(tree, edge.color=.colorRamp(L$pp, pal, 100), ...)
-  }
-  if(circles){
-    #theta2 <- L$magnitude.of.theta2
-    #root.median <- median(sapply(chain$theta[postburn], function(x) x[1]))
-    #theta2[is.na(theta2)] <- root.median
-    #theta2 <- theta2 - root.median
-    #circle.cols <- sapply(colorRamp(theta2, circle.pal, 100), function(x) makeTransparent(x, circle.alpha))
-    circle.cexs <- seq(0, circle.cex.max, length.out=100)[.colorRamp(L$pp, NULL, 100)]
-    edgelabels(pch=circle.pch, lwd=circle.lwd, bg=makeTransparent(circle.col, circle.alpha), cex=circle.cexs)
-  }
-  if(pp.labels){
-    edgelabels(round(L$pp,2), col=makeTransparent(pp.col, pp.alpha), cex=pp.cex, frame = "none")
-  }
-=======
   }
   if(edge.type == "regimes"){
     plotRegimes(tr, col=colors, lwd=lwd, pal=pal, ...)
@@ -165,7 +141,6 @@ plotSimmap.mcmc <- function(chain, burnin=NULL, lwd=1, edge.type = c("regimes", 
   if(pp.labels){
     edgelabels(round(L$pp,2), col=makeTransparent(pp.col, pp.alpha), cex=pp.cex, frame = "none")
   }
->>>>>>> master
     
   
 }
@@ -527,7 +502,6 @@ plotRegimes <- function(tree, col=NULL, lwd=1, pal=rainbow, ...){
 }
 
 
-<<<<<<< HEAD
 #' A function for summarizing the state of a model after a shift
 #' 
 #' @param chain A bayouMCMC chain
@@ -692,5 +666,3 @@ plotShiftSummaries <- function(summaries, pal=rainbow, ask=FALSE, single.plot=FA
   suppressWarnings(par(px))
 }
 
-=======
->>>>>>> master
