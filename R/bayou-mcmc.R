@@ -572,7 +572,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
   return(out)
 }
 
-#' Function that grabs the last parameters from a set of bayou output files.
+# Function that grabs the last parameters from a set of bayou output files.
 .lastpar <- function(files, outpars, startpar, rjpars, ss=FALSE){
   fLs <- sapply(files, function(x) countL(summary(x)$description))
   fL <- min(fLs[fLs > 0])
@@ -611,7 +611,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
   
 }
 
-#' Function to format a locally returned bayou store and format it as a bayouMCMC chain.
+# Function to format a locally returned bayou store and format it as a bayouMCMC chain.
 .fchain.local <- function(store, bayouFit, ss=FALSE){
   tree <- bayouFit$tree
   dat <- bayouFit$dat

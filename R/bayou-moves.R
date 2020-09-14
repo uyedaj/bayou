@@ -201,7 +201,7 @@ attributes(.vectorSlidingWindow)$types <- NULL
 attributes(.slide)$types <- c("U0", "U1", "U2","D0", "D1", "R1")
 
 
-#' MCMC move for splitting or collapsing a shift on phylogeny
+# MCMC move for splitting or collapsing a shift on phylogeny
 .splitmerge <- function(pars, cache, d, ct, move=NULL, prior=NULL){
   nbranch <- length(cache$edge.length)
   TH <- sum(cache$edge.length)
@@ -290,7 +290,7 @@ attributes(.splitmerge)$types <- c("birth", "death")
  # return(list(segs=new.segs, theta=new.theta))
 #}
 
-#' MCMC move for splitting or collapsing a shift on phylogeny
+# MCMC move for splitting or collapsing a shift on phylogeny
 .splitmergebd <- function(pars, cache, d, ct, move=NULL, prior=NULL){
   splitmergepars <- attributes(ct)$splitmergepars
   nbranch <- length(cache$edge.length)

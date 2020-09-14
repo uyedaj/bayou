@@ -262,9 +262,9 @@ parmap.W <- function(tree, pars){
   return(W)
 }
 
-#' Calculate the weight matrix for an auteur bm-jumps model
-#'  
-#'  Example: 
+# Calculate the weight matrix for an auteur bm-jumps model
+#  
+#  Example: 
 #pars <- list(sig2 = 1, sig2jump = 2, k=2, ntheta=3, sb= c(447, 436), t2= c(2, 3), loc= c(0,0))
 .auteur.W <- function(cache, pars){
   nbranch <- length(cache$edge.length)

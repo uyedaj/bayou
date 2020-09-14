@@ -147,6 +147,8 @@ make.prior <- function(tree, dists=list(), param=list(), fixed=list(), plot.prio
   names(rfx) <- names(rprior.param)
   
   if(plot.prior){
+    oldpar <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(oldpar))
     graphics::par(mfrow=c(ceiling(length(dists2get)/2),2))
     nsim <-500000
     for(i in 1:length(rfx)){

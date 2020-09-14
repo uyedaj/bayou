@@ -1,4 +1,4 @@
-#' Utility for getting the starting and ending ages for each regime
+# Utility for getting the starting and ending ages for each regime
 .optima.ages <- function(pars,tree){
   nH <- nodeHeights(tree)
   reg <- sapply(tree$maps,function(x) names(x)[length(x)])
@@ -255,17 +255,15 @@ plot.bayouMCMC <- function(x, ...){
 #' 
 #' @export
 plotBayoupars <- function(pars, tree,...){
-  mar <- par()$mar
   tree <- reorder(tree, 'postorder')
   X <- rep(0, length(tree$tip.label))
   names(X) <- tree$tip.label
   cache <- .prepare.ou.univariate(tree, X)
   tr <- .toSimmap(.pars2map(pars, cache),cache)
   plotRegimes(tr,...)
-  par(mar=mar)
 }
 
-#' Experimental function for ancestral state reconstruction for a given OU model
+# Experimental function for ancestral state reconstruction for a given OU model
 .OU.asr <- function(tree, dat, pars, start=NULL, SE=0){
   phy <- reorder(tree, "postorder")
   dat <- dat[phy$tip.label]
@@ -575,11 +573,13 @@ shiftSummaries <- function(chain, mcmc, pp.cutoff=0.3, branches=NULL){
 #' coefficients in the model.
 #' @export
 plotShiftSummaries <- function(summaries, pal=rainbow, ask=FALSE, single.plot=FALSE, label.pts=TRUE, ...){
-  px <- par()
+  #oldpar <- graphics::par(no.readonly = TRUE)    # code line i
+  #on.exit(graphics::par(oldpar))            # code line i + 1 
+  #px <- par()
   ndens <- length(summaries$cladesummaries[[1]]$densities)
-  par(mfrow=c(2,max(ndens,2)), mar=c(3,3,5,1), bg="black", ask=FALSE, col.axis="white", col.lab="white", col.main="white", ...)
+  #par(mfrow=c(2,max(ndens,2)), mar=c(3,3,5,1), bg="black", ask=FALSE, col.axis="white", col.lab="white", col.main="white", ...)
   blank.panels <- prod(par()$mfrow) - (2+ndens)
-  par(ask=ask)
+  #par(ask=ask)
   regressions <- summaries$regressions
   if(ncol(regressions)==1){ regressions <- data.frame(regressions, "slope"=0)}
   dat <- summaries$dat
@@ -637,6 +637,103 @@ plotShiftSummaries <- function(summaries, pal=rainbow, ask=FALSE, single.plot=FA
     }
     
   }
-  px <- px[!(names(px) %in% c("cin", "cra", "cxy", "csi", "din", "page"))]
-  suppressWarnings(par(px))
+  #px <- px[!(names(px) %in% c("cin", "cra", "cxy", "csi", "din", "page"))]
+  #suppressWarnings(par(px))
 }
+
+#' A function to plot a heatmap of reconstructed parameter values on the branches of the tree
+#' 
+#' @param tree A phylogenetic tree
+#' @param chain A bayou MCMC chain
+#' @param variable The parameter to reconstruct across the tree
+#' @param burnin The initial proportion of burnin samples to discard 
+#' @param nn The number of discrete categories to divide the variable into
+#' @param pal A color palette function that produces nn colors
+#' @param legend_ticks The sequence of values to display a legend for
+#' @param legend_settings A list of legend attributes (passed to bayou:::.addColorBar)
+#' @param ... Additional options passed to plot.phylo
+#' 
+#' @details legend_settings is an optional list of any of the following:
+#' 
+#' legend - a logical indicating whether a legend should be plotted
+#' 
+#' x - the x location of the legend
+#' 
+#' y - the y location of the legend
+#' 
+#' height - the height of the legend
+#' 
+#' width - the width of the legend
+#' 
+#' n - the number of gradations in color to plot from the palette
+#' 
+#' adjx - an x adjustment for placing text next to the legend bar
+#' 
+#' cex.lab - the size of text labels next to the legend bar
+#' 
+#' text.col - The color of text labels
+#' 
+#' locator - if TRUE, then x and y coordinates are ignored and legend is placed
+#' interactively.
+#' 
+#' @export
+plotBranchHeatMap <- function(tree, chain, variable, burnin=0, nn=NULL, pal=heat.colors, legend_ticks=NULL, legend_settings=list(plot=TRUE), ...){
+  dum <- setNames(rep(1, length(tree$tip.label)), tree$tip.label)
+  cache <- .prepare.ou.univariate(tree, dum)
+  tree <- cache$phy
+  seq1 <- floor(max(seq(burnin*length(chain$gen),1), length(chain$gen), 1))
+  if(is.null(legend_ticks)){
+    legend_ticks <- seq(min(unlist(chain[[variable]][seq1],F,F)), max(unlist(chain[[variable]][seq1],F,F)), length.out=5)
+  }
+  if(is.null(nn)) nn <- length(seq1) else { seq1 <- floor(seq(max(burnin*length(chain$gen),1), length(chain$gen), length.out=nn))}
+  if(length(nn) > length(chain$gen)) stop("Number of samples greater than chain length, lower nn")
+  abranches <- lapply(1:nrow(tree$edge), .ancestorBranches, cache=cache)
+  allbranches <- suppressWarnings(sapply(1:nrow(tree$edge), function(x) .branchRegime(x, abranches, chain, variable, seq1, summary=TRUE)))
+  ape::plot.phylo(tree, edge.color=.colorRamp(allbranches, pal, 100), ...)
+  lastPP<-get("last_plot.phylo",envir=.PlotPhyloEnv)
+  legend_stuff <- list(x=0.01* lastPP$x.lim[2], 
+                       y=0, 
+                       height=0.25*diff(lastPP$y.lim), 
+                       width=0.01*diff(lastPP$x.lim), 
+                       n=100, 
+                       trait=allbranches, 
+                       ticks=legend_ticks, 
+                       adjx=0.01*lastPP$x.lim[2], 
+                       cex.lab=0.5, 
+                       text.col="black",
+                       plot=TRUE,
+                       locator=FALSE
+  )
+  if(length(legend_settings) > 0){
+    for(i in 1:length(legend_settings)){
+      legend_stuff[[names(legend_settings)[i]]] <- legend_settings[[i]]
+    }
+  }
+  if(legend_stuff$plot) {
+    if(legend_stuff$locator){
+      lc <- locator(1)
+      legend_stuff$x <- lc$x
+      legend_stuff$y <- lc$y
+      .addColorBar(x=legend_stuff$x, y=legend_stuff$y, height=legend_stuff$height, width=legend_stuff$width, pal=pal, n=legend_stuff$n, trait=allbranches, ticks=legend_ticks, adjx=legend_stuff$adjx, cex.lab=legend_stuff$cex.lab, text.col=legend_stuff$text.col)
+    } else .addColorBar(x=legend_stuff$x, y=legend_stuff$y, height=legend_stuff$height, width=legend_stuff$width, pal=pal, n=legend_stuff$n, trait=allbranches, ticks=legend_ticks, adjx=legend_stuff$adjx, cex.lab=legend_stuff$cex.lab, text.col=legend_stuff$text.col)
+  }
+}
+
+
+.ancestorBranches <- function(branch, cache){
+  ancbranches <- which(sapply(cache$bdesc, function(x) branch %in% x))
+  sort(ancbranches, decreasing=FALSE)
+}
+.branchRegime <- function(branch, abranches, chain, parameter, seqx, summary=FALSE){
+  ancs <- c(branch, abranches[[branch]])
+  ancshifts <- lapply(1:length(seqx), function(x) chain$t2[[seqx[x]]][which(chain$sb[[seqx[x]]] == ancs[min(which(ancs %in% chain$sb[[seqx[x]]]))])])
+  ancshifts <- sapply(ancshifts, function(x) ifelse(length(x)==0, 1, x))
+  ests <- sapply(1:length(ancshifts), function(x) chain[[parameter]][[seqx[x]]][ancshifts[x]])
+  res <- cbind(ests)
+  if(summary){
+    return(apply(res, 2, stats::median))
+  } else {
+    return(res)
+  }
+}
+

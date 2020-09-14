@@ -1,8 +1,8 @@
-#' bayOU internal function. 
-#' 
-#' \code{.repars} is an internal function and not generally called by the user
-#' 
-#' This is an internal function borrowed from geiger.
+# bayOU internal function. 
+# 
+# \code{.repars} is an internal function and not generally called by the user
+# 
+# This is an internal function borrowed from geiger.
 .repars <- function (pars, expected) 
 {
   if (!length(pars) == length(expected)) 
@@ -24,11 +24,12 @@
     return(pars)
   }
 }
-#' bayOU internal function. 
-#' 
-#' \code{.set.defaults} is an internal function and not generally called by the user
-#' 
-#' This is an internal function borrowed from diversitree.
+
+# bayOU internal function. 
+# 
+# \code{.set.defaults} is an internal function and not generally called by the user
+# 
+# This is an internal function borrowed from diversitree.
 .set.defaults <- function (f, ..., defaults = NULL) {
   dots <- match.call(expand.dots = FALSE)[["..."]]  
   if (missing(defaults)) 
@@ -46,11 +47,11 @@
   f
 }
 
-#' bayOU internal function. 
-#' 
-#' \code{.prepare.ou.univariate} is an internal function and not generally called by the user
-#' 
-#' This is an internal function modified from geiger's function .prepare.bm.univariate for use with OU models.
+# bayOU internal function. 
+# 
+# \code{.prepare.ou.univariate} is an internal function and not generally called by the user
+# 
+# This is an internal function modified from geiger's function .prepare.bm.univariate for use with OU models.
 ##Merging .prepare.ou.phylolm and .prepare.ou.univariate
 ##Clean this up to make sure I actually need all this!!
 .prepare.ou.univariate <- function(tree,X, SE=0, pred=NULL, ...){
@@ -111,11 +112,11 @@
   return(cache)
 }
 
-#' bayOU internal function. 
-#' 
-#' \code{.prepare.bm.univariate} is an internal function and not generally called by the user
-#' 
-#' This is an internal function modified from geiger's function .prepare.bm.univariate for use with OU models.
+# bayOU internal function. 
+# 
+# \code{.prepare.bm.univariate} is an internal function and not generally called by the user
+# 
+# This is an internal function modified from geiger's function .prepare.bm.univariate for use with OU models.
 .prepare.bm.univariate <- function (phy, dat, nodes = NULL, SE = NA, control = list(binary = TRUE, ultrametric = FALSE)) {
   ct = list(binary = TRUE, ultrametric = FALSE)
   ct[names(control)] = control
@@ -178,7 +179,7 @@
   return(cache)
 }
 
-#' Internal function from geiger
+# Internal function from geiger
 .heights.cache <- function (cache) {
   if (is.null(cache$ordering) || cache$ordering != "postorder") {
     stop("'cache' should be postordered")
@@ -203,7 +204,7 @@
   res
 }
 
-#' Internal function from geiger
+# Internal function from geiger
 .cache.tree <- function (phy) {
   ordxx = function(children, is.tip, root) {
     todo <- list(root)
@@ -246,7 +247,7 @@
   ans
 }
 
-#' Internal function from geiger
+# Internal function from geiger
 .cache.descendants <- function (phy) {
   N = as.integer(Ntip(phy))
   n = as.integer(Nnode(phy))
@@ -257,7 +258,7 @@
   return(res)
 }
 
-#' Internal function from geiger
+# Internal function from geiger
 .cache.y.nodes <- function (m, s, g, nn, phy, nodes) {
   if (is.numeric(nodes) & is.vector(nodes)) {
     if (!all(names(nodes) %in% nn)) 
@@ -313,7 +314,7 @@
   vec
 }
 
-#' Internal function from geiger
+# Internal function from geiger
 .mrca <- function (labels, phy)  {
 mm = labels
 if (all(is.character(labels))) {
@@ -350,12 +351,12 @@ max(as.integer(names(tt[tt == length(labels)])))
 
 #geiger:::.prepare.bm.univariate
 
-#' bayOU internal function. 
-#' 
-#' \code{.sample} is an internal function and not generally called by the user
-#' 
-#' This is an internal function modified from the base function \code{sample()} \\
-#' that provides consistent results with variable sample size.
+# bayOU internal function. 
+# 
+# \code{.sample} is an internal function and not generally called by the user
+# 
+# This is an internal function modified from the base function \code{sample()} \\
+# that provides consistent results with variable sample size.
 .sample <- function (x, size, replace = FALSE, prob = NULL, ...) {
   x[sample(length(x), size, replace, prob, ...)]
   #if (missing(size)) 
@@ -363,11 +364,11 @@ max(as.integer(names(tt[tt == length(labels)])))
   #x[.Internal(sample(length(x), size, replace, prob))]
 }
 
-#' bayOU internal function. 
-#' 
-#' \code{.heights.cache} is an internal function and not generally called by the user
-#' 
-#' This is an internal function taken from geiger.
+# bayOU internal function. 
+# 
+# \code{.heights.cache} is an internal function and not generally called by the user
+# 
+# This is an internal function taken from geiger.
 .heights.cache <- function (cache) {
   if (is.null(cache$ordering) || cache$ordering != "postorder") {
     stop("'cache' should be postordered")
@@ -470,7 +471,8 @@ print.refFn <- function(x, ...){
 #' 
 #' @export
 identifyBranches <- function(tree, n, fixed.loc=TRUE, plot.simmap=TRUE){
-  mar.old <- par('mar')
+  oldpar <- graphics::par(no.readonly = TRUE)
+  on.exit(graphics::par(oldpar))
   par(mfrow=c(1,1), mar=c(0.1,0.1,0.1,0.1))
   tree <- reorder(tree,"postorder")
   plot(tree, cex=0.5)
@@ -501,19 +503,18 @@ identifyBranches <- function(tree, n, fixed.loc=TRUE, plot.simmap=TRUE){
     names(cols) <- 1:(length(sb)+1)
     plotSimmap(tr, pts=FALSE, fsize=0.5,colors=cols)
   }
-  par(mar=mar.old)
   out <- list(sb=sb)
   if(fixed.loc) out$loc <- loc
   return(out)
 }
 
-#' Internal function taken from phytools
+# Internal function taken from phytools
 .whichorder <- function (x, y){ 
   sapply(x, function(x, y) which(x == y), y = y)
 }
 
 
-#' Internal function to determine tip regimes:
+# Internal function to determine tip regimes:
 .tipregime <- function(pars, tree){
   ntips <- length(tree$tip.label)
   tree <- reorder(tree, "postorder")

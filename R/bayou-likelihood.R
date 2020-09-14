@@ -1,8 +1,8 @@
-#' bayOU internal function. 
-#' 
-#' \code{.fix.root.bm} is an internal function and not generally called by the user
-#' 
-#' This is an internal function from geiger.
+# bayOU internal function. 
+# 
+# \code{.fix.root.bm} is an internal function and not generally called by the user
+# 
+# This is an internal function from geiger.
 .fix.root.bm <- function (root, cache) {
   rtidx = cache$root
   cache$y["m", rtidx] = root
@@ -11,11 +11,11 @@
 }
 #geiger:::.fix.root.bm
 
-#' bayOU internal function. 
-#' 
-#' \code{.ou.cache} is an internal function and not generally called by the user
-#' 
-#' This is an internal function that modifies the internal function \code{.ou.cache} in geiger for efficiency.
+# bayOU internal function. 
+# 
+# \code{.ou.cache} is an internal function and not generally called by the user
+# 
+# This is an internal function that modifies the internal function \code{.ou.cache} in geiger for efficiency.
 .ou.cache.fast <- function (cache) 
 {
   ht = cache$ht
@@ -42,11 +42,11 @@
   return(z)
 }
 
-#' bayOU internal function. 
-#' 
-#' \code{fastbm.lik} is an internal function and not generally called by the user
-#' 
-#' This is an internal function that modifies the internal function \code{bm.lik} in geiger for efficiency.
+# bayOU internal function. 
+# 
+# \code{fastbm.lik} is an internal function and not generally called by the user
+# 
+# This is an internal function that modifies the internal function \code{bm.lik} in geiger for efficiency.
 .fastbm.lik <- function (cache, dat,SE = NA, model = "OU", ...) {
   cache$dat <- dat
   cache$y[1,][1:cache$ntips] <- dat
