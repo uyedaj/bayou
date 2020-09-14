@@ -1,4 +1,4 @@
-context("weight matrix can be calculated")
+#context("weight matrix can be calculated")
 test_that("weight matrix can be calculated", {
   data(chelonia)
   tree <- chelonia$phy

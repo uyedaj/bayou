@@ -1,4 +1,4 @@
-context("testing prior functions")
+#context("testing prior functions")
 
 test_that("testing prior functions", {
   data(chelonia)
@@ -18,6 +18,6 @@ test_that("testing prior functions", {
   f1tree$edge.length[pars$sb] <- tree$edge.length[pars$sb]*100
   priorf1 <- make.prior(tree,dists=list(dalpha="dunif",dsig2="dunif"),param=list(dalpha=list(min=0,max=1),dsig2=list(min=0,max=1),dsb=list(bmax=Inf,prob=tree$edge.length)),plot.prior=FALSE)
   priorf2 <- make.prior(f1tree,dists=list(dalpha="dunif",dsig2="dunif"),param=list(dalpha=list(min=0,max=1),dsig2=list(min=0,max=1),dsb=list(bmax=Inf,prob=f1tree$edge.length)),plot.prior=FALSE)
-  expect_that(priorf1(pars)< priorf2(pars), is_true())  
+  expect_true(priorf1(pars)< priorf2(pars))  
   expect_that(QGprior(pars),throws_error("Missing parameters:  h2 P w2 Ne"))
 })

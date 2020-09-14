@@ -1,4 +1,4 @@
-context("can calculate likelihoods")
+#context("can calculate likelihoods")
 test_that("can calculate likelihoods", {
   data(chelonia)
   library(geiger)
@@ -6,8 +6,7 @@ test_that("can calculate likelihoods", {
   dat <- chelonia$dat
   cache <- bayou:::.prepare.ou.univariate(tree, dat, SE=0)
   pars <- list(alpha=0.01, sig2=1, k=3, ntheta=4, theta=c(3,4,5,6), sb= c(408, 399, 448), loc=c(8, 9, 31), t2=2:4)
-  expect_that(is.finite(OU.lik(pars, tree, dat)$loglik), is_true())
-  expect_that(is.finite(bayou.lik(pars, cache, dat)$loglik), is_true())
+  expect_true(is.finite(bayou.lik(pars, cache, dat)$loglik))
   expect_that(bayou.lik(pars, cache, dat)$loglik[1], equals(OU.lik(pars, tree, dat)$loglik[1]))
   expect_that(bayou.lik(pars, cache, dat)$loglik[1], equals(-494.775911175547))
   ##Test Brownian motion works
