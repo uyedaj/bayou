@@ -161,7 +161,7 @@ plotBranchHeatMap <- function(tree, chain, variable, burnin=0, nn=NULL, pal=heat
   if(length(nn) > length(chain$gen)) stop("Number of samples greater than chain length, lower nn")
   abranches <- lapply(1:nrow(tree$edge), .ancestorBranches, cache=cache)
   allbranches <- suppressWarnings(sapply(1:nrow(tree$edge), function(x) .branchRegime(x, abranches, chain, variable, seq1, summary=TRUE)))
-  plot(tree, edge.color=.colorRamp(allbranches, pal, 100), ...)
+  ape::plot.phylo(tree, edge.color=.colorRamp(allbranches, pal, 100), ...)
   lastPP<-get("last_plot.phylo",envir=.PlotPhyloEnv)
   legend_stuff <- list(x=0.01* lastPP$x.lim[2], 
                        y=0, 

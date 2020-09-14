@@ -94,7 +94,7 @@ plotSimmap.mcmc <- function(chain, burnin=NULL, lwd=1, edge.type = c("regimes", 
     }
   }
   if(edge.type=="none"){
-    plot(tr, edge.color=edge.color, lwd=lwd, ...)
+    ape::plot.phylo(tr, edge.color=edge.color, lwd=lwd, ...)
   }
   if(edge.type == "regimes"){
     plotRegimes(tr, col=colors, lwd=lwd, pal=pal, ...)
@@ -103,7 +103,7 @@ plotSimmap.mcmc <- function(chain, burnin=NULL, lwd=1, edge.type = c("regimes", 
     plotBranchHeatMap(tree, chain, "theta", burnin=burnin, pal=heat.colors, ...)
   }
   if(edge.type == "pp"){
-   plot(tree, edge.color=.colorRamp(L$pp, pal, 100), ...)
+   ape::plot.phylo(tree, edge.color=.colorRamp(L$pp, pal, 100), ...)
   }
   if(circles){
     #theta2 <- L$magnitude.of.theta2
@@ -240,6 +240,7 @@ plot.bayouMCMC <- function(x, ...){
   univariates <- chain2[sapply(chain2,function(x) length(unlist(x)))==length(chain2$gen)]
   univariates$root <- sapply(chain2$theta, function(x) x[1])
   uni.df <- as.data.frame(univariates)
+  uni.df <- uni.df[!duplicated(uni.df$gen),]
   rownames(uni.df) <- uni.df[,1]
   uni.df <- uni.df[,-1]
   plot(mcmc(uni.df), ...)
@@ -423,7 +424,7 @@ plotRegimes <- function(tree, col=NULL, lwd=1, pal=rainbow, ...){
     col <- setNames(pal(nreg), regNames)
   }
   #nodecols <- col[sapply(tree$maps, function(x) names(x)[1])]
-  tmp <- plot(tree, edge.color="#FFFFFF00", use.edge.length=TRUE, ...)
+  tmp <- ape::plot.phylo(tree, edge.color="#FFFFFF00", use.edge.length=TRUE, ...)
   lastPP <- get("last_plot.phylo", envir = .PlotPhyloEnv)
   #if(lastPP$type != "phylogram") stop("Currently only able to plot phylograms")
   nbranch <- nrow(tree$edge)
