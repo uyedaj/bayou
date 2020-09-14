@@ -4,12 +4,28 @@
 \alias{bayou.makeMCMC}
 \title{Revision of bayou.mcmc that only makes the mcmc loop function, rather than running it itself.}
 \usage{
-bayou.makeMCMC(tree, dat, pred = NULL, SE = 0, model = "OU", prior,
-  samp = 10, chunk = 100, control = NULL, tuning = NULL,
-  new.dir = TRUE, plot.freq = 500, outname = "bayou",
-  plot.fn = phenogram, ticker.freq = 1000, tuning.int = c(0.1, 0.2, 0.3),
-  startpar = NULL, moves = NULL, control.weights = NULL, lik.fn = NULL,
-  perform.checks = TRUE)
+bayou.makeMCMC(
+  tree,
+  dat,
+  pred = NULL,
+  SE = 0,
+  model = "OU",
+  prior,
+  samp = 10,
+  chunk = 100,
+  control = NULL,
+  tuning = NULL,
+  file.dir = tempdir(),
+  plot.freq = 500,
+  outname = "bayou",
+  plot.fn = phenogram,
+  ticker.freq = 1000,
+  startpar = NULL,
+  moves = NULL,
+  control.weights = NULL,
+  lik.fn = NULL,
+  perform.checks = TRUE
+)
 }
 \arguments{
 \item{tree}{a phylogenetic tree of class 'phylo'}
@@ -40,9 +56,9 @@ parameters}
 \item{tuning}{A named vector that governs how liberal or conservative proposals are that equals 
 the number of proposal mechanisms.}
 
-\item{new.dir}{If TRUE, then results are stored in a new temporary directory. If FALSE, results 
-are written to the current working directory. If a character string,
-then results are written to that working directory.}
+\item{file.dir}{If a character string, then results are written to that working directory. If NULL, 
+then results are not saved to files, but instead held in memory. Default is `tempdir()`, which
+writes to an R temporary directory.}
 
 \item{plot.freq}{How often plots should be made during the mcmc. If NULL, then plots are not 
 produced}
@@ -52,9 +68,6 @@ produced}
 \item{plot.fn}{Function used in plotting, defaults to phytools::phenogram}
 
 \item{ticker.freq}{How often a summary log should be printed to the screen}
-
-\item{tuning.int}{How often the tuning parameters should be adjusted as a fraction of the total 
-number of generations (currently ignored)}
 
 \item{startpar}{A list with the starting parameters for the mcmc. If NULL, starting parameters 
 are simulated from the prior distribution}
