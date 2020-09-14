@@ -1,25 +1,25 @@
-language: c
+# R for travis: see documentation at https://docs.travis-ci.com/user/languages/r
 
-env:
-  - global:
-    - WARNINGS_ARE_ERRORS=1
-
-before_install:
-  - curl -OL http://raw.github.com/craigcitro/r-travis/master/scripts/travis-tool.sh
-  - chmod 755 ./travis-tool.sh
-  - ./travis-tool.sh bootstrap
-install:
-  - ./travis-tool.sh aptget_install libgsl0-dev
-  - ./travis-tool.sh install_deps
-
-script: ./travis-tool.sh run_tests
-
-on_failure:
-  - ./travis-tool.sh dump_logs
-after_failure:
-  "cat /home/travis/build/uyedaj/bayou/bayou.Rcheck/00install.out"
-
+language: R
+cache: packages
+r_packages:
+  - covr
+os:
+  - linux
+  - osx
+after_success:
+  - test $TRAVIS_R_VERSION_STRING = 'release' && Rscript -e 'covr::codecov()'
 notifications:
   email:
     on_success: change
     on_failure: change
+osx_image: xcode11.4
+addons:
+  apt:
+    update: true
+    sources:
+      - sourceline: 'ppa:opencpu/imagemagick'
+      - sourceline: 'ppa:ubuntugis/ppa'
+    packages:
+      - libmagick++-dev
+      - liblapack-dev
