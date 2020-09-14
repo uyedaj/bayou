@@ -1,6 +1,6 @@
 #context("testing prior functions")
 
-test_that("testing prior functions", {
+testthat::test_that("testing prior functions", {
   data(chelonia)
   tree <- chelonia$phy
   dat <- chelonia$dat

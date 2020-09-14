@@ -1,5 +1,5 @@
 #context("can calculate likelihoods")
-test_that("can calculate likelihoods", {
+testthat::test_that("can calculate likelihoods", {
   data(chelonia)
   library(geiger)
   tree <- chelonia$phy
