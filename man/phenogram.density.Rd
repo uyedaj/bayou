@@ -4,8 +4,16 @@
 \alias{phenogram.density}
 \title{Plot a pheongram with the posterior density for optima values}
 \usage{
-phenogram.density(tree, dat, burnin = 0, chain, colors = NULL,
-  pp.cutoff = NULL, K = NULL, ...)
+phenogram.density(
+  tree,
+  dat,
+  burnin = 0,
+  chain,
+  colors = NULL,
+  pp.cutoff = NULL,
+  K = NULL,
+  ...
+)
 }
 \arguments{
 \item{tree}{A phylogeny of class 'phylo'}

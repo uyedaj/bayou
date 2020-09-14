@@ -4,8 +4,16 @@
 \alias{bayou.checkModel}
 \title{Function for checking parameter lists, prior and models are consistent and error-free}
 \usage{
-bayou.checkModel(pars = NULL, tree, dat, pred = NULL, SE = 0, prior,
-  model = "OU", autofix = TRUE)
+bayou.checkModel(
+  pars = NULL,
+  tree,
+  dat,
+  pred = NULL,
+  SE = 0,
+  prior,
+  model = "OU",
+  autofix = TRUE
+)
 }
 \arguments{
 \item{pars}{A list of parameters that will be specified as starting parameter}

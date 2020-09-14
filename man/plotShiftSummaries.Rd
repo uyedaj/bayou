@@ -4,8 +4,14 @@
 \alias{plotShiftSummaries}
 \title{A function to plot a list produced by \code{shiftSummaries}}
 \usage{
-plotShiftSummaries(summaries, pal = rainbow, ask = FALSE,
-  single.plot = FALSE, label.pts = TRUE, ...)
+plotShiftSummaries(
+  summaries,
+  pal = rainbow,
+  ask = FALSE,
+  single.plot = FALSE,
+  label.pts = TRUE,
+  ...
+)
 }
 \arguments{
 \item{summaries}{A list produced by the function \code{shiftSummaries}}

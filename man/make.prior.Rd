@@ -4,8 +4,14 @@
 \alias{make.prior}
 \title{Make a prior function for bayou}
 \usage{
-make.prior(tree, dists = list(), param = list(), fixed = list(),
-  plot.prior = TRUE, model = "OU")
+make.prior(
+  tree,
+  dists = list(),
+  param = list(),
+  fixed = list(),
+  plot.prior = TRUE,
+  model = "OU"
+)
 }
 \arguments{
 \item{tree}{A tree object of class "phylo"}

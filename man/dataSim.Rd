@@ -4,8 +4,7 @@
 \alias{dataSim}
 \title{Simulates data from bayou models}
 \usage{
-dataSim(pars, model, tree, map.type = "pars", SE = 0, phenogram = TRUE,
-  ...)
+dataSim(pars, model, tree, map.type = "pars", SE = 0, phenogram = TRUE, ...)
 }
 \arguments{
 \item{pars}{A bayou formated parameter list}

@@ -4,7 +4,7 @@
 \alias{pull.pars}
 \title{Utility function for retrieving parameters from an MCMC chain}
 \usage{
-\method{pull}{pars}(i, chain, model = "OU")
+pull.pars(i, chain, model = "OU")
 }
 \arguments{
 \item{i}{An integer giving the sample to retrieve}

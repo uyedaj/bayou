@@ -2,15 +2,31 @@
 % Please edit documentation in R/bayou-deprecated.R, R/bayou-mcmc.R
 \name{bayou-deprecated}
 \alias{bayou-deprecated}
-\alias{bayou-deprecated}
 \alias{bayou.mcmc}
 \title{Deprecated functions in package bayou.}
 \usage{
-bayou.mcmc(tree, dat, SE = 0, model = "OU", prior, ngen = 10000,
-  samp = 10, chunk = 100, control = NULL, tuning = NULL,
-  new.dir = FALSE, plot.freq = 500, outname = "bayou",
-  plot.fn = phenogram, ticker.freq = 1000, tuning.int = c(0.1, 0.2, 0.3),
-  startpar = NULL, moves = NULL, control.weights = NULL, lik.fn = NULL)
+bayou.mcmc(
+  tree,
+  dat,
+  SE = 0,
+  model = "OU",
+  prior,
+  ngen = 10000,
+  samp = 10,
+  chunk = 100,
+  control = NULL,
+  tuning = NULL,
+  new.dir = FALSE,
+  plot.freq = 500,
+  outname = "bayou",
+  plot.fn = phenogram,
+  ticker.freq = 1000,
+  tuning.int = c(0.1, 0.2, 0.3),
+  startpar = NULL,
+  moves = NULL,
+  control.weights = NULL,
+  lik.fn = NULL
+)
 }
 \arguments{
 \item{tree}{a phylogenetic tree of class 'phylo'}

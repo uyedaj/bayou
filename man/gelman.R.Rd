@@ -4,8 +4,7 @@
 \alias{gelman.R}
 \title{Calculate Gelman's R statistic}
 \usage{
-gelman.R(parameter, chain1, chain2, freq = 20, start = 1, plot = TRUE,
-  ...)
+gelman.R(parameter, chain1, chain2, freq = 20, start = 1, plot = TRUE, ...)
 }
 \arguments{
 \item{parameter}{The name or number of the parameter to calculate the statistic on}

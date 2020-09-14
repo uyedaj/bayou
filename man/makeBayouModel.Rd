@@ -4,10 +4,23 @@
 \alias{makeBayouModel}
 \title{This function makes a bayou model object that can be used for customized allometric regression models.}
 \usage{
-makeBayouModel(f, rjpars, tree, dat, pred, prior, SE = 0,
-  slopechange = "immediate", impute = NULL, startpar = NULL,
-  moves = NULL, control.weights = NULL, D = NULL, shiftpars = c("sb",
-  "loc", "t2"), model = "OU")
+makeBayouModel(
+  f,
+  rjpars,
+  tree,
+  dat,
+  pred,
+  prior,
+  SE = 0,
+  slopechange = "immediate",
+  impute = NULL,
+  startpar = NULL,
+  moves = NULL,
+  control.weights = NULL,
+  D = NULL,
+  shiftpars = c("sb", "loc", "t2"),
+  model = "OU"
+)
 }
 \arguments{
 \item{f}{A formula describing the relationship between the data and one or more predictors (use 'dat' 

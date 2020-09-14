@@ -4,8 +4,7 @@
 \alias{load.bayou}
 \title{Loads a bayou object}
 \usage{
-load.bayou(bayouFit, saveRDS = TRUE, file = NULL, cleanup = FALSE,
-  ref = FALSE)
+load.bayou(bayouFit, saveRDS = TRUE, file = NULL, cleanup = FALSE, ref = FALSE)
 }
 \arguments{
 \item{bayouFit}{An object of class \code{bayouFit} produced by the function \code{bayou.mcmc()}}

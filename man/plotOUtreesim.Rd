@@ -4,8 +4,7 @@
 \alias{plotOUtreesim}
 \title{A function to visualize a multi-optimum OU process evolving on a phylogeny}
 \usage{
-plotOUtreesim(pars, tree, ptsperunit = 100, pal = rainbow, aph = 255,
-  lwd = 1)
+plotOUtreesim(pars, tree, ptsperunit = 100, pal = rainbow, aph = 255, lwd = 1)
 }
 \arguments{
 \item{pars}{A bayou parameter list to simulate the OU process from}
