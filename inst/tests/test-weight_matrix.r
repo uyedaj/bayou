@@ -1,6 +1,6 @@
 #context("weight matrix can be calculated")
 testthat::test_that("weight matrix can be calculated", {
-  data(chelonia)
+  data(chelonia, package="geiger")
   tree <- chelonia$phy
   dat <- chelonia$dat
   cache <- .prepare.ou.univariate(tree, dat)

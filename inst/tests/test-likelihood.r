@@ -1,7 +1,6 @@
 #context("can calculate likelihoods")
 testthat::test_that("can calculate likelihoods", {
-  data(chelonia)
-  library(geiger)
+  data(chelonia, package="geiger")
   tree <- chelonia$phy
   dat <- chelonia$dat
   cache <- bayou:::.prepare.ou.univariate(tree, dat, SE=0)

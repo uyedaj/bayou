@@ -1,7 +1,7 @@
 #context("testing prior functions")
 
 testthat::test_that("testing prior functions", {
-  data(chelonia)
+  data(chelonia, package="geiger")
   tree <- chelonia$phy
   dat <- chelonia$dat
   cache <- .prepare.ou.univariate(tree, dat)
