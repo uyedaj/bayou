@@ -28,7 +28,7 @@ Imports:
     grDevices,
     stats
 Suggests:
-    doParallel
+    doParallel,
     testthat
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 7.1.1
