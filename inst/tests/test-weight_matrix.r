@@ -8,8 +8,8 @@ testthat::test_that("weight matrix can be calculated", {
   TotExp <- exp(-cache$height*pars$alpha)
   stree <- pars2simmap(pars, tree)
   sW <- simmap.W(stree$tree, pars)
-  expect_that(apply(sW, 1, sum), equals(rep(1,226)))
+  testthat::expect_equal(apply(sW, 1, sum), rep(1,226))
   bW <- bayou:::C_weightmatrix(cache, pars)$W
-  expect_that(bW, equals(sW))
-  expect_that(apply(bW,2,sum), equals(c(79.58365, 117.46516, 28.95119), tolerance=0.0001))
+  testthat::expect_equal(bW, sW)
+  testthat::expect_equal(apply(bW,2,sum), c(79.58365, 117.46516, 28.95119), tolerance=0.0001)
 })
