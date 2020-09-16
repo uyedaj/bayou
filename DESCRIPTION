@@ -29,5 +29,6 @@ Imports:
     stats
 Suggests:
     doParallel
+    testthat
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 7.1.1
