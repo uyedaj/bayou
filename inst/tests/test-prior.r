@@ -1,6 +1,7 @@
 #context("testing prior functions")
 
 testthat::test_that("testing prior functions", {
+  library(bayou)
   data(chelonia, package="geiger")
   tree <- chelonia$phy
   dat <- chelonia$dat
