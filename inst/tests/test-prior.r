@@ -5,7 +5,7 @@ testthat::test_that("testing prior functions", {
   data(chelonia, package="geiger")
   tree <- chelonia$phy
   dat <- chelonia$dat
-  cache <- .prepare.ou.univariate(tree, dat)
+  cache <- bayou:::.prepare.ou.univariate(tree, dat)
   pars <- list(alpha=0.1, sig2=1, k=16, theta=c(3,4,5,6), sb=c(411,400,47), loc=c(23, 21, 33))
   QGpars <- list(h2=0.1,P=1,w2=0.9,Ne=1,k=16,theta=c(3,4,5,6), sb=c(411,400,47), loc=c(23, 21, 33))
   prior <- make.prior(tree,dists=list(dalpha="dunif",dsig2="dunif"),param=list(dalpha=list(min=0,max=1),dsig2=list(min=0,max=1),dsb=list(bmax=1,prob=1)),plot.prior=FALSE)
