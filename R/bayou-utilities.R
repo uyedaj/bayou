@@ -123,7 +123,9 @@
   td = treedata(phy, dat, sort = TRUE, warnings = FALSE)
   phy = reorder(td$phy, "postorder")
   if (ct$binary) 
-    if (!is.binary.tree(phy)) 
+    # (May 10, 2021) DSC: Warning of deprecated function. Changing to "is.binary"
+    # if (!is.binary.tree(phy))
+    if (!is.binary(phy))  
       stop("'phy' should be a binary tree")
   if (ct$ultrametric) 
     if (!is.ultrametric(phy)) 
