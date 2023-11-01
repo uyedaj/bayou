@@ -488,6 +488,11 @@ summary.bayouMCMC <- function(object, ...){
   } else {
     start <- round(attributes(object)$burnin*length(object$gen),0)
   }
+  if(is.null(attributes(object)$pp.cutoff)){
+    pp.cutoff <- 0.1
+  } else {
+    pp.cutoff <- attributes(object)$pp.cutoff
+  }
   cat("bayou MCMC chain:", max(object$gen), "generations\n")
   cat(length(object$gen), "samples, first", eval(start), "samples discarded as burnin\n")
   postburn <- start:length(object$gen)
@@ -519,8 +524,8 @@ summary.bayouMCMC <- function(object, ...){
   print(statistics, ...)
   Lpost <- Lposterior(object, tree)
   Lpost.sorted <- Lpost[order(Lpost[,1],decreasing=TRUE),]
-  cat("\n\nBranches with posterior probabilities higher than 0.1:\n")
-  print(Lpost.sorted[Lpost.sorted[,1]>0.1,], ...)
+  cat("\n\nBranches with posterior probabilities higher than ", pp.cutoff, ":\n")
+  print(Lpost.sorted[Lpost.sorted[,1]>pp.cutoff,], ...)
   out <- list(statistics=statistics, branch.posteriors=Lpost)
   invisible(out)
 }
