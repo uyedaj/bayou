@@ -1,11 +1,11 @@
 #' Calculate the weight matrix of a set of regimes on a phylogeny
 #' 
 #' These functions calculate weight matrices from regimes specified in phytools' simmap format.
-#' \code{simmap.W} calculates the weight matrix for a set of regimes from a phylogeny
+#' \code{simmapW} calculates the weight matrix for a set of regimes from a phylogeny
 #' with a stored regime history. \code{.simmap.W} calculates the same matrix, but without checks and is 
 #' generally run internally. 
 #' 
-#' @rdname simmap.W
+#' @rdname simmapW
 #' @param tree either a tree of class "phylo" or a cache object produced by bayOU's internal 
 #' functions. Must include list element 'maps' which is a simmap reconstruction of regime history.
 #' @param pars a list of the parameters used to calculate the weight matrix. Only pars$alpha is
@@ -15,8 +15,8 @@
 #' of \code{TotExp} is supplied to speed computation and reduce redundancy, and cache objects must be supplied as
 #' the phylogeny, and the parameter \code{ntheta} must be present in the list \code{pars}.
 #' @export
-simmap.W <- function(tree,pars){
-  if(class(tree)=="phylo"){
+simmapW <- function(tree,pars){
+  if(inherits(tree, "phylo")){
     X <- rep(NA,length(tree$tip.label))
     names(X) <- tree$tip.label
     cache <- .prepare.ou.univariate(tree,X)
@@ -180,7 +180,7 @@ simmap.W <- function(tree,pars){
 #' @details \code{.parmap.W} is more computationally efficient within a mcmc and is used internally. 
 #' @export
 parmap.W <- function(tree, pars){
-  if(class(tree)=="phylo"){
+  if(inherits(tree, "phylo")){
     X <- rep(NA,length(tree$tip.label))
     names(X) <- tree$tip.label
     cache <- .prepare.ou.univariate(tree,X)

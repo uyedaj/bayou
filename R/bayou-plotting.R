@@ -315,7 +315,7 @@ plotBayoupars <- function(pars, tree,...){
   a <- pars$alpha
   s2 <- pars$sig2
   nbranch <- length(tree$edge.length)
-  if(class(tree)=="phylo"){
+  if(inherits(tree,"phylo")){
     X <- rep(NA,length(tree$tip.label))
     names(X) <- tree$tip.label
     cache <- .prepare.ou.univariate(tree,X)

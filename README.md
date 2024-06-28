@@ -1,3 +1,7 @@
+  <!-- badges: start -->
+  [![R-CMD-check](https://github.com/uyedaj/bayou/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/uyedaj/bayou/actions/workflows/R-CMD-check.yaml)
+  <!-- badges: end -->
+
 ## This is the development version of the R package _bayou_. _bayou_ fits Bayesian reversible-jump multi-optima OU models to phylogenetic comparative data.
 
 Please report any bugs or issues, as this package is currently under development.

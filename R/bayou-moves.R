@@ -100,7 +100,7 @@ attributes(.vectorMultiplier)$types <- NULL
 attributes(.vectorSlidingWindow)$types <- NULL
 
 
-#' MCMC move for sliding a shift up or down to neighboring branches, or within a branch
+## MCMC move for sliding a shift up or down to neighboring branches, or within a branch
 .slidespace <- function(j, pars, cache, ct, map){
   sb <- rep(NA, 5)
   t2 <- pars$t2[j]

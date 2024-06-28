@@ -232,10 +232,10 @@ plot.ssMCMC <- function(x, ...){
   return(list(Lmax=Lmax,Lfactored=Lfactored))
 }
 
-#' Compute marginal likelihood
-#' 
-#' \code{computelnr} computes the marginal likelihood of a set of chains estimated via stepping stone
-#' sampling and produced by the function \code{steppingstone}
+## Compute marginal likelihood
+## 
+## \code{computelnr} computes the marginal likelihood of a set of chains estimated via stepping stone
+## sampling and produced by the function \code{steppingstone}
 .computelnr <- function(Kchains,Bk,samp){
   lnr <- list()
   for(i in 1:(length(Bk)-1)){

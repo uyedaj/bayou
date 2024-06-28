@@ -433,11 +433,11 @@ print.refFn <- function(x, ...){
   print(x, ...)
 }
 
-#' bayOU internal function. 
-#' 
-#' \code{.heights.cache} is an internal function and not generally called by the user
-#' 
-#' This function calculates the change in optima at each shift point on the tree
+## bayOU internal function. 
+## 
+## \code{.heights.cache} is an internal function and not generally called by the user
+## 
+## This function calculates the change in optima at each shift point on the tree
 .D.from.theta <- function(pars, cache, sort=TRUE){
   map <- .pars2map(pars, cache)
   reg.shifts <- cbind(map$theta[which(duplicated(names(map$theta)))-1], map$theta[which(duplicated(names(map$theta)))])
@@ -562,7 +562,7 @@ bayou.checkModel <- function(pars=NULL, tree, dat, pred=NULL, SE=0,
   checks <- list()
   
   ## Step 1. Check to see if the model already exists in bayou or is custom.
-  if(class(model)=="character"){
+  if(inherits(model,"character")){
     if(model %in% c("OU", "QG", "OUrepar")){
       model.name <- model
       model <- switch(model, "OU"=model.OU, "QG"=model.QG, "OUrepar"=model.OUrepar)

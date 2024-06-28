@@ -20,3 +20,4 @@
 ^\.git$
 ^tutorial_files$
 ^tutorial_files/.+$
+^\.github$

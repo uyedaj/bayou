@@ -578,7 +578,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
   fL <- min(fLs[fLs > 0])
   if(fL==1){skipL <- 0} else {skipL=fL-1}
   res <- lapply(1:length(files), function(x) try(utils::read.table(summary(files[[x]])$description, skip=skipL), silent=TRUE))
-  res <- lapply(1:length(files), function(x) if(class(res[[x]])=="try-error"){numeric(0)}else{res[[x]]})
+  res <- lapply(1:length(files), function(x) if(inherits(res[[x]], "try-error")){numeric(0)}else{res[[x]]})
   pars <- list()
   parLs <- lapply(startpar, length)[outpars]
   npars <- length(res[[4]])

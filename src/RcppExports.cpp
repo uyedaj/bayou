@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // C_threepoint
 SEXP C_threepoint(SEXP dat);
 RcppExport SEXP _bayou_C_threepoint(SEXP datSEXP) {
@@ -51,8 +56,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_bayou_C_threepoint", (DL_FUNC) &_bayou_C_threepoint, 1},
     {"_bayou_C_transf_branch_lengths", (DL_FUNC) &_bayou_C_transf_branch_lengths, 4},
     {"_bayou_C_weightmatrix", (DL_FUNC) &_bayou_C_weightmatrix, 2},
-    {"bm_direct2",                     (DL_FUNC) &bm_direct2,                     2},
-    {"cache_descendants",              (DL_FUNC) &cache_descendants,              2},
+    {"bm_direct2",        (DL_FUNC) &bm_direct2,        2},
+    {"cache_descendants", (DL_FUNC) &cache_descendants, 2},
     {NULL, NULL, 0}
 };
 

@@ -195,28 +195,27 @@ Lposterior <- function(chain,tree,burnin=0, simpar=NULL,mag=TRUE){
   return(Lpost)
 }
 
-#' Discards burnin
-#' 
-#' @export
+# Discards burnin
+# 
 .discard.burnin <- function(chain,burnin.prop=0.3){
   lapply(chain,function(x) x[(burnin.prop*length(x)):length(x)])
 }
 
-#' Tuning function, not currently used.
-.tune.D <- function(D,accept,accept.type){
-  tuning.samp <- (length(accept)/2):length(accept)
-  acc <- tapply(accept[tuning.samp],accept.type[tuning.samp],mean)
-  acc.length <- tapply(accept[tuning.samp],accept.type[tuning.samp],length)
-  acc.tune <- acc/0.25
-  acc.tune[acc.tune<0.5] <- 0.5
-  acc.tune[acc.tune>2] <- 2
-  D$ak <- acc.tune['alpha']*D$ak
-  D$sk <- acc.tune['sig2']*D$sk
-  D$tk <- acc.tune['theta']*D$tk
-  D$bk <- D$tk*2
-  D <- lapply(D,function(x){ names(x) <- NULL; x})
-  return(list("D"=D,"acc.tune"=acc.tune))
-}
+# Tuning function, not currently used.
+#.tune.D <- function(D,accept,accept.type){
+#  tuning.samp <- (length(accept)/2):length(accept)
+#  acc <- tapply(accept[tuning.samp],accept.type[tuning.samp],mean)
+#  acc.length <- tapply(accept[tuning.samp],accept.type[tuning.samp],length)
+#  acc.tune <- acc/0.25
+#  acc.tune[acc.tune<0.5] <- 0.5
+#  acc.tune[acc.tune>2] <- 2
+#  D$ak <- acc.tune['alpha']*D$ak
+#  D$sk <- acc.tune['sig2']*D$sk
+#  D$tk <- acc.tune['theta']*D$tk
+#  D$bk <- D$tk*2
+#  D <- lapply(D,function(x){ names(x) <- NULL; x})
+#  return(list("D"=D,"acc.tune"=acc.tune))
+#}
 
 #' Utility function for retrieving parameters from an MCMC chain
 #' 
@@ -316,10 +315,10 @@ print.bayouMCMC <- function(x, ...){
   for(i in o){
     cat("$", nn[i], "     ", sep="")
     cat(class(x[[i]]), " with ", length(x[[i]]), " elements", "\n", sep="")
-    if(class(x[[i]])=="numeric" & length(x[[i]]) > 0) cat(x[[i]][1:min(c(length(x[[i]]), 5))])
-    if(class(x[[i]])=="list" & length(x[[i]]) > 0) print(x[[i]][1:min(c(length(x[[i]]), 2))])
-    if(class(x[[i]])=="numeric" & length(x[[i]]) > 5) cat(" ...", "\n")
-    if(class(x[[i]])=="list" & length(x[[i]]) > 2) cat(" ...", "\n")
+    if(inherits(x[[i]], "numeric") & length(x[[i]]) > 0) cat(x[[i]][1:min(c(length(x[[i]]), 5))])
+    if(inherits(x[[i]], "list") & length(x[[i]]) > 0) print(x[[i]][1:min(c(length(x[[i]]), 2))])
+    if(inherits(x[[i]], "numeric") & length(x[[i]]) > 5) cat(" ...", "\n")
+    if(inherits(x[[i]], "list") & length(x[[i]]) > 2) cat(" ...", "\n")
     cat("\n")
   }
 }
@@ -530,9 +529,7 @@ summary.bayouMCMC <- function(object, ...){
   invisible(out)
 }
 
-#' Stores a flat file
-#' 
-
+# Stores a flat file
 .store.bayou2 <- function(i, pars, outpars, rjpars, ll, pr, store, samp, chunk, parorder, files, ref=numeric(0)){
   if(i%%samp==0){
     j <- (i/samp)%%chunk

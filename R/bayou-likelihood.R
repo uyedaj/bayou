@@ -203,7 +203,7 @@
 #' 
 #' @export
 OU.lik <- function(pars,tree,X,SE=0,model="OU", invert=FALSE){
-  if(class(tree)=="phylo"){
+  if(inherits(tree, "phylo")){
     cache <- .prepare.ou.univariate(tree, X, SE=SE)
   } else {cache <- tree}
   dat <- cache$dat
