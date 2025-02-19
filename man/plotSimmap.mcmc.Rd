@@ -62,10 +62,15 @@ on that branch is > pp.cutoff), or "pp" (branches will be colored according to t
 
 \item{edge.color}{The color of edges if edge.type="none"}
 
-\item{parameter.sample}{When edge.type=="theta", the number of samples used to estimate the median "theta" value from each branch. Since this is 
+\item{parameter.sample}{When edge.type=="theta", the number of samples used to estimate the median "theta" value from each branch. Since this is
 computationally intensive, this enables you to downsample the chain.}
 
 \item{...}{Additional arguments passed to ape's plot.phylo}
+}
+\value{
+**No return value**, called for **side effects**.
+The function generates a **phylogenetic tree visualization** with branches colored
+based on posterior probabilities, regimes, or estimated parameters.
 }
 \description{
 Plot a phylogenetic tree with posterior probabilities from a bayouMCMC chain (function adapted from phytools' plotSimmap)

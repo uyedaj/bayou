@@ -23,7 +23,7 @@ makeBayouModel(
 )
 }
 \arguments{
-\item{f}{A formula describing the relationship between the data and one or more predictors (use 'dat' 
+\item{f}{A formula describing the relationship between the data and one or more predictors (use 'dat'
 for the dependent variable)}
 
 \item{rjpars}{A character vector of parameters to split at the mapped shifts on the tree}
@@ -57,6 +57,13 @@ starting values from the prior function.}
 
 \item{model}{The parameterization of the OU model, either "OU", "OUrepar" or "QG".}
 }
+\value{
+A list with two elements:
+\describe{
+  \item{model}{A list containing MCMC settings, likelihood functions, monitoring functions, and other parameters for the Bayesian OU model.}
+  \item{startpar}{A list of starting parameter values for the model. If missing data is imputed, it includes `missing.pred`.}
+}
+}
 \description{
 This function makes a bayou model object that can be used for customized allometric regression models.
 }
@@ -65,7 +72,7 @@ This function generates a list with the '$model', which provides the specificati
 model and '$startpar', which provides starting values to input into bayou.makeMCMC. Note that this model assumes
 that predictors immediately affect trait values at a shift. In other words, regardless of the past history of the
 predictor, only the current value affects the current expected trait value. This is only reasonable for allometric
-models, although it may be appropriate for other models if phylogenetic inertia is very low (short half-lives). 
+models, although it may be appropriate for other models if phylogenetic inertia is very low (short half-lives).
 
 One predictor variable may include missing data (coded as "NA"). The model will assume the maximum-likelihood
 best-fit BM model and simulate the missing predictor values throughout the course of the MCMC. These values will

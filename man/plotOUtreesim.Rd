@@ -19,6 +19,10 @@ plotOUtreesim(pars, tree, ptsperunit = 100, pal = rainbow, aph = 255, lwd = 1)
 
 \item{lwd}{The width of the lines}
 }
+\value{
+**No return value**, called for **side effects**.
+The function **generates a plot** showing the simulated trait evolution over time.
+}
 \description{
 A function to visualize a multi-optimum OU process evolving on a phylogeny
 }

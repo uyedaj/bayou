@@ -12,7 +12,7 @@ combine.chains(chain.list, thin = 1, burnin.prop = 0)
 \item{thin}{A number or vector specifying the thinning interval to be used. If a single value,
 then the same proportion will be applied to all chains.}
 
-\item{burnin.prop}{A number or vector giving the proportion of burnin from each chain to be 
+\item{burnin.prop}{A number or vector giving the proportion of burnin from each chain to be
 discarded. If a single value, then the same proportion will be applied to all chains.}
 }
 \value{

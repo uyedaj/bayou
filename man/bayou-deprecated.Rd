@@ -33,12 +33,12 @@ bayou.mcmc(
 
 \item{dat}{a named vector of continuous trait values matching the tips in tree}
 
-\item{SE}{The standard error of the data. Either a single value applied to all 
+\item{SE}{The standard error of the data. Either a single value applied to all
 the data, or a vector of length(dat).}
 
-\item{model}{The parameterization of the OU model used. Either "OU" for standard parameterization with 
-alpha and sigma^2; "OUrepar" for phylogenetic half-life and stationary variance (Vy), or "QG" for the 
-Lande model, with parameters h^2 (heritability), P (phenotypic variance), omega^2 (width of adaptive 
+\item{model}{The parameterization of the OU model used. Either "OU" for standard parameterization with
+alpha and sigma^2; "OUrepar" for phylogenetic half-life and stationary variance (Vy), or "QG" for the
+Lande model, with parameters h^2 (heritability), P (phenotypic variance), omega^2 (width of adaptive
 landscape), and Ne (effective population size)}
 
 \item{prior}{A prior function of class 'priorFn' that gives the prior distribution of all parameters}
@@ -51,10 +51,10 @@ landscape), and Ne (effective population size)}
 
 \item{control}{A list providing a control object governing how often and which proposals are used}
 
-\item{tuning}{A named vector that governs how liberal or conservative proposals are that equals the 
+\item{tuning}{A named vector that governs how liberal or conservative proposals are that equals the
 number of proposal mechanisms.}
 
-\item{new.dir}{If TRUE, then results are stored in a new temporary directory. If FALSE, results are 
+\item{new.dir}{If TRUE, then results are stored in a new temporary directory. If FALSE, results are
 written to the current working directory. If a character string,
 then results are written to that working directory.}
 
@@ -66,19 +66,54 @@ then results are written to that working directory.}
 
 \item{ticker.freq}{How often a summary log should be printed to the screen}
 
-\item{tuning.int}{How often the tuning parameters should be adjusted as a fraction of the total 
+\item{tuning.int}{How often the tuning parameters should be adjusted as a fraction of the total
 number of generations (currently ignored)}
 
-\item{startpar}{A list with the starting parameters for the mcmc. If NULL, starting parameters are 
+\item{startpar}{A list with the starting parameters for the mcmc. If NULL, starting parameters are
 simulated from the prior distribution}
 
-\item{moves}{A named list providing the proposal functions to be used in the mcmc. Names correspond to 
+\item{moves}{A named list providing the proposal functions to be used in the mcmc. Names correspond to
 the parameters to be modified in the parameter list. See 'details' for default values.}
 
-\item{control.weights}{A named vector providing the relative frequency each proposal mechanism is to 
+\item{control.weights}{A named vector providing the relative frequency each proposal mechanism is to
 be used during the mcmc}
 
 \item{lik.fn}{Likelihood function to be evaluated. Defaults to \code{bayou.lik}.}
+}
+\value{
+This documentation does not return a value. It serves as a reference for deprecated functions in the \code{bayou} package.
+
+For `bayou.mcmc`, a list of class `"bayouFit"` containing:
+\describe{
+  \item{model}{The model parameterization used.}
+  \item{dir.name}{Directory where results are stored.}
+  \item{dir}{Full directory path for stored results.}
+  \item{outname}{Filename prefix for output files.}
+  \item{accept}{Vector of acceptance rates for different proposals.}
+  \item{accept.type}{Vector indicating types of accepted proposals.}
+  \item{tree}{The phylogenetic tree used.}
+  \item{dat}{Continuous trait data used in the MCMC simulation.}
+  \item{tmpdir}{Logical indicating if a temporary directory was used.}
+  \item{startpar}{List of starting parameter values.}
+}
+
+For `bayou.makeMCMC`, a list of class `"bayouMCMCFn"` containing:
+\describe{
+  \item{model}{The model parameterization used.}
+  \item{model.pars}{List of model parameters used in the MCMC simulation.}
+  \item{dir.name}{Directory where results are stored.}
+  \item{dir}{Full directory path for stored results.}
+  \item{outname}{Filename prefix for output files.}
+  \item{tree}{The phylogenetic tree used.}
+  \item{dat}{Continuous trait data used in the MCMC simulation.}
+  \item{pred}{Predictor data matrix or `NULL` if not used.}
+  \item{SE}{Measurement error values provided.}
+  \item{tmpdir}{Logical indicating if a temporary directory was used.}
+  \item{startpar}{List of starting parameter values.}
+  \item{run}{Function to execute the MCMC simulation.}
+  \item{steppingstone}{Function for performing stepping-stone sampling for marginal likelihood estimation.}
+  \item{load}{Function to load the MCMC chain after the simulation.}
+}
 }
 \description{
 The functions listed below are deprecated and will be defunct in
@@ -86,7 +121,7 @@ The functions listed below are deprecated and will be defunct in
   functionality are also mentioned. Help pages for deprecated functions are
   available at \code{help("-deprecated")}.
 
-Runs a reversible-jump Markov chain Monte Carlo on continuous phenotypic data on a phylogeny, 
+Runs a reversible-jump Markov chain Monte Carlo on continuous phenotypic data on a phylogeny,
 sampling possible shift locations and shift magnitudes, and shift numbers.
 }
 \section{\code{bayou.mcmc}}{

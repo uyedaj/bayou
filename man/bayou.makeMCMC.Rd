@@ -32,19 +32,19 @@ bayou.makeMCMC(
 
 \item{dat}{a named vector of continuous trait values matching the tips in tree}
 
-\item{pred}{A matrix or data frame with named columns with predictor data represented in the 
+\item{pred}{A matrix or data frame with named columns with predictor data represented in the
 specified
 formula}
 
-\item{SE}{The standard error of the data. Either a single value applied to all the data, or a 
+\item{SE}{The standard error of the data. Either a single value applied to all the data, or a
 vector of length(dat).}
 
-\item{model}{The parameterization of the OU model used. Either "OU" for standard parameterization 
-with alpha and sigma^2; "OUrepar" for phylogenetic half-life and stationary variance (Vy), or 
-"QG" for the Lande model, with parameters h^2 (heritability), P (phenotypic variance), omega^2 
+\item{model}{The parameterization of the OU model used. Either "OU" for standard parameterization
+with alpha and sigma^2; "OUrepar" for phylogenetic half-life and stationary variance (Vy), or
+"QG" for the Lande model, with parameters h^2 (heritability), P (phenotypic variance), omega^2
 (width of adaptive landscape), and Ne (effective population size)}
 
-\item{prior}{A prior function of class 'priorFn' that gives the prior distribution of all 
+\item{prior}{A prior function of class 'priorFn' that gives the prior distribution of all
 parameters}
 
 \item{samp}{The frequency at which Markov samples are retained}
@@ -53,14 +53,14 @@ parameters}
 
 \item{control}{A list providing a control object governing how often and which proposals are used}
 
-\item{tuning}{A named vector that governs how liberal or conservative proposals are that equals 
+\item{tuning}{A named vector that governs how liberal or conservative proposals are that equals
 the number of proposal mechanisms.}
 
-\item{file.dir}{If a character string, then results are written to that working directory. If NULL, 
+\item{file.dir}{If a character string, then results are written to that working directory. If NULL,
 then results are not saved to files, but instead held in memory. Default is `tempdir()`, which
 writes to an R temporary directory.}
 
-\item{plot.freq}{How often plots should be made during the mcmc. If NULL, then plots are not 
+\item{plot.freq}{How often plots should be made during the mcmc. If NULL, then plots are not
 produced}
 
 \item{outname}{The prefix given to files created by the mcmc}
@@ -69,13 +69,13 @@ produced}
 
 \item{ticker.freq}{How often a summary log should be printed to the screen}
 
-\item{startpar}{A list with the starting parameters for the mcmc. If NULL, starting parameters 
+\item{startpar}{A list with the starting parameters for the mcmc. If NULL, starting parameters
 are simulated from the prior distribution}
 
 \item{moves}{A named list providing the proposal functions to be used in the mcmc. Names correspond
 to the parameters to be modified in the parameter list. See 'details' for default values.}
 
-\item{control.weights}{A named vector providing the relative frequency each proposal mechanism is 
+\item{control.weights}{A named vector providing the relative frequency each proposal mechanism is
 to be used during the mcmc}
 
 \item{lik.fn}{Likelihood function to be evaluated. Defaults to \code{bayou.lik}.}
@@ -83,14 +83,14 @@ to be used during the mcmc}
 \item{perform.checks}{A logical indicating whether to use bayou.checkModel to validate model inputs.}
 }
 \description{
-Runs a reversible-jump Markov chain Monte Carlo on continuous phenotypic data 
-on a phylogeny, sampling possible shift locations and 
+Runs a reversible-jump Markov chain Monte Carlo on continuous phenotypic data
+on a phylogeny, sampling possible shift locations and
 shift magnitudes, and shift numbers.
 }
 \details{
-By default, the alpha, sig2 (and various reparameterizations of these parameters) are adjusted 
+By default, the alpha, sig2 (and various reparameterizations of these parameters) are adjusted
 with multiplier proposals, theta are adjusted with sliding window proposals,
-and the number of shifts is adjusted by splitting and merging, as well as sliding the shifts 
-both within and between branches. Allowed shift locations are specified by the 
+and the number of shifts is adjusted by splitting and merging, as well as sliding the shifts
+both within and between branches. Allowed shift locations are specified by the
 prior function (see make.prior()).
 }

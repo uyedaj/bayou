@@ -17,11 +17,15 @@ plotRegimes(tree, col = NULL, lwd = 1, pal = rainbow, ...)
 
 \item{...}{Optional arguments that are passed to plot.phylo}
 }
+\value{
+**No return value**, called for **side effects**.
+The function **generates a plot** of the phylogenetic tree with color-coded regimes.
+}
 \description{
 Function to plot the regimes from a simmap tree
 }
 \details{
-This function uses plot.phylo to generate coordinates and plot the tree, but plots the 
+This function uses plot.phylo to generate coordinates and plot the tree, but plots the
 'maps' element of phytools' simmap format. This provides much of the functionality of plot.phylo from
 the ape package. Currently, only types 'phylogram', 'unrooted', 'radial', and 'cladogram' are allowed. Phylogenies must
 have branch lengths.

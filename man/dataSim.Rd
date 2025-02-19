@@ -21,6 +21,14 @@ dataSim(pars, model, tree, map.type = "pars", SE = 0, phenogram = TRUE, ...)
 
 \item{...}{Optional parameters passed to \code{phenogram(...)}.}
 }
+\value{
+A list with the following components:
+\describe{
+  \item{W}{Weight matrix based on the OU model and simulated shifts.}
+  \item{E.th}{Expected trait values for each tip given the parameter set.}
+  \item{dat}{A named vector of simulated continuous trait values.}
+}
+}
 \description{
 This function simulates data for a given set of parameter values.
 }

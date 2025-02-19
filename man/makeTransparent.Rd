@@ -11,6 +11,9 @@ makeTransparent(someColor, alpha = 100)
 
 \item{alpha}{The alpha transparency. The maxColorValue is set to 255.}
 }
+\value{
+A character vector of colors in hexadecimal format with the specified transparency applied.
+}
 \description{
 Make a color transparent (Taken from an answer on StackOverflow by Nick Sabbe)
 }

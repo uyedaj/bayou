@@ -26,13 +26,22 @@ plotShiftSummaries(
 
 \item{...}{Additional parameters passed to the function par(...)}
 }
+\value{
+**No return value**, called for **side effects**.
+The function **generates visualizations** of shift summaries, including:
+\itemize{
+  \item **Phylogenetic tree with shift locations**
+  \item **Scatter plots of phenotype data**
+  \item **Density plots for regression coefficients**
+}
+}
 \description{
 A function to plot a list produced by \code{shiftSummaries}
 }
 \details{
 For each shift, this function plots the taxa on the phylogeny that are (usually) in this regime (each taxon
-is assigned to the specified shifts, thus some descendent taxa may not always be in indicated regime if the shift if 
-they are sometimes in another tipward shift with low posterior probability). The function then plots the distribution 
+is assigned to the specified shifts, thus some descendent taxa may not always be in indicated regime if the shift if
+they are sometimes in another tipward shift with low posterior probability). The function then plots the distribution
 of phenotypic states and the predicted regression line, as well as density plots for the intercept and any regression
 coefficients in the model.
 }

@@ -9,7 +9,11 @@
 \arguments{
 \item{x}{A 'bayouFit' object produced by \code{bayou.mcmc}}
 
-\item{...}{Additional parameters passed to \code{print}}
+\item{...}{Additional parameters passed to \code{print}
+
+#' @return **No return value**, called for **side effects**.
+This function prints a summary of a **bayou model fit**, including
+posterior probabilities, model parameters, and key statistics.}
 }
 \description{
 S3 method for printing bayouFit objects

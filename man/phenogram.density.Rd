@@ -29,11 +29,16 @@ phenogram.density(
 \item{pp.cutoff}{The posterior probability cutoff value. Branches with posterior probabilities of having a shift above this value
 will have the average location of the regime shift painted onto the branches.}
 
-\item{K}{A list with the values of K to be plotted. If \code{NULL} all values of K are combined and a total posterior produced. This 
-allows separate lines to be plotted for different numbers of shifts so that the location of optima can be compared, for example, between 
+\item{K}{A list with the values of K to be plotted. If \code{NULL} all values of K are combined and a total posterior produced. This
+allows separate lines to be plotted for different numbers of shifts so that the location of optima can be compared, for example, between
 all samples that have 1 vs. 2 shifts in the posterior.}
 
 \item{...}{Additional parameters passed to \code{phenogram(...)}}
+}
+\value{
+No return value, called for side effects. This function generates a phenogram plot
+with posterior density overlays for optima values, visualizing the distribution of evolutionary
+regimes across a phylogenetic tree.
 }
 \description{
 Plots a phenogram and the posterior density for optima values

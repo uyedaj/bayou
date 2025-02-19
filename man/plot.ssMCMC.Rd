@@ -11,6 +11,11 @@
 
 \item{...}{Additional arguments passed to \code{plot}}
 }
+\value{
+No return value, called for side effects. This function generates
+diagnostic plots for an `ssMCMC` object, including log-likelihood, log-prior,
+log-reference function, and cumulative marginal likelihood across power posteriors.
+}
 \description{
 S3 method for plotting ssMCMC objects
 }

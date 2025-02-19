@@ -21,6 +21,9 @@ gelman.R(parameter, chain1, chain2, freq = 20, start = 1, plot = TRUE, ...)
 
 \item{...}{Optional arguments passed to \code{gelman.diag(...)} from the \code{coda} package}
 }
+\value{
+A data frame with two columns
+}
 \description{
 Calculate Gelman's R statistic
 }

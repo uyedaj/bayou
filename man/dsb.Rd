@@ -14,16 +14,16 @@ rsb(k, ntips = ntips, bmax = 1, prob = 1, log = TRUE)
 
 \item{ntips}{The number of tips in the phylogeny}
 
-\item{bmax}{A single integer or a vector of integers equal to the number of 
+\item{bmax}{A single integer or a vector of integers equal to the number of
 branches in the phylogeny indicating the
 maximum number of shifts allowable in the phylogeny. Can take values 0, 1 and Inf.}
 
-\item{prob}{A single value or a vector of values equal to the number of branches 
+\item{prob}{A single value or a vector of values equal to the number of branches
 in the phylogeny indicating the probability that
-a randomly selected shift will lie on this branch. Can take any positive value, 
+a randomly selected shift will lie on this branch. Can take any positive value,
 values need not sum to 1 (they will be scaled to sum to 1)}
 
-\item{log}{A logical indicating whether the log probability should be returned. 
+\item{log}{A logical indicating whether the log probability should be returned.
 Default is 'TRUE'}
 
 \item{k}{The number of shifts to randomly draw from the distribution}
@@ -32,16 +32,16 @@ Default is 'TRUE'}
 The log density of the particular number and arrangement of shifts.
 }
 \description{
-This function provides a means to specify the prior for the location 
+This function provides a means to specify the prior for the location
 of shifts across the phylogeny. Certain combinations are not
-allowed. For example, a maximum shift number of Inf on one branch cannot be combined 
+allowed. For example, a maximum shift number of Inf on one branch cannot be combined
 with a maximum shift number of 1 on another. Thus, bmax must be
-either a vector of 0's and Inf's or a vector of 0's and 1's. Also, if bmax == 1, 
-then all probabilities must be equal, as bayou cannot sample unequal 
+either a vector of 0's and Inf's or a vector of 0's and 1's. Also, if bmax == 1,
+then all probabilities must be equal, as bayou cannot sample unequal
 probabilities without replacement.
 }
 \details{
-\code{dsb} calculates the probability of a particular arrangement of shifts 
+\code{dsb} calculates the probability of a particular arrangement of shifts
 for a given set of assumptions.
 }
 \examples{
@@ -51,14 +51,14 @@ tree <- reorder(tree, "postorder")
 nbranch <- 2*n-2
 sb <- c(1,2, 2, 3)
 
-# Allow any number of shifts on each branch, with probability 
+# Allow any number of shifts on each branch, with probability
 # proportional to branch length
 dsb(sb, ntips=n, bmax=Inf, prob=tree$edge.length)
 
 # Disallow shifts on the first branch, returns -Inf because sb[1] = 1
 dsb(sb, ntips=n, bmax=c(0, rep(1, nbranch-1)), prob=tree$edge.length)
 
-# Set maximum number of shifts to 1, returns -Inf because two shifts 
+# Set maximum number of shifts to 1, returns -Inf because two shifts
 # are on branch 2
 dsb(sb, ntips=n, bmax=1, prob=1)
 

@@ -11,6 +11,11 @@
 
 \item{...}{Additional arguments passed to \code{print}}
 }
+\value{
+**No return value**, called for **side effects**.
+This function prints a summary of a **refFn** object, including
+the expected model, required parameter list, and reference distribution functions.
+}
 \description{
 S3 method for printing refFn objects
 }

@@ -11,6 +11,11 @@
 
 \item{...}{Additional arguments}
 }
+\value{
+**No return value**, called for **side effects**.
+This function prints a summary of a **bayouMCMC** object, including
+details about the MCMC run, burn-in proportion, and key parameter statistics.
+}
 \description{
 S3 method for printing bayouMCMC objects
 }

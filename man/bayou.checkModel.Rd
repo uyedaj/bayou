@@ -22,10 +22,10 @@ bayou.checkModel(
 
 \item{dat}{A named data vector that matches the tip lables in the provided tree}
 
-\item{pred}{A matrix or data frame with named columns with predictor data represented 
+\item{pred}{A matrix or data frame with named columns with predictor data represented
 in the specified formula}
 
-\item{SE}{The standard error of the data. Either a single value applied to all the data, 
+\item{SE}{The standard error of the data. Either a single value applied to all the data,
 or a vector of length(dat).}
 
 \item{prior}{A prior function made using make.prior}
@@ -44,7 +44,7 @@ Function for checking parameter lists, prior and models are consistent and error
 }
 \details{
 A series of checks are performed, run internally within bayou.makeMCMC, but can also
-be run on provided inputs prior to this. Errors are reported. 
+be run on provided inputs prior to this. Errors are reported.
 
 If autofix == TRUE, then the following errors will be automatically corrected:
 

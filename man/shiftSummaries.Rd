@@ -11,24 +11,24 @@ shiftSummaries(chain, mcmc, pp.cutoff = 0.3, branches = NULL)
 
 \item{mcmc}{A bayou mcmc object}
 
-\item{pp.cutoff}{The threshold posterior probability for shifts to summarize, if 'branches' 
+\item{pp.cutoff}{The threshold posterior probability for shifts to summarize, if 'branches'
 specified than this is ignored.}
 
 \item{branches}{The specific branches with shifts to summarize, assuming postordered tree}
 }
 \value{
-A list with elements: 
+A list with elements:
 \code{pars} = a bayoupars list giving the location of shifts specified;
-\code{tree} = The tree; 
-\code{pred} = Predictor variable matrix; 
-\code{dat} = A vector of the data; 
+\code{tree} = The tree;
+\code{pred} = Predictor variable matrix;
+\code{dat} = A vector of the data;
 \code{SE} = A vector of standard errors;
-\code{PP} = Posterior probabilities of the specified shifts; 
-\code{model} = A list specifying the model used; 
-\code{variables} = The variables summarized; 
-\code{cladesummaries} = A list providing the medians and densities of the distributions of regression 
-variables for each shift; 
-\code{descendents} = A list providing the taxa that belong to each regime 
+\code{PP} = Posterior probabilities of the specified shifts;
+\code{model} = A list specifying the model used;
+\code{variables} = The variables summarized;
+\code{cladesummaries} = A list providing the medians and densities of the distributions of regression
+variables for each shift;
+\code{descendents} = A list providing the taxa that belong to each regime
 \code{regressions} = A matrix providing the regression coefficients for each regime.
 }
 \description{
