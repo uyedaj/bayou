@@ -28,6 +28,13 @@ rhalfcauchy(n, scale = 25)
 
 \item{n}{The number of observations}
 }
+\value{
+A numeric vector:
+\describe{
+  \item{If `log = FALSE`}{The probability density of `x` under the half-Cauchy distribution.}
+  \item{If `log = TRUE`}{The logarithm of the probability density.}
+}
+}
 \description{
 \code{dhalfcauchy} returns the probability density for a half-Cauchy distribution
 }
