@@ -39,7 +39,7 @@ warning and ask for confirmation. In this case, if the results of \code{load.bay
 the results of the MCMC run will be permanently deleted.
 }
 \examples{
-\dontrun{
+\donttest{
 data(chelonia)
 tree <- chelonia$phy
 dat <- chelonia$dat

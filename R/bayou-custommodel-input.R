@@ -37,7 +37,7 @@ getPreValues <- function(cache, col){
   return(list(pars=pars.new, hr=hr, decision = type))
 }
 
-.make.monitorFn <- function(model, noMonitor=c("missing.pred", "ntheta"), integers=c("gen","k")){
+.make.monitorFn <- function(model, noMonitor=c("missing.pred", "ntheta"), integers=c("gen","k"), verbose=TRUE){
   parorder <- model$parorder
   rjpars <- model$rjpars
   exclude <- which(parorder %in% noMonitor)
@@ -58,10 +58,12 @@ getPreValues <- function(cache, col){
     #string <- "%-8i%-8.2f%-8.2f%-8.2f%-8.2f%-8.2f%-8.2f%-8i"
     acceptratios <- unlist(accept/accept.type) #tapply(accept, accept.type, mean)
     names <- c(names, names(acceptratios))
-    if(j==0){
-      cat(sprintf("%-7.7s", names), "\n", sep=" ")
+    if (verbose){
+      if(j==0){
+        cat(sprintf("%-7.7s", names), "\n", sep=" ")
+      }
+      cat(sprintf(string, i, lik, pr, pars$alpha, pars$sig2, pars$beta1[1], pars$endo, pars$k), sprintf("%-8.2f", acceptratios),"\n", sep="")
     }
-    cat(sprintf(string, i, lik, pr, pars$alpha, pars$sig2, pars$beta1[1], pars$endo, pars$k), sprintf("%-8.2f", acceptratios),"\n", sep="")
   }
 }
 
@@ -235,16 +237,18 @@ makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, slopechange=
     llh <- -0.5*(n*log(2*pi)+detV+inv.yVy)
     return(list(loglik=llh, theta=pars$theta,resid=X.c, comp=comp, transf.phy=transf.phy))
   }
-  monitorFn <- function(i, lik, pr, pars, accept, accept.type, j){
+  monitorFn <- function(i, lik, pr, pars, accept, accept.type, j, verbose=TRUE){
     names <- c("gen", "lnL", "prior", varnames, parnames, "rtheta", "k")
     format <- c("%-8i",rep("%-8.2f",4), rep("%-8.2f", length(parnames)), "%-8.2f","%-8i")
     acceptratios <- unlist(accept/accept.type) #tapply(accept, accept.type, mean)
     names <- c(names, names(acceptratios))
-    if(j==0){
-      cat(sprintf("%-7.7s", names), "\n", sep=" ")
+    if (verbose) {
+      if(j==0){
+        cat(sprintf("%-7.7s", names), "\n", sep=" ")
+      }
+      item <- c(i, lik, pr, pars[[varnames[1]]], pars[[varnames[2]]], sapply(pars[parnames], function(x) x[1]), pars$theta[1], pars$k)
+      cat(sapply(1:length(item), function(x) sprintf(format[x], item[x])), sprintf("%-8.2f", acceptratios),"\n", sep="")
     }
-    item <- c(i, lik, pr, pars[[varnames[1]]], pars[[varnames[2]]], sapply(pars[parnames], function(x) x[1]), pars$theta[1], pars$k)
-    cat(sapply(1:length(item), function(x) sprintf(format[x], item[x])), sprintf("%-8.2f", acceptratios),"\n", sep="")
   }
   rdists <- .getSimDists(prior)
   ## Set default moves if not specified.
