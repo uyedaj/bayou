@@ -405,16 +405,18 @@ max(as.integer(names(tt[tt == length(labels)])))
 
 #' @export
 #' @method print priorFn
-print.priorFn <- function(x, ...){
-  cat("prior function for bayou\n")
-  cat(paste("expecting ", attributes(x)$model, " model\n", sep=""))
-  cat("'pars' should be a list with named parameter values: list(", paste(gsub('^[a-zA-Z]',"",names(attributes(x)$param)),collapse=", "),")\n",sep="")
-  cat("prior distribution functions used:\n")
-  print(unlist(attributes(x)$dist))
-  cat("\n")
-  cat("definition:\n")
-  attributes(x) <- NULL
-  print(x, ...)
+print.priorFn <- function(x, ..., verbose=TRUE){
+  if(verbose){
+    cat("prior function for bayou\n")
+    cat(paste("expecting ", attributes(x)$model, " model\n", sep=""))
+    cat("'pars' should be a list with named parameter values: list(", paste(gsub('^[a-zA-Z]',"",names(attributes(x)$param)),collapse=", "),")\n",sep="")
+    cat("prior distribution functions used:\n")
+    print(unlist(attributes(x)$dist))
+    cat("\n")
+    cat("definition:\n")
+    attributes(x) <- NULL
+    print(x, ...)
+  }
 }
 
 #' S3 method for printing refFn objects
@@ -428,16 +430,18 @@ print.priorFn <- function(x, ...){
 #'
 #' @export
 #' @method print refFn
-print.refFn <- function(x, ...){
-  cat("reference function for bayou\n")
-  cat(paste("expecting ", attributes(x)$model, " model\n", sep=""))
-  cat("'pars' should be a list with named parameter values: list(", paste(names(attributes(x)$dist),collapse=", "),")\n",sep="")
-  cat("prior distribution functions used:\n")
-  print(unlist(attributes(x)$dist))
-  cat("\n")
-  cat("definition:\n")
-  attributes(x) <- NULL
-  print(x, ...)
+print.refFn <- function(x, ..., verbose=TRUE){
+  if(verbose){
+    cat("reference function for bayou\n")
+    cat(paste("expecting ", attributes(x)$model, " model\n", sep=""))
+    cat("'pars' should be a list with named parameter values: list(", paste(names(attributes(x)$dist),collapse=", "),")\n",sep="")
+    cat("prior distribution functions used:\n")
+    print(unlist(attributes(x)$dist))
+    cat("\n")
+    cat("definition:\n")
+    attributes(x) <- NULL
+    print(x, ...)
+  }
 }
 
 ## bayOU internal function.
@@ -565,7 +569,7 @@ identifyBranches <- function(tree, n, fixed.loc=TRUE, plot.simmap=TRUE){
 #'
 #' @export
 bayou.checkModel <- function(pars=NULL, tree, dat, pred=NULL, SE=0,
-                             prior, model="OU", autofix=TRUE){
+                             prior, model="OU", autofix=TRUE, verbose=TRUE){
   checks <- list()
 
   ## Step 1. Check to see if the model already exists in bayou or is custom.
@@ -678,12 +682,19 @@ bayou.checkModel <- function(pars=NULL, tree, dat, pred=NULL, SE=0,
 
   ## Step 7. Check likelihood function
       checks$likfn_finite <- assertthat::validate_that(is.finite(try(model$lik.fn(pars, cache, dat, model=model.name)$loglik)))
-
-  cat("Checking inputs for errors:")
-  sapply(checks, function(x) if(x==TRUE) cat(".") else cat("!"))
-  cat("\n")
+  if(verbose) {
+    cat("Checking inputs for errors:")
+  }
+  check_results <- sapply(checks, function(x) {
+    if (x == TRUE) {
+        if (verbose) cat(".")  # Show dots for successful checks
+      } else {
+        if (verbose) cat("!")  # Show exclamation marks for failed checks
+      }
+    })
+  if(verbose) cat("\n")
   warns <- which(sapply(checks, function(x) x!=TRUE))
-  if(length(warns)>0) {
+  if(length(warns)>0 && verbose) {
     cat("The following errors were found, proceed with caution\n")
     dum <- lapply(1:length(warns), function(x) cat(paste(x,". ", checks[[warns[x]]],"\n", sep="")))
   }

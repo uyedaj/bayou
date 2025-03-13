@@ -87,7 +87,7 @@
 bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, chunk=100,
                        control=NULL, tuning=NULL, new.dir=FALSE, plot.freq=500, outname="bayou",
                        plot.fn=phenogram, ticker.freq=1000, tuning.int=c(0.1,0.2,0.3), startpar=NULL,
-                       moves=NULL, control.weights=NULL, lik.fn=NULL){
+                       moves=NULL, control.weights=NULL, lik.fn=NULL, verbose=TRUE){
   .Deprecated("bayou.makeMCMC")
   if(FALSE){
   fixed <- gsub('^[a-zA-Z]',"",names(attributes(prior)$distributions)[which(attributes(prior)$distributions=="fixed")])
@@ -112,7 +112,9 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
     startpar <- priorSim(prior,cache$phy,model,nsim=1,plot=FALSE, exclude.branches=NULL)$pars[[1]]
     if(length(fixed)>0){
       assumed <- sapply(fixed, function(x) switch(x, "slide"="", "sb"="sb=numeric(0)", "k"= "k=0", "alpha"="alpha=0", "sig2"="sig2=0", "loc"="0.5*edge.length"))
-      print(paste("Warning: Fixed parameters '", paste(fixed,collapse=", "), "' not specified, assuming values: ", paste(assumed,collapse=", "),sep="" ))
+      if(verbose){
+        print(paste("Warning: Fixed parameters '", paste(fixed,collapse=", "), "' not specified, assuming values: ", paste(assumed,collapse=", "),sep="" ))
+      }
     }
   }
   if(length(fixed)==0 & is.null(control.weights)){
@@ -174,7 +176,7 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
     plot.dim <- list(par('usr')[1:2],par('usr')[3:4])
   }
   #tuning.int <- round(tuning.int*ngen,0)
-  mcmc.loop <- function(){
+  mcmc.loop <- function(verbose=TRUE){
     for (i in 1:ngen){
       ct <- .updateControl(ct, oldpar, fixed)
       u <- runif(1)
@@ -223,10 +225,12 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
           tick[-1] <- round(tick[-1],2)
           names(tick)[1:6] <- c('gen','lnL','prior','half.life','Vy','K')
         }
-        if(i==ticker.freq){
-          cat(c(names(tick),'\n'),sep='\t\t\t')
+        if(verbose) {
+          if(i==ticker.freq ){
+            cat(c(names(tick),'\n'),sep='\t\t\t')
+          }
+          cat(c(tick,'\n'),sep='\t\t\t')
         }
-        cat(c(tick,'\n'),sep='\t\t\t')
       }
     }
   }
@@ -293,7 +297,7 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
 bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=10, chunk=100,
                             control=NULL, tuning=NULL, file.dir=tempdir(), plot.freq=500, outname="bayou",
                             plot.fn=phenogram, ticker.freq=1000, startpar=NULL, moves=NULL,
-                            control.weights=NULL, lik.fn=NULL, perform.checks=TRUE){
+                            control.weights=NULL, lik.fn=NULL, perform.checks=TRUE, verbose=TRUE){
 
   #Check if custom or predefined model
   if(is.character(model)){
@@ -316,7 +320,11 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
     dat <- checks$autofixed$cache$dat
     pred <- checks$autofixed$pred
     model.pars <- checks$autofixed$model
-    if(all(sapply(checks[-length(checks)], function(x) x)==TRUE)) cat("seems fine...\n")
+    if(all(sapply(checks[-length(checks)], function(x) x)==TRUE)){
+      if(verbose){
+        cat("seems fine...\n")
+      }
+    }
   } else {
     # Skip the checks (caution)
     cache <- .prepare.ou.univariate(tree, dat, SE=SE, pred=pred)
@@ -362,7 +370,9 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
   if(is.null(lik.fn)) lik.fn <- model.pars$lik.fn #.OU.lik
 
   if(is.null(file.dir)){
-    cat("\nFile directory specified as NULL. Results will be returned as output.\n")
+    if(verbose){
+      cat("\nFile directory specified as NULL. Results will be returned as output.\n")
+    }
     oldpar <- startpar
     chunk <- Inf
     files <- NULL

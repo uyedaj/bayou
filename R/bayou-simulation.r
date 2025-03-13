@@ -114,7 +114,7 @@ priorSim <- function(prior, tree, plot=TRUE, nsim=1, shiftpars="theta", ...){
 #'
 #' @export
 dataSim <- function(pars, model, tree, map.type="pars", SE=0,
-                    phenogram=TRUE, ...){
+                    phenogram=TRUE, verbose=TRUE, ...){
   if(model %in% c("QG")){
     pars$alpha <- QG.alpha(pars)
     pars$sig2 <- QG.sig2(pars)
@@ -124,11 +124,11 @@ dataSim <- function(pars, model, tree, map.type="pars", SE=0,
     pars$alpha <- p$alpha
     pars$sig2 <- p$sig2
   }
-  if(map.type=="simmap"){
+  if(map.type=="simmap" && verbose){
     print("Using mapped regimes from ape tree file")
     maps <- tree$maps
   }
-  if(map.type=="pars"){
+  if(map.type=="pars" && verbose){
     print("Using mapped regimes from parameter list")
     maps <- pars2simmap(pars, tree)$tree$maps
   }

@@ -38,7 +38,7 @@
 #'
 #'
 #' @export
-load.bayou <- function(bayouFit, saveRDS=TRUE, file=NULL, cleanup=FALSE, ref=FALSE){
+load.bayou <- function(bayouFit, saveRDS=TRUE, file=NULL, cleanup=FALSE, ref=FALSE, verbose=TRUE){
   tree <- bayouFit$tree
   dat <- bayouFit$dat
   outname <- bayouFit$outname
@@ -107,16 +107,22 @@ load.bayou <- function(bayouFit, saveRDS=TRUE, file=NULL, cleanup=FALSE, ref=FAL
   if(saveRDS){
     if(is.null(file)){
       saveRDS(chain, file=paste(bayouFit$dir, outname, ".chain.rds",sep=""))
-      cat(paste("file saved to", paste(bayouFit$dir,"/",outname,".chain.rds\n",sep="")))
+      if(verbose) {
+        cat(paste("file saved to", paste(bayouFit$dir,"/",outname,".chain.rds\n",sep="")))
+      }
     } else {
       saveRDS(chain, file=file)
+      if(verbose) {
       cat(paste("file saved to", file))
+      }
     }
   }
   if(cleanup){
     if(bayouFit$tmpdir){
       unlink(dir,T,T)
-      cat(paste("deleting temporary directory", dir))
+      if(verbose) {
+        cat(paste("deleting temporary directory", dir))
+      }
     } else {
       file.remove(paste(dir, outname, ".loc", sep=""))
       file.remove(paste(dir, outname, ".t2", sep=""))
@@ -319,25 +325,31 @@ combine.chains <- function(chain.list, thin=1, burnin.prop=0){
 
 #' @export
 #' @method print bayouMCMC
-print.bayouMCMC <- function(x, ...){
-  cat("bayouMCMC object \n")
+print.bayouMCMC <- function(x, ..., verbose=TRUE){
+  if(verbose) {
+    cat("bayouMCMC object \n")
+  }
   nn <- names(x)
   if("model.pars" %in% names(attributes(x))){
     model.pars <- attributes(x)$model.pars
-    cat("shift-specific/reversible-jump parameters: ", model.pars$rjpars, "\n", sep="")
+    if(verbose) {
+      cat("shift-specific/reversible-jump parameters: ", model.pars$rjpars, "\n", sep="")
+    }
     o <- match(c("gen", "lnL", "prior", model.pars$parorder, model.pars$shiftpars), names(x))
   } else {
-    cat("No model specification found in attributes", "\n")
+    message("No model specification found in attributes", "\n")
     o <- 1:length(x)
   }
   for(i in o){
-    cat("$", nn[i], "     ", sep="")
-    cat(class(x[[i]]), " with ", length(x[[i]]), " elements", "\n", sep="")
-    if(inherits(x[[i]], "numeric") & length(x[[i]]) > 0) cat(x[[i]][1:min(c(length(x[[i]]), 5))])
-    if(inherits(x[[i]], "list") & length(x[[i]]) > 0) print(x[[i]][1:min(c(length(x[[i]]), 2))])
-    if(inherits(x[[i]], "numeric") & length(x[[i]]) > 5) cat(" ...", "\n")
-    if(inherits(x[[i]], "list") & length(x[[i]]) > 2) cat(" ...", "\n")
-    cat("\n")
+    if (verbose) {
+      cat("$", nn[i], "     ", sep="")
+      cat(class(x[[i]]), " with ", length(x[[i]]), " elements", "\n", sep="")
+      if(inherits(x[[i]], "numeric") & length(x[[i]]) > 0) cat(x[[i]][1:min(c(length(x[[i]]), 5))])
+      if(inherits(x[[i]], "list") & length(x[[i]]) > 0) print(x[[i]][1:min(c(length(x[[i]]), 2))])
+      if(inherits(x[[i]], "numeric") & length(x[[i]]) > 5) cat(" ...", "\n")
+      if(inherits(x[[i]], "list") & length(x[[i]]) > 2) cat(" ...", "\n")
+      cat("\n")
+    }
   }
 }
 
@@ -454,19 +466,25 @@ print.bayouMCMC <- function(x, ...){
 #'
 #' @export
 #' @method print bayouFit
-print.bayouFit <- function(x, ...){
-  cat("bayou modelfit\n")
-  cat(paste(x$model, " parameterization\n\n",sep=""))
-  cat("Results are stored in directory\n")
+print.bayouFit <- function(x, ..., verbose=TRUE){
+  if(verbose) {
+    cat("bayou modelfit\n")
+    cat(paste(x$model, " parameterization\n\n",sep=""))
+    cat("Results are stored in directory\n")
+  }
   out<-(paste(x$dir, x$outname,".*",sep=""))
-  cat(out,"\n")
-  cat(paste("To load results, use 'load.bayou(bayouFit)'\n\n",sep=""))
-  cat(paste(length(x$accept), " generations were run with the following acceptance probabilities:\n"))
+  if(verbose) {
+    cat(out,"\n")
+    cat(paste("To load results, use 'load.bayou(bayouFit)'\n\n",sep=""))
+    cat(paste(length(x$accept), " generations were run with the following acceptance probabilities:\n"))
+  }
   accept.prob <- round(tapply(x$accept,x$accept.type,mean),2)
   prop.N <- tapply(x$accept.type,x$accept.type,length)
-  print(accept.prob, ...)
-  cat(" Total number of proposals of each type:\n")
-  print(prop.N, ...)
+  if(verbose){
+    print(accept.prob, ...)
+    cat(" Total number of proposals of each type:\n")
+    print(prop.N, ...)
+  }
 }
 
 #' Set the burnin proportion for bayouMCMC objects
@@ -500,7 +518,7 @@ set.burnin <- function(chain, burnin=0.3){
 #'
 #' @export
 #' @method summary bayouMCMC
-summary.bayouMCMC <- function(object, ...){
+summary.bayouMCMC <- function(object, ..., verbose=TRUE){
   tree <- attributes(object)$tree
   model <- attributes(object)$model
   model.pars <- attributes(object)$model.pars
@@ -514,8 +532,10 @@ summary.bayouMCMC <- function(object, ...){
   } else {
     pp.cutoff <- attributes(object)$pp.cutoff
   }
-  cat("bayou MCMC chain:", max(object$gen), "generations\n")
-  cat(length(object$gen), "samples, first", eval(start), "samples discarded as burnin\n")
+  if(verbose){
+    cat("bayou MCMC chain:", max(object$gen), "generations\n")
+    cat(length(object$gen), "samples, first", eval(start), "samples discarded as burnin\n")
+  }
   postburn <- start:length(object$gen)
   object <- lapply(object,function(x) x[postburn])
   parorder <- c("lnL", "prior", model.pars$parorder)
@@ -541,12 +561,16 @@ summary.bayouMCMC <- function(object, ...){
       rownames(statistics)[nrow(statistics)] <- paste("all", model.pars$rjpars[i],sep=" ")
     }
   }
-  cat("\n\nSummary statistics for parameters:\n")
-  print(statistics, ...)
+  if(verbose) {
+    cat("\n\nSummary statistics for parameters:\n")
+    print(statistics, ...)
+  }
   Lpost <- Lposterior(object, tree)
   Lpost.sorted <- Lpost[order(Lpost[,1],decreasing=TRUE),]
-  cat("\n\nBranches with posterior probabilities higher than ", pp.cutoff, ":\n")
-  print(Lpost.sorted[Lpost.sorted[,1]>pp.cutoff,], ...)
+  if(verbose){
+    cat("\n\nBranches with posterior probabilities higher than ", pp.cutoff, ":\n")
+    print(Lpost.sorted[Lpost.sorted[,1]>pp.cutoff,], ...)
+  }
   out <- list(statistics=statistics, branch.posteriors=Lpost)
   invisible(out)
 }
