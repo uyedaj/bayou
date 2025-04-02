@@ -174,14 +174,13 @@ powerPosteriorFn <- function(k, Bk, lik, prior, ref){
 #'
 #' @export
 #' @method print ssMCMC
-print.ssMCMC <- function(x, ..., verbose=TRUE){
-  if(verbose){
-    cat("Stepping stone estimation of marginal likelihood\n")
-    cat("Marginal Likelihood:\n")
-    print(x$lnr, ...)
-    cat(paste("A total of ", length(x$Bk), " power posteriors were run along the sequence: ",paste(round(x$Bk,5), collapse="\t\t"), "\n", sep=""))
-    cat("lnr_k", round(unlist(x$lnrk),2))
-  }
+print.ssMCMC <- function(x, ...){
+  cat("Stepping stone estimation of marginal likelihood\n")
+  cat("Marginal Likelihood:\n")
+  print(x$lnr, ...)
+  cat(paste("A total of ", length(x$Bk), " power posteriors were run along the sequence: ",paste(round(x$Bk,5), collapse="\t\t"), "\n", sep=""))
+  cat("lnr_k", round(unlist(x$lnrk),2))
+
 }
 #' S3 method for plotting ssMCMC objects
 #'

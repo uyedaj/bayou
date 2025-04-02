@@ -24,7 +24,8 @@ bayou.makeMCMC(
   moves = NULL,
   control.weights = NULL,
   lik.fn = NULL,
-  perform.checks = TRUE
+  perform.checks = TRUE,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -81,6 +82,8 @@ to be used during the mcmc}
 \item{lik.fn}{Likelihood function to be evaluated. Defaults to \code{bayou.lik}.}
 
 \item{perform.checks}{A logical indicating whether to use bayou.checkModel to validate model inputs.}
+
+\item{verbose}{Determines whether information is outputted to the console for the user to view}
 }
 \description{
 Runs a reversible-jump Markov chain Monte Carlo on continuous phenotypic data

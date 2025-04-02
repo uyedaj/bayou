@@ -102,6 +102,7 @@ priorSim <- function(prior, tree, plot=TRUE, nsim=1, shiftpars="theta", ...){
 #' @param SE A single value or vector equal to the number of tips specifying the measurement error that should be simulated at the tips
 #' @param phenogram A logical indicating whether or not the simulated data should be plotted as a phenogram
 #' @param ... Optional parameters passed to \code{phenogram(...)}.
+#' @param verbose Determines whether information is outputted to the console for the user to view
 #'
 #' @return A list with the following components:
 #' \describe{

@@ -4,7 +4,16 @@
 \alias{dataSim}
 \title{Simulates data from bayou models}
 \usage{
-dataSim(pars, model, tree, map.type = "pars", SE = 0, phenogram = TRUE, ...)
+dataSim(
+  pars,
+  model,
+  tree,
+  map.type = "pars",
+  SE = 0,
+  phenogram = TRUE,
+  verbose = TRUE,
+  ...
+)
 }
 \arguments{
 \item{pars}{A bayou formated parameter list}
@@ -18,6 +27,8 @@ dataSim(pars, model, tree, map.type = "pars", SE = 0, phenogram = TRUE, ...)
 \item{SE}{A single value or vector equal to the number of tips specifying the measurement error that should be simulated at the tips}
 
 \item{phenogram}{A logical indicating whether or not the simulated data should be plotted as a phenogram}
+
+\item{verbose}{Determines whether information is outputted to the console for the user to view}
 
 \item{...}{Optional parameters passed to \code{phenogram(...)}.}
 }

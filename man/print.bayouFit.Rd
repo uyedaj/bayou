@@ -4,7 +4,7 @@
 \alias{print.bayouFit}
 \title{S3 method for printing bayouFit objects}
 \usage{
-\method{print}{bayouFit}(x, ...)
+\method{print}{bayouFit}(x, ..., verbose = TRUE)
 }
 \arguments{
 \item{x}{A 'bayouFit' object produced by \code{bayou.mcmc}}

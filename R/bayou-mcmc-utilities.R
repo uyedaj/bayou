@@ -7,6 +7,7 @@
 #' @param file An optional filename (possibly including path) for the saved *.rds file
 #' @param cleanup A logical indicating whether the files produced by \code{bayou.mcmc()} should be removed.
 #' @param ref A logical indicating whether a reference function is also in the output
+#' @param verbose Determines whether information is outputted to the console for the user to view
 #'
 #' @details If both \code{save.Rdata} is \code{FALSE} and \code{cleanup} is \code{TRUE}, then \code{load.bayou} will trigger a
 #' warning and ask for confirmation. In this case, if the results of \code{load.bayou()} are not stored in an object,
@@ -325,31 +326,27 @@ combine.chains <- function(chain.list, thin=1, burnin.prop=0){
 
 #' @export
 #' @method print bayouMCMC
-print.bayouMCMC <- function(x, ..., verbose=TRUE){
+print.bayouMCMC <- function(x, ...){
   if(verbose) {
     cat("bayouMCMC object \n")
   }
   nn <- names(x)
   if("model.pars" %in% names(attributes(x))){
     model.pars <- attributes(x)$model.pars
-    if(verbose) {
-      cat("shift-specific/reversible-jump parameters: ", model.pars$rjpars, "\n", sep="")
-    }
+    cat("shift-specific/reversible-jump parameters: ", model.pars$rjpars, "\n", sep="")
     o <- match(c("gen", "lnL", "prior", model.pars$parorder, model.pars$shiftpars), names(x))
   } else {
     message("No model specification found in attributes", "\n")
     o <- 1:length(x)
   }
   for(i in o){
-    if (verbose) {
-      cat("$", nn[i], "     ", sep="")
-      cat(class(x[[i]]), " with ", length(x[[i]]), " elements", "\n", sep="")
-      if(inherits(x[[i]], "numeric") & length(x[[i]]) > 0) cat(x[[i]][1:min(c(length(x[[i]]), 5))])
-      if(inherits(x[[i]], "list") & length(x[[i]]) > 0) print(x[[i]][1:min(c(length(x[[i]]), 2))])
-      if(inherits(x[[i]], "numeric") & length(x[[i]]) > 5) cat(" ...", "\n")
-      if(inherits(x[[i]], "list") & length(x[[i]]) > 2) cat(" ...", "\n")
-      cat("\n")
-    }
+    cat("$", nn[i], "     ", sep="")
+    cat(class(x[[i]]), " with ", length(x[[i]]), " elements", "\n", sep="")
+    if(inherits(x[[i]], "numeric") & length(x[[i]]) > 0) cat(x[[i]][1:min(c(length(x[[i]]), 5))])
+    if(inherits(x[[i]], "list") & length(x[[i]]) > 0) print(x[[i]][1:min(c(length(x[[i]]), 2))])
+    if(inherits(x[[i]], "numeric") & length(x[[i]]) > 5) cat(" ...", "\n")
+    if(inherits(x[[i]], "list") & length(x[[i]]) > 2) cat(" ...", "\n")
+    cat("\n")
   }
 }
 

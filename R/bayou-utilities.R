@@ -405,18 +405,17 @@ max(as.integer(names(tt[tt == length(labels)])))
 
 #' @export
 #' @method print priorFn
-print.priorFn <- function(x, ..., verbose=TRUE){
-  if(verbose){
-    cat("prior function for bayou\n")
-    cat(paste("expecting ", attributes(x)$model, " model\n", sep=""))
-    cat("'pars' should be a list with named parameter values: list(", paste(gsub('^[a-zA-Z]',"",names(attributes(x)$param)),collapse=", "),")\n",sep="")
-    cat("prior distribution functions used:\n")
-    print(unlist(attributes(x)$dist))
-    cat("\n")
-    cat("definition:\n")
-    attributes(x) <- NULL
-    print(x, ...)
-  }
+print.priorFn <- function(x, ...){
+  cat("prior function for bayou\n")
+  cat(paste("expecting ", attributes(x)$model, " model\n", sep=""))
+  cat("'pars' should be a list with named parameter values: list(", paste(gsub('^[a-zA-Z]',"",names(attributes(x)$param)),collapse=", "),")\n",sep="")
+  cat("prior distribution functions used:\n")
+  print(unlist(attributes(x)$dist))
+  cat("\n")
+  cat("definition:\n")
+  attributes(x) <- NULL
+  print(x, ...)
+
 }
 
 #' S3 method for printing refFn objects
@@ -430,18 +429,17 @@ print.priorFn <- function(x, ..., verbose=TRUE){
 #'
 #' @export
 #' @method print refFn
-print.refFn <- function(x, ..., verbose=TRUE){
-  if(verbose){
-    cat("reference function for bayou\n")
-    cat(paste("expecting ", attributes(x)$model, " model\n", sep=""))
-    cat("'pars' should be a list with named parameter values: list(", paste(names(attributes(x)$dist),collapse=", "),")\n",sep="")
-    cat("prior distribution functions used:\n")
-    print(unlist(attributes(x)$dist))
-    cat("\n")
-    cat("definition:\n")
-    attributes(x) <- NULL
-    print(x, ...)
-  }
+print.refFn <- function(x, ...){
+  cat("reference function for bayou\n")
+  cat(paste("expecting ", attributes(x)$model, " model\n", sep=""))
+  cat("'pars' should be a list with named parameter values: list(", paste(names(attributes(x)$dist),collapse=", "),")\n",sep="")
+  cat("prior distribution functions used:\n")
+  print(unlist(attributes(x)$dist))
+  cat("\n")
+  cat("definition:\n")
+  attributes(x) <- NULL
+  print(x, ...)
+
 }
 
 ## bayOU internal function.
@@ -554,6 +552,7 @@ identifyBranches <- function(tree, n, fixed.loc=TRUE, plot.simmap=TRUE){
 #' @param model Either one of c("OU", "QG" or "OUrepar") or a list specifying the model
 #' to be used.
 #' @param autofix A logical that indicates whether certain errors should be automatically fixed.
+#' @param verbose Determines whether information is outputted to the console for the user to view
 #'
 #' @details A series of checks are performed, run internally within bayou.makeMCMC, but can also
 #' be run on provided inputs prior to this. Errors are reported.

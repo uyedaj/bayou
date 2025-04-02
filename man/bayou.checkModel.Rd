@@ -12,7 +12,8 @@ bayou.checkModel(
   SE = 0,
   prior,
   model = "OU",
-  autofix = TRUE
+  autofix = TRUE,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ or a vector of length(dat).}
 to be used.}
 
 \item{autofix}{A logical that indicates whether certain errors should be automatically fixed.}
+
+\item{verbose}{Determines whether information is outputted to the console for the user to view}
 }
 \value{
 A list of results of the checks and if 'autofix==TRUE', then ..$autofixed returns a

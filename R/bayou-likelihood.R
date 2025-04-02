@@ -447,7 +447,7 @@ model.auteur <- list(moves = list(alpha="fixed", sig2=".vectorMultiplier", theta
                       }
                       if(verbose) {
                         cat(sprintf(string, i, lik, pr, pars$sig2[1], pars$theta, pars$k), sprintf("%-8.2f", acceptratios),"\n", sep="")}
-                    }
+                    },
                     lik.fn = function(pars, cache, X, model="Custom"){
                         phy <- cache$phy
                         map <- bayou:::.pars2map(pars, cache)

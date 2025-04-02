@@ -4,7 +4,14 @@
 \alias{load.bayou}
 \title{Loads a bayou object}
 \usage{
-load.bayou(bayouFit, saveRDS = TRUE, file = NULL, cleanup = FALSE, ref = FALSE)
+load.bayou(
+  bayouFit,
+  saveRDS = TRUE,
+  file = NULL,
+  cleanup = FALSE,
+  ref = FALSE,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{bayouFit}{An object of class \code{bayouFit} produced by the function \code{bayou.mcmc()}}
@@ -16,6 +23,8 @@ load.bayou(bayouFit, saveRDS = TRUE, file = NULL, cleanup = FALSE, ref = FALSE)
 \item{cleanup}{A logical indicating whether the files produced by \code{bayou.mcmc()} should be removed.}
 
 \item{ref}{A logical indicating whether a reference function is also in the output}
+
+\item{verbose}{Determines whether information is outputted to the console for the user to view}
 }
 \value{
 A list of class `"bayouMCMC"` containing:
@@ -39,7 +48,7 @@ warning and ask for confirmation. In this case, if the results of \code{load.bay
 the results of the MCMC run will be permanently deleted.
 }
 \examples{
-\donttest{
+\dontrun{
 data(chelonia)
 tree <- chelonia$phy
 dat <- chelonia$dat

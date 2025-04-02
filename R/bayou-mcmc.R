@@ -1,79 +1,79 @@
 #SE=0; ngen=1000; samp=10; chunk=100; control=NULL; tuning=NULL; new.dir=TRUE; plot.freq=NULL; outname="bayou"; ticker.freq=1000; tuning.int=NULL; moves=NULL; control.weights=NULL; lik.fn=NULL; plot.fn=NULL
 #model <- model.Impute; plot.fn <- NULL
 #startpar=list(alpha=0.1, sig2=3, beta1=1, k=1, ntheta=2, theta=c(4,4), sb=200, loc=0, t2=2)
-#' Bayesian sampling of multi-optima OU models
-#'
-#' @description Runs a reversible-jump Markov chain Monte Carlo on continuous phenotypic data on a phylogeny,
-#' sampling possible shift locations and shift magnitudes, and shift numbers.
-#'
-#' @param tree a phylogenetic tree of class 'phylo'
-#' @param dat a named vector of continuous trait values matching the tips in tree
-#' @param SE The standard error of the data. Either a single value applied to all
-#' the data, or a vector of length(dat).
-#' @param model The parameterization of the OU model used. Either "OU" for standard parameterization with
-#' alpha and sigma^2; "OUrepar" for phylogenetic half-life and stationary variance (Vy), or "QG" for the
-#' Lande model, with parameters h^2 (heritability), P (phenotypic variance), omega^2 (width of adaptive
-#' landscape), and Ne (effective population size)
-#' @param prior A prior function of class 'priorFn' that gives the prior distribution of all parameters
-#' @param ngen The number of generations to run the Markov Chain
-#' @param samp The frequency at which Markov samples are retained
-#' @param chunk The number of samples retained in memory before being written to a file
-#' @param control A list providing a control object governing how often and which proposals are used
-#' @param tuning A named vector that governs how liberal or conservative proposals are that equals the
-#' number of proposal mechanisms.
-#' @param new.dir If TRUE, then results are stored in a new temporary directory. If FALSE, results are
-#' written to the current working directory. If a character string,
-#' then results are written to that working directory.
-#' @param plot.freq How often plots should be made during the mcmc. If NULL, then plots are not produced
-#' @param outname The prefix given to files created by the mcmc
-#' @param plot.fn Function used in plotting, defaults to phytools::phenogram
-#' @param ticker.freq How often a summary log should be printed to the screen
-#' @param tuning.int How often the tuning parameters should be adjusted as a fraction of the total
-#' number of generations (currently ignored)
-#' @param startpar A list with the starting parameters for the mcmc. If NULL, starting parameters are
-#' simulated from the prior distribution
-#' @param moves A named list providing the proposal functions to be used in the mcmc. Names correspond to
-#' the parameters to be modified in the parameter list. See 'details' for default values.
-#' @param control.weights A named vector providing the relative frequency each proposal mechanism is to
-#' be used during the mcmc
-#' @param lik.fn Likelihood function to be evaluated. Defaults to \code{bayou.lik}.
-#'
-#' @return
-#' For `bayou.mcmc`, a list of class `"bayouFit"` containing:
-#' \describe{
-#'   \item{model}{The model parameterization used.}
-#'   \item{dir.name}{Directory where results are stored.}
-#'   \item{dir}{Full directory path for stored results.}
-#'   \item{outname}{Filename prefix for output files.}
-#'   \item{accept}{Vector of acceptance rates for different proposals.}
-#'   \item{accept.type}{Vector indicating types of accepted proposals.}
-#'   \item{tree}{The phylogenetic tree used.}
-#'   \item{dat}{Continuous trait data used in the MCMC simulation.}
-#'   \item{tmpdir}{Logical indicating if a temporary directory was used.}
-#'   \item{startpar}{List of starting parameter values.}
-#' }
-#'
-#' For `bayou.makeMCMC`, a list of class `"bayouMCMCFn"` containing:
-#' \describe{
-#'   \item{model}{The model parameterization used.}
-#'   \item{model.pars}{List of model parameters used in the MCMC simulation.}
-#'   \item{dir.name}{Directory where results are stored.}
-#'   \item{dir}{Full directory path for stored results.}
-#'   \item{outname}{Filename prefix for output files.}
-#'   \item{tree}{The phylogenetic tree used.}
-#'   \item{dat}{Continuous trait data used in the MCMC simulation.}
-#'   \item{pred}{Predictor data matrix or `NULL` if not used.}
-#'   \item{SE}{Measurement error values provided.}
-#'   \item{tmpdir}{Logical indicating if a temporary directory was used.}
-#'   \item{startpar}{List of starting parameter values.}
-#'   \item{run}{Function to execute the MCMC simulation.}
-#'   \item{steppingstone}{Function for performing stepping-stone sampling for marginal likelihood estimation.}
-#'   \item{load}{Function to load the MCMC chain after the simulation.}
-#' }
-#'
-#' @name bayou-deprecated
-#' @section \code{bayou.mcmc}: This function is deprecated, please use \code{\link{bayou.makeMCMC}}.
-#' @export
+# Bayesian sampling of multi-optima OU models
+#
+# @description Runs a reversible-jump Markov chain Monte Carlo on continuous phenotypic data on a phylogeny,
+# sampling possible shift locations and shift magnitudes, and shift numbers.
+#
+# @param tree a phylogenetic tree of class 'phylo'
+# @param dat a named vector of continuous trait values matching the tips in tree
+# @param SE The standard error of the data. Either a single value applied to all
+# the data, or a vector of length(dat).
+# @param model The parameterization of the OU model used. Either "OU" for standard parameterization with
+# alpha and sigma^2; "OUrepar" for phylogenetic half-life and stationary variance (Vy), or "QG" for the
+# Lande model, with parameters h^2 (heritability), P (phenotypic variance), omega^2 (width of adaptive
+# landscape), and Ne (effective population size)
+# @param prior A prior function of class 'priorFn' that gives the prior distribution of all parameters
+# @param ngen The number of generations to run the Markov Chain
+# @param samp The frequency at which Markov samples are retained
+# @param chunk The number of samples retained in memory before being written to a file
+# @param control A list providing a control object governing how often and which proposals are used
+# @param tuning A named vector that governs how liberal or conservative proposals are that equals the
+# number of proposal mechanisms.
+# @param new.dir If TRUE, then results are stored in a new temporary directory. If FALSE, results are
+# written to the current working directory. If a character string,
+# then results are written to that working directory.
+# @param plot.freq How often plots should be made during the mcmc. If NULL, then plots are not produced
+# @param outname The prefix given to files created by the mcmc
+# @param plot.fn Function used in plotting, defaults to phytools::phenogram
+# @param ticker.freq How often a summary log should be printed to the screen
+# @param tuning.int How often the tuning parameters should be adjusted as a fraction of the total
+# number of generations (currently ignored)
+# @param startpar A list with the starting parameters for the mcmc. If NULL, starting parameters are
+# simulated from the prior distribution
+# @param moves A named list providing the proposal functions to be used in the mcmc. Names correspond to
+# the parameters to be modified in the parameter list. See 'details' for default values.
+# @param control.weights A named vector providing the relative frequency each proposal mechanism is to
+# be used during the mcmc
+# @param lik.fn Likelihood function to be evaluated. Defaults to \code{bayou.lik}.
+# @param verbose Determines whether information is outputted to the console for the user to view
+#
+# @return
+# For `bayou.mcmc`, a list of class `"bayouFit"` containing:
+# \describe{
+#   \item{model}{The model parameterization used.}
+#   \item{dir.name}{Directory where results are stored.}
+#   \item{dir}{Full directory path for stored results.}
+#   \item{outname}{Filename prefix for output files.}
+#   \item{accept}{Vector of acceptance rates for different proposals.}
+#   \item{accept.type}{Vector indicating types of accepted proposals.}
+#   \item{tree}{The phylogenetic tree used.}
+#   \item{dat}{Continuous trait data used in the MCMC simulation.}
+#   \item{tmpdir}{Logical indicating if a temporary directory was used.}
+#   \item{startpar}{List of starting parameter values.}
+# }
+#
+# For `bayou.makeMCMC`, a list of class `"bayouMCMCFn"` containing:
+# \describe{
+#   \item{model}{The model parameterization used.}
+#   \item{model.pars}{List of model parameters used in the MCMC simulation.}
+#   \item{dir.name}{Directory where results are stored.}
+#   \item{dir}{Full directory path for stored results.}
+#   \item{outname}{Filename prefix for output files.}
+#   \item{tree}{The phylogenetic tree used.}
+#   \item{dat}{Continuous trait data used in the MCMC simulation.}
+#   \item{pred}{Predictor data matrix or `NULL` if not used.}
+#   \item{SE}{Measurement error values provided.}
+#   \item{tmpdir}{Logical indicating if a temporary directory was used.}
+#   \item{startpar}{List of starting parameter values.}
+#   \item{run}{Function to execute the MCMC simulation.}
+#   \item{steppingstone}{Function for performing stepping-stone sampling for marginal likelihood estimation.}
+#   \item{load}{Function to load the MCMC chain after the simulation.}
+# }
+#
+# @name bayou-deprecated
+# @section \code{bayou.mcmc}: This function is deprecated, please use \code{\link{bayou.makeMCMC}}.
 # @useDynLib bayou
 # @details
 # By default, the alpha, sig2 (and various reparameterizations of these parameters) are adjusted with
@@ -282,6 +282,7 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
 #' to be used during the mcmc
 #' @param lik.fn Likelihood function to be evaluated. Defaults to \code{bayou.lik}.
 #' @param perform.checks A logical indicating whether to use bayou.checkModel to validate model inputs.
+#' @param verbose Determines whether information is outputted to the console for the user to view
 #'
 #' @useDynLib bayou
 #' @export
