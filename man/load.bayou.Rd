@@ -47,15 +47,3 @@ If both \code{save.Rdata} is \code{FALSE} and \code{cleanup} is \code{TRUE}, the
 warning and ask for confirmation. In this case, if the results of \code{load.bayou()} are not stored in an object,
 the results of the MCMC run will be permanently deleted.
 }
-\examples{
-\dontrun{
-data(chelonia)
-tree <- chelonia$phy
-dat <- chelonia$dat
-prior <- make.prior(tree)
-fit <- bayou.mcmc(tree, dat, model="OU", prior=prior,
-                                 new.dir=TRUE, ngen=5000)
-chain <- load.bayou(fit, save.Rdata=FALSE, cleanup=TRUE)
-plot(chain)
-}
-}

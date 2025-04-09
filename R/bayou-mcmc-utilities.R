@@ -13,7 +13,7 @@
 #' warning and ask for confirmation. In this case, if the results of \code{load.bayou()} are not stored in an object,
 #' the results of the MCMC run will be permanently deleted.
 #'
-#' @examples
+#'
 #' @return
 #' A list of class `"bayouMCMC"` containing:
 #' \describe{
@@ -317,9 +317,9 @@ combine.chains <- function(chain.list, thin=1, burnin.prop=0){
 #' @export
 #' @method print bayouMCMC
 print.bayouMCMC <- function(x, ...){
-  if(verbose) {
-    cat("bayouMCMC object \n")
-  }
+
+  cat("bayouMCMC object \n")
+
   nn <- names(x)
   if("model.pars" %in% names(attributes(x))){
     model.pars <- attributes(x)$model.pars
@@ -453,25 +453,24 @@ print.bayouMCMC <- function(x, ...){
 #'
 #' @export
 #' @method print bayouFit
-print.bayouFit <- function(x, ..., verbose=TRUE){
-  if(verbose) {
-    cat("bayou modelfit\n")
-    cat(paste(x$model, " parameterization\n\n",sep=""))
-    cat("Results are stored in directory\n")
-  }
+print.bayouFit <- function(x, ...){
+
+  cat("bayou modelfit\n")
+  cat(paste(x$model, " parameterization\n\n",sep=""))
+  cat("Results are stored in directory\n")
+
   out<-(paste(x$dir, x$outname,".*",sep=""))
-  if(verbose) {
-    cat(out,"\n")
-    cat(paste("To load results, use 'load.bayou(bayouFit)'\n\n",sep=""))
-    cat(paste(length(x$accept), " generations were run with the following acceptance probabilities:\n"))
-  }
+
+  cat(out,"\n")
+  cat(paste("To load results, use 'load.bayou(bayouFit)'\n\n",sep=""))
+  cat(paste(length(x$accept), " generations were run with the following acceptance probabilities:\n"))
+
   accept.prob <- round(tapply(x$accept,x$accept.type,mean),2)
   prop.N <- tapply(x$accept.type,x$accept.type,length)
-  if(verbose){
-    print(accept.prob, ...)
-    cat(" Total number of proposals of each type:\n")
-    print(prop.N, ...)
-  }
+  print(accept.prob, ...)
+  cat(" Total number of proposals of each type:\n")
+  print(prop.N, ...)
+
 }
 
 #' Set the burnin proportion for bayouMCMC objects
@@ -505,7 +504,7 @@ set.burnin <- function(chain, burnin=0.3){
 #'
 #' @export
 #' @method summary bayouMCMC
-summary.bayouMCMC <- function(object, ..., verbose=TRUE){
+summary.bayouMCMC <- function(object, ...){
   tree <- attributes(object)$tree
   model <- attributes(object)$model
   model.pars <- attributes(object)$model.pars
@@ -519,10 +518,8 @@ summary.bayouMCMC <- function(object, ..., verbose=TRUE){
   } else {
     pp.cutoff <- attributes(object)$pp.cutoff
   }
-  if(verbose){
-    cat("bayou MCMC chain:", max(object$gen), "generations\n")
-    cat(length(object$gen), "samples, first", eval(start), "samples discarded as burnin\n")
-  }
+  cat("bayou MCMC chain:", max(object$gen), "generations\n")
+  cat(length(object$gen), "samples, first", eval(start), "samples discarded as burnin\n")
   postburn <- start:length(object$gen)
   object <- lapply(object,function(x) x[postburn])
   parorder <- c("lnL", "prior", model.pars$parorder)
@@ -548,16 +545,12 @@ summary.bayouMCMC <- function(object, ..., verbose=TRUE){
       rownames(statistics)[nrow(statistics)] <- paste("all", model.pars$rjpars[i],sep=" ")
     }
   }
-  if(verbose) {
-    cat("\n\nSummary statistics for parameters:\n")
-    print(statistics, ...)
-  }
+  cat("\n\nSummary statistics for parameters:\n")
+  print(statistics, ...)
   Lpost <- Lposterior(object, tree)
   Lpost.sorted <- Lpost[order(Lpost[,1],decreasing=TRUE),]
-  if(verbose){
-    cat("\n\nBranches with posterior probabilities higher than ", pp.cutoff, ":\n")
-    print(Lpost.sorted[Lpost.sorted[,1]>pp.cutoff,], ...)
-  }
+  cat("\n\nBranches with posterior probabilities higher than ", pp.cutoff, ":\n")
+  print(Lpost.sorted[Lpost.sorted[,1]>pp.cutoff,], ...)
   out <- list(statistics=statistics, branch.posteriors=Lpost)
   invisible(out)
 }

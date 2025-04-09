@@ -4,7 +4,7 @@
 \alias{summary.bayouMCMC}
 \title{S3 method for summarizing bayouMCMC objects}
 \usage{
-\method{summary}{bayouMCMC}(object, ..., verbose = TRUE)
+\method{summary}{bayouMCMC}(object, ...)
 }
 \arguments{
 \item{object}{A bayouMCMC object}
