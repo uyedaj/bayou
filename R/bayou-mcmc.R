@@ -445,7 +445,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
   }
 
   #Define MCMC loop function
-  mcmc.loop <- function(ngen, j, oll, pr1, startpar, store, ref1=NULL, type="mcmc", ref=NULL, Bk=NULL, k=NULL, files=NULL){
+  mcmc.loop <- function(ngen, j, oll, pr1, startpar, store, ref1=NULL, type="mcmc", ref=NULL, Bk=NULL, k=NULL, files=NULL, verbose=TRUE){
     if(!is.null(files)){
       closeAllConnections()
       files <- list(mapsb=file(files$mapsb,open="a"),
@@ -514,7 +514,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
           plot.fn(tr,dat,colors=tcols,ftype="off",add=TRUE)
         }
       }
-      if(i%%ticker.freq==0){
+      if(i%%ticker.freq==0 && verbose){
         model.pars$monitor.fn(i, oll, pr1, oldpar, accept, acceptN, header)
         header <- 1
       }
@@ -531,7 +531,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
       return(NULL)
     }
   }
-  run.mcmc <- function(ngen, prior.only=FALSE){
+  run.mcmc <- function(ngen, prior.only=FALSE, verbose=TRUE){
     if(!is.null(files)){
       closeAllConnections()
       files <- list(mapsb=file(filenames$mapsb,open="a"),
