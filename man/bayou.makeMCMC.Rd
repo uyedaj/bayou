@@ -2,7 +2,7 @@
 % Please edit documentation in R/bayou-mcmc.R
 \name{bayou.makeMCMC}
 \alias{bayou.makeMCMC}
-\title{Revision of bayou.mcmc that only makes the mcmc loop function, rather than running it itself.}
+\title{Builds a bayouMCMCFn object that can run MCMC and stepping stone analyses.}
 \usage{
 bayou.makeMCMC(
   tree,
@@ -83,7 +83,10 @@ to be used during the mcmc}
 
 \item{perform.checks}{A logical indicating whether to use bayou.checkModel to validate model inputs.}
 
-\item{verbose}{Determines whether information is outputted to the console for the user to view}
+\item{verbose}{A logical that determines whether information is outputted to the console for the user to view}
+}
+\value{
+A bayouMCMCFn object (list).
 }
 \description{
 Runs a reversible-jump Markov chain Monte Carlo on continuous phenotypic data

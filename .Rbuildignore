@@ -21,3 +21,5 @@
 ^tutorial_files$
 ^tutorial_files/.+$
 ^\.github$
+^tutorial_dev\.Rmd$
+^tutorial_dev_files$

@@ -9,7 +9,7 @@
 #' @param shiftpars A vector of parameters that split upon a shift, default is "theta"
 #' @param ... Parameters passed on to \code{plotSimmap(...)}
 #'
-#' @return A list of bayou parameter lists
+#' @return A list of bayou parameter lists drawn from the prior.
 #'
 #' @export
 priorSim <- function(prior, tree, plot=TRUE, nsim=1, shiftpars="theta", ...){

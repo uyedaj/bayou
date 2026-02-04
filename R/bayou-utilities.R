@@ -681,7 +681,7 @@ bayou.checkModel <- function(pars=NULL, tree, dat, pred=NULL, SE=0,
 
   ## Step 7. Check likelihood function
       checks$likfn_finite <- assertthat::validate_that(is.finite(try(model$lik.fn(pars, cache, dat, model=model.name)$loglik)))
-  if(verbose) {
+  if(verbose){
     cat("Checking inputs for errors:")
   }
   check_results <- sapply(checks, function(x) {

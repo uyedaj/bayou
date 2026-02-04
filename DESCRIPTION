@@ -2,8 +2,8 @@ Type: Package
 Package: bayou
 Title: Bayesian Fitting of Ornstein-Uhlenbeck Models to
     Phylogenies
-Version: 2.3.0
-Date: 2025-02-25
+Version: 2.3.2
+Date: 2025-07-07
 Authors@R: c(
     person("Josef C.", "Uyeda", ,"juyeda@vt.edu", role = c("aut", "cre"),
     	comment = c(ORCID = "0000-0003-4624-9680")),
@@ -13,9 +13,8 @@ Authors@R: c(
     person("Abhishek", "Hari", , "abhihari010@vt.edu", role = "ctb")
     )
 Maintainer: Josef C. Uyeda <juyeda@vt.edu>
-Description: Helps to fit and simulate multi-optima
-    Ornstein-Uhlenbeck models to phylogenetic comparative data using
-    Bayesian reversible-jump methods.
+Description: Fits and simulates multi-optima Ornstein-Uhlenbeck models to phylogenetic comparative data using
+    Bayesian reversible-jump methods. See Uyeda and Harmon (2014) <DOI:10.1093/sysbio/syu057>. 
 License: GPL (>= 2)
 Depends:
     ape (>= 3.0-6),

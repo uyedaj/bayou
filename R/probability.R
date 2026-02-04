@@ -11,7 +11,9 @@
 #' @param log log transformed density
 #' @param lambda rate parameter of the Poisson distribution
 #' @param ... additional parameters passed to \code{dpois} or \code{rpois}
-#' @return A numeric value representing the probability (or log-probability) of observing `k` under the truncated Poisson distribution.
+#' @return A numeric value representing the probability (or log-probability) of
+#' observing `k` under the truncated Poisson distribution, or a vector of random
+#' values drawn from a truncated Poisson distribution.
 #' @export
 #' @examples
 #' cdpois(10,1,10)

@@ -1,16 +1,16 @@
-#' General Proposal Function Caller
-#'
-#' This function selects a move based on a random value `u` and executes the corresponding proposal function.
-#'
-#' @param u A random value used to select the move.
-#' @param ct Control object specifying the move probabilities.
-#' @param D Tuning parameters for the proposals.
-#' @param moves List of available proposal functions.
-#' @param cache Cache object containing phylogenetic tree and trait data.
-#' @param pars List of current parameter values.
-#' @param prior Optional prior function for parameter values.
-#'
-#' @return A list containing new parameter values and Hastings ratio.
+# General Proposal Function Caller
+#
+# This function selects a move based on a random value `u` and executes the corresponding proposal function.
+#
+# @param u A random value used to select the move.
+# @param ct Control object specifying the move probabilities.
+# @param D Tuning parameters for the proposals.
+# @param moves List of available proposal functions.
+# @param cache Cache object containing phylogenetic tree and trait data.
+# @param pars List of current parameter values.
+# @param prior Optional prior function for parameter values.
+#
+# @return A list containing new parameter values and Hastings ratio.
 .proposalFn <- function(u, ct, D, moves, cache, pars, prior=NULL){
   #ct <- .updateControl(ct,oldpar)
   ctM <-ct[sapply(ct,length)==1]
@@ -39,18 +39,18 @@
 }
 
 ###Generic multiplier proposal
-#' Multiplier Proposal Function
-#'
-#' This function generates a multiplier proposal for a given parameter.
-#'
-#' @param move The parameter being modified.
-#' @param cache Cache object containing phylogenetic tree and trait data.
-#' @param pars List of current parameter values.
-#' @param d Tuning parameter for the proposal step size.
-#' @param ct Optional control object.
-#' @param prior Optional prior function.
-#'
-#' @return A list containing new parameter values and Hastings ratio.
+# Multiplier Proposal Function
+#
+# This function generates a multiplier proposal for a given parameter.
+#
+# @param move The parameter being modified.
+# @param cache Cache object containing phylogenetic tree and trait data.
+# @param pars List of current parameter values.
+# @param d Tuning parameter for the proposal step size.
+# @param ct Optional control object.
+# @param prior Optional prior function.
+#
+# @return A list containing new parameter values and Hastings ratio.
 .multiplierProposal <- function(move,cache,pars,d,ct=NULL, prior=NULL){
   m <- exp(d*(stats::runif(1)-0.5))
   prop <- pars[[move]]*m
@@ -64,18 +64,18 @@
 attributes(.multiplierProposal)$types <- NULL
 
 
-#' Sliding Window Proposal Function
-#'
-#' This function generates a sliding window proposal for a given parameter.
-#'
-#' @param cache Cache object containing phylogenetic tree and trait data.
-#' @param pars List of current parameter values.
-#' @param d Tuning parameter for the proposal step size.
-#' @param move The parameter being modified.
-#' @param ct Optional control object.
-#' @param prior Optional prior function.
-#'
-#' @return A list containing new parameter values and Hastings ratio.
+# Sliding Window Proposal Function
+#
+# This function generates a sliding window proposal for a given parameter.
+#
+# @param cache Cache object containing phylogenetic tree and trait data.
+# @param pars List of current parameter values.
+# @param d Tuning parameter for the proposal step size.
+# @param move The parameter being modified.
+# @param ct Optional control object.
+# @param prior Optional prior function.
+#
+# @return A list containing new parameter values and Hastings ratio.
 .slidingWindowProposal <- function(cache, pars, d, move, ct=NULL, prior=NULL){
   prop <- d*(stats::runif(1)-0.5)+pars[[move]]
   lnHastingsRatio <- 0
@@ -87,19 +87,19 @@ attributes(.multiplierProposal)$types <- NULL
 attributes(.slidingWindowProposal)$types <- NULL
 
 ##Adjust a randomly selected theta parameter
-#' Adjust a Randomly Selected Theta Parameter
-#'
-#' This function modifies a randomly selected theta parameter using either a sliding window or multiplier proposal.
-#'
-#' @param cache Cache object containing phylogenetic tree and trait data.
-#' @param pars List of current parameter values.
-#' @param d Tuning parameter for the proposal step size.
-#' @param type Proposal type: "slidingwindow" or "multiplier".
-#' @param move The parameter being modified.
-#' @param ct Optional control object.
-#' @param prior Optional prior function.
-#'
-#' @return A list containing new parameter values, Hastings ratio, and selected theta index.
+# Adjust a Randomly Selected Theta Parameter
+#
+# This function modifies a randomly selected theta parameter using either a sliding window or multiplier proposal.
+#
+# @param cache Cache object containing phylogenetic tree and trait data.
+# @param pars List of current parameter values.
+# @param d Tuning parameter for the proposal step size.
+# @param type Proposal type: "slidingwindow" or "multiplier".
+# @param move The parameter being modified.
+# @param ct Optional control object.
+# @param prior Optional prior function.
+#
+# @return A list containing new parameter values, Hastings ratio, and selected theta index.
 .adjustTheta <- function(cache, pars, d, type="slidingwindow",move=NULL,ct=NULL, prior=NULL){
   j <- sample(1:pars$ntheta,1)
   if(type=="slidingwindow"){
@@ -125,18 +125,18 @@ attributes(.slidingWindowProposal)$types <- NULL
 attributes(.adjustTheta)$types <- NULL
 
 ##Adjust a randomly selected theta parameter
-#' Vector Sliding Window Proposal
-#'
-#' Adjusts one element in a vector parameter using a sliding window.
-#'
-#' @param cache Cached data.
-#' @param pars Current parameters.
-#' @param d Tuning parameter.
-#' @param move Name of the parameter being adjusted.
-#' @param ct Control list.
-#' @param prior Optional prior function.
-#'
-#' @return A list containing the new parameters and Hastings ratio.
+# Vector Sliding Window Proposal
+#
+# Adjusts one element in a vector parameter using a sliding window.
+#
+# @param cache Cached data.
+# @param pars Current parameters.
+# @param d Tuning parameter.
+# @param move Name of the parameter being adjusted.
+# @param ct Control list.
+# @param prior Optional prior function.
+#
+# @return A list containing the new parameters and Hastings ratio.
 .vectorMultiplier <- function(cache, pars, d, move,ct=NULL, prior=NULL){
   j <- sample(1:length(pars[[move]]),1)
   ##Generate multiplier proposal
@@ -151,17 +151,17 @@ attributes(.adjustTheta)$types <- NULL
 attributes(.vectorMultiplier)$types <- NULL
 
 
-#' Sliding Window Proposal for Vector Parameter
-#'
-#' Uses a sliding window proposal for vector parameters.
-#'
-#' @param cache The cache list containing the tree and data
-#' @param pars The current parameter set
-#' @param d The tuning parameter
-#' @param move The parameter name being updated
-#' @param ct Control list (unused)
-#' @param prior The prior function (unused)
-#' @return A list with new parameters and the Hastings ratio
+# Sliding Window Proposal for Vector Parameter
+#
+# Uses a sliding window proposal for vector parameters.
+#
+# @param cache The cache list containing the tree and data
+# @param pars The current parameter set
+# @param d The tuning parameter
+# @param move The parameter name being updated
+# @param ct Control list (unused)
+# @param prior The prior function (unused)
+# @return A list with new parameters and the Hastings ratio
 .vectorSlidingWindow <- function(cache, pars, d, move,ct=NULL, prior=NULL){
   j <- sample(1:length(pars[[move]]),1)
   prop <- d*(stats::runif(1)-0.5)+pars[[move]][j]
@@ -174,16 +174,16 @@ attributes(.vectorMultiplier)$types <- NULL
 attributes(.vectorSlidingWindow)$types <- NULL
 
 
-#' Move a Shift in Space
-#'
-#' Moves a shift up or down within or between branches in the phylogeny.
-#'
-#' @param j Index of the shift being moved
-#' @param pars The current parameter set
-#' @param cache The cache list containing the tree and data
-#' @param ct Control list governing constraints
-#' @param map A map structure of the tree
-#' @return A list containing new shift branch positions and proposal probabilities
+# Move a Shift in Space
+#
+# Moves a shift up or down within or between branches in the phylogeny.
+#
+# @param j Index of the shift being moved
+# @param pars The current parameter set
+# @param cache The cache list containing the tree and data
+# @param ct Control list governing constraints
+# @param map A map structure of the tree
+# @return A list containing new shift branch positions and proposal probabilities
 .slidespace <- function(j, pars, cache, ct, map){
   sb <- rep(NA, 5)
   t2 <- pars$t2[j]
@@ -246,17 +246,17 @@ attributes(.vectorSlidingWindow)$types <- NULL
   return(list(sb=sb,pp=pp))
 }
 
-#' Slide a Shift on the Phylogenetic Tree
-#'
-#' Moves an existing shift along a branch or onto a neighboring branch.
-#'
-#' @param pars The current parameter set
-#' @param cache The cache list containing the tree and data
-#' @param d The tuning parameter
-#' @param ct Control list governing constraints
-#' @param move The move being performed (unused)
-#' @param prior The prior function (unused)
-#' @return A list with updated parameters and the Hastings ratio
+# Slide a Shift on the Phylogenetic Tree
+#
+# Moves an existing shift along a branch or onto a neighboring branch.
+#
+# @param pars The current parameter set
+# @param cache The cache list containing the tree and data
+# @param d The tuning parameter
+# @param ct Control list governing constraints
+# @param move The move being performed (unused)
+# @param prior The prior function (unused)
+# @return A list with updated parameters and the Hastings ratio
 .slide <- function(pars, cache, d, ct, move=NULL, prior=NULL){
   map <- .pars2map(pars,cache)
   j <- sample(1:pars$k,1)
@@ -296,17 +296,17 @@ attributes(.slide)$types <- c("U0", "U1", "U2","D0", "D1", "R1")
 
 
 # MCMC move for splitting or collapsing a shift on phylogeny
-#' Perform a Split-Merge Move on the Phylogenetic Tree
-#'
-#' Adds or removes a shift along a branch of the phylogenetic tree.
-#'
-#' @param pars The current parameter set
-#' @param cache The cache list containing the tree and data
-#' @param d The tuning parameter
-#' @param ct Control list governing constraints
-#' @param move The move being performed (unused)
-#' @param prior The prior function (unused)
-#' @return A list with updated parameters and the Hastings ratio
+# Perform a Split-Merge Move on the Phylogenetic Tree
+#
+# Adds or removes a shift along a branch of the phylogenetic tree.
+#
+# @param pars The current parameter set
+# @param cache The cache list containing the tree and data
+# @param d The tuning parameter
+# @param ct Control list governing constraints
+# @param move The move being performed (unused)
+# @param prior The prior function (unused)
+# @return A list with updated parameters and the Hastings ratio
 .splitmerge <- function(pars, cache, d, ct, move=NULL, prior=NULL){
   nbranch <- length(cache$edge.length)
   TH <- sum(cache$edge.length)
@@ -396,17 +396,17 @@ attributes(.splitmerge)$types <- c("birth", "death")
 #}
 
 # MCMC move for splitting or collapsing a shift on phylogeny
-#' Perform a Birth-Death Split-Merge Move
-#'
-#' Adds or removes a shift in a birth-death model framework.
-#'
-#' @param pars The current parameter set
-#' @param cache The cache list containing the tree and data
-#' @param d The tuning parameter
-#' @param ct Control list governing constraints
-#' @param move The move being performed (unused)
-#' @param prior The prior function (unused)
-#' @return A list with updated parameters and the Hastings ratio
+# Perform a Birth-Death Split-Merge Move
+#
+# Adds or removes a shift in a birth-death model framework.
+#
+# @param pars The current parameter set
+# @param cache The cache list containing the tree and data
+# @param d The tuning parameter
+# @param ct Control list governing constraints
+# @param move The move being performed (unused)
+# @param prior The prior function (unused)
+# @return A list with updated parameters and the Hastings ratio
 .splitmergebd <- function(pars, cache, d, ct, move=NULL, prior=NULL){
   splitmergepars <- attributes(ct)$splitmergepars
   nbranch <- length(cache$edge.length)
@@ -472,17 +472,17 @@ attributes(.splitmerge)$types <- c("birth", "death")
 }
 attributes(.splitmergebd)$types <- c("birth","death")
 
-#' Perform a Shift Slide Proposal
-#'
-#' Moves an existing shift along the phylogenetic tree.
-#'
-#' @param pars The current parameter set.
-#' @param cache The cache list containing the tree and data.
-#' @param d The tuning parameter.
-#' @param ct Control list governing constraints.
-#' @param move The move being performed (unused).
-#' @param prior The prior function (unused).
-#' @return A list with updated parameters, the Hastings ratio, and decision type.
+# Perform a Shift Slide Proposal
+#
+# Moves an existing shift along the phylogenetic tree.
+#
+# @param pars The current parameter set.
+# @param cache The cache list containing the tree and data.
+# @param d The tuning parameter.
+# @param ct Control list governing constraints.
+# @param move The move being performed (unused).
+# @param prior The prior function (unused).
+# @return A list with updated parameters, the Hastings ratio, and decision type.
 .slide2 <- function(pars, cache, d, ct, move=NULL, prior=NULL){
   splitmergepars <- attributes(ct)$splitmergepars
   map <- .pars2map(pars,cache)
@@ -524,17 +524,17 @@ attributes(.splitmergebd)$types <- c("birth","death")
 }
 attributes(.slide2)$types <- c("U0","U1","U2","D0","D1","R1")
 
-#' Perform a Joint Proposal on Half-life and Vy Parameters
-#'
-#' Jointly updates both half-life and stationary variance parameters using a bivariate normal proposal.
-#'
-#' @param move The parameter being updated ("halflife" or "Vy")
-#' @param cache The cache list containing the tree and data
-#' @param pars The current parameter set
-#' @param d The tuning parameter (vector of length 2)
-#' @param ct Control list governing constraints (unused)
-#' @param prior The prior function (unused)
-#' @return A list with updated parameters and the Hastings ratio
+# Perform a Joint Proposal on Half-life and Vy Parameters
+#
+# Jointly updates both half-life and stationary variance parameters using a bivariate normal proposal.
+#
+# @param move The parameter being updated ("halflife" or "Vy")
+# @param cache The cache list containing the tree and data
+# @param pars The current parameter set
+# @param d The tuning parameter (vector of length 2)
+# @param ct Control list governing constraints (unused)
+# @param prior The prior function (unused)
+# @return A list with updated parameters and the Hastings ratio
 .jointHalflifeVyProposal <- function(move, cache, pars, d, ct = NULL, prior=NULL){
   dSig <- matrix(c(d[1], d[2]*d[1], d[2]*d[1], d[1]), ncol=2)
   m <- mnormt::rmnorm(1, c(1,1), dSig)
@@ -554,17 +554,17 @@ attributes(.slide2)$types <- c("U0","U1","U2","D0","D1","R1")
 }
 attributes(.jointHalflifeVyProposal)$types <- NULL
 
-#' Vector Sliding Window Split Proposal
-#'
-#' Adjusts a randomly selected parameter in a vector using a sliding window approach.
-#'
-#' @param move The move being performed.
-#' @param cache The cache list containing the tree and data.
-#' @param pars The current parameter set.
-#' @param d The tuning parameter (a vector for multiple adjustments).
-#' @param ct Control list governing constraints.
-#' @param prior The prior function (unused).
-#' @return A list with updated parameters, the Hastings ratio, and the selected index.
+# Vector Sliding Window Split Proposal
+#
+# Adjusts a randomly selected parameter in a vector using a sliding window approach.
+#
+# @param move The move being performed.
+# @param cache The cache list containing the tree and data.
+# @param pars The current parameter set.
+# @param d The tuning parameter (a vector for multiple adjustments).
+# @param ct Control list governing constraints.
+# @param prior The prior function (unused).
+# @return A list with updated parameters, the Hastings ratio, and the selected index.
 .vectorSlidingWindowSplit <- function(move, cache, pars, d, ct=NULL, prior=NULL){
   j <- sample(1:length(pars[[move]]),1)
   if(j==1){
@@ -587,18 +587,18 @@ attributes(.jointHalflifeVyProposal)$types <- NULL
 attributes(.vectorSlidingWindowSplit)$types <- NULL
 
 ## Split merge proposal from Green 1995, only works for positive parameters
-#' Green's (1995) Split-Merge Proposal
-#'
-#' Implements a split-merge move where the new value is determined based on a transformation
-#' that preserves reversibility.
-#'
-#' @param pars The current parameter set.
-#' @param cache The cache list containing tree and data.
-#' @param d The tuning parameter controlling the move.
-#' @param ct Control list governing constraints.
-#' @param move The move being performed (unused).
-#' @param prior The prior function (unused).
-#' @return A list containing the updated parameters, Hastings ratio, decision type, and shift probability.
+# Green's (1995) Split-Merge Proposal
+#
+# Implements a split-merge move where the new value is determined based on a transformation
+# that preserves reversibility.
+#
+# @param pars The current parameter set.
+# @param cache The cache list containing tree and data.
+# @param d The tuning parameter controlling the move.
+# @param ct Control list governing constraints.
+# @param move The move being performed (unused).
+# @param prior The prior function (unused).
+# @return A list containing the updated parameters, Hastings ratio, decision type, and shift probability.
 .splitmergeGreen <- function(pars, cache, d, ct, move=NULL, prior=NULL){
   splitmergepars <- attributes(ct)$splitmergepars
   nbranch <- length(cache$edge.length)
@@ -670,17 +670,17 @@ attributes(.vectorSlidingWindowSplit)$types <- NULL
 attributes(.splitmergeGreen)$types <- c("birth", "death")
 
 ## Split merge proposal where new value is drawn from the prior
-#' Split-Merge Proposal Using Prior Distribution
-#'
-#' Implements a split-merge move where the new value is drawn from the prior distribution.
-#'
-#' @param pars The current parameter set.
-#' @param cache The cache list containing tree and data.
-#' @param d The tuning parameter controlling the move.
-#' @param ct Control list governing constraints.
-#' @param move The move being performed (unused).
-#' @param prior The prior function used to sample new values.
-#' @return A list containing the updated parameters, Hastings ratio, decision type, and shift probability.
+# Split-Merge Proposal Using Prior Distribution
+#
+# Implements a split-merge move where the new value is drawn from the prior distribution.
+#
+# @param pars The current parameter set.
+# @param cache The cache list containing tree and data.
+# @param d The tuning parameter controlling the move.
+# @param ct Control list governing constraints.
+# @param move The move being performed (unused).
+# @param prior The prior function used to sample new values.
+# @return A list containing the updated parameters, Hastings ratio, decision type, and shift probability.
 .splitmergePrior <- function(pars, cache, d, ct, move=NULL, prior){
   splitmergepars <- attributes(ct)$splitmergepars
   nbranch <- length(cache$edge.length)
@@ -765,17 +765,17 @@ attributes(.splitmergePrior)$types <- c("birth", "death")
 
 ## Split merge proposal where new value is a combination of a new value drawn from
 ## the prior and a multiplier proposal
-#' Split-Merge Proposal Using Prior and Multiplier Proposal
-#'
-#' Implements a split-merge move where new values are drawn from the prior and modified by a multiplier proposal.
-#'
-#' @param pars The current parameter set.
-#' @param cache The cache list containing tree and data.
-#' @param d The tuning parameter controlling the move.
-#' @param ct Control list governing constraints.
-#' @param move The move being performed (unused).
-#' @param prior The prior function used to sample new values.
-#' @return A list containing the updated parameters, Hastings ratio, decision type, and shift probability.
+# Split-Merge Proposal Using Prior and Multiplier Proposal
+#
+# Implements a split-merge move where new values are drawn from the prior and modified by a multiplier proposal.
+#
+# @param pars The current parameter set.
+# @param cache The cache list containing tree and data.
+# @param d The tuning parameter controlling the move.
+# @param ct Control list governing constraints.
+# @param move The move being performed (unused).
+# @param prior The prior function used to sample new values.
+# @return A list containing the updated parameters, Hastings ratio, decision type, and shift probability.
 .splitmergePriorMultiplier <- function(pars, cache, d, ct, move=NULL, prior){
   splitmergepars <- attributes(ct)$splitmergepars
   nbranch <- length(cache$edge.length)
@@ -854,17 +854,17 @@ attributes(.splitmergePriorMultiplier)$types <- c("birth", "death")
 
 ## Split merge proposal where new value is a combination of a new value drawn from
 ## the prior and a sliding window proposal
-#' Split-Merge Proposal Using Prior and Sliding Window
-#'
-#' Implements a split-merge move where new values are drawn from the prior and modified by a sliding window proposal.
-#'
-#' @param pars The current parameter set.
-#' @param cache The cache list containing tree and data.
-#' @param d The tuning parameter controlling the move.
-#' @param ct Control list governing constraints.
-#' @param move The move being performed (unused).
-#' @param prior The prior function used to sample new values.
-#' @return A list containing the updated parameters, Hastings ratio, decision type, and shift probability.
+# Split-Merge Proposal Using Prior and Sliding Window
+#
+# Implements a split-merge move where new values are drawn from the prior and modified by a sliding window proposal.
+#
+# @param pars The current parameter set.
+# @param cache The cache list containing tree and data.
+# @param d The tuning parameter controlling the move.
+# @param ct Control list governing constraints.
+# @param move The move being performed (unused).
+# @param prior The prior function used to sample new values.
+# @return A list containing the updated parameters, Hastings ratio, decision type, and shift probability.
 .splitmergePriorSlidingWindow <- function(pars, cache, d, ct, move=NULL, prior){
   splitmergepars <- attributes(ct)$splitmergepars
   nbranch <- length(cache$edge.length)

@@ -32,7 +32,7 @@ slow for large trees. However, what is returned is the maximum likelihood estima
 given the model, data and the parameter values.
 }
 \examples{
-\dontrun{
+\donttest{
 tree <- sim.bdtree(n=50)
 tree$edge.length <- tree$edge.length/max(branching.times(tree))
 prior <- make.prior(tree, dists=list(dk="cdpois", dsig2="dnorm",

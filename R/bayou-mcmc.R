@@ -242,7 +242,7 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
   }
 }
 
-#' Revision of bayou.mcmc that only makes the mcmc loop function, rather than running it itself.
+#' Builds a bayouMCMCFn object that can run MCMC and stepping stone analyses.
 #'
 #' @description Runs a reversible-jump Markov chain Monte Carlo on continuous phenotypic data
 #' on a phylogeny, sampling possible shift locations and
@@ -282,7 +282,7 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
 #' to be used during the mcmc
 #' @param lik.fn Likelihood function to be evaluated. Defaults to \code{bayou.lik}.
 #' @param perform.checks A logical indicating whether to use bayou.checkModel to validate model inputs.
-#' @param verbose Determines whether information is outputted to the console for the user to view
+#' @param verbose A logical that determines whether information is outputted to the console for the user to view
 #'
 #' @useDynLib bayou
 #' @export
@@ -292,6 +292,7 @@ bayou.mcmc <- function(tree, dat, SE=0, model="OU", prior, ngen=10000, samp=10, 
 #' and the number of shifts is adjusted by splitting and merging, as well as sliding the shifts
 #' both within and between branches. Allowed shift locations are specified by the
 #' prior function (see make.prior()).
+#' @return A bayouMCMCFn object (list).
 
 #model="bd"; tree <- phy; SE=0; ngen=1000; samp=10; chunk=100; control=NULL;tuning=NULL; new.dir=TRUE;plot.freq=100; outname="bayou";ticker.freq=1000; tuning.int=c(0.1,0.2,0.3); startpar=pars; moves=NULL; control.weights=NULL; lik.fn <- bdSplit.lik; plot.fn <- plotSimmap
 #tree <- phy; dat <- dat; pred=NULL; SE=0; model="OU"; prior=priorOU; samp=10; chunk=100; control=NULL;tuning=NULL;file.dir=NULL;plot.freq=500;outname="bayou";plot.fn=phenogram; ticker.freq=1000;startpar=NULL; moves=NULL; control.weights=NULL; lik.fn=NULL; perform.checks=TRUE;
@@ -311,9 +312,9 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
   #Perform input checks to see if everything looks like it is specified correctly
   if(perform.checks == TRUE){
     if(model=="Custom") {
-      checks <- bayou.checkModel(pars=startpar, tree=tree, dat=dat, pred=pred, SE=SE, prior=prior, model=model.pars, autofix=TRUE)
+      checks <- bayou.checkModel(pars=startpar, tree=tree, dat=dat, pred=pred, SE=SE, prior=prior, model=model.pars, autofix=TRUE, verbose=verbose)
     } else {
-      checks <- bayou.checkModel(pars=startpar, tree=tree, dat=dat, pred=pred, SE=SE, prior=prior, model=model, autofix=TRUE)
+      checks <- bayou.checkModel(pars=startpar, tree=tree, dat=dat, pred=pred, SE=SE, prior=prior, model=model, autofix=TRUE, verbose=verbose)
     }
     cache <- checks$autofixed$cache
     startpar <- checks$autofixed$pars
@@ -550,15 +551,15 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
       filenames <- NULL
     }
     if(prior.only==TRUE){
-      res <- tryCatch(mcmc.loop(ngen, j=j, oll=oll, pr1=pr1, startpar=oldpar, store=store, ref1 = NULL, type="prior.only", ref=NULL, files=filenames))
+      res <- tryCatch(mcmc.loop(ngen, j=j, oll=oll, pr1=pr1, startpar=oldpar, store=store, ref1 = NULL, type="prior.only", ref=NULL, files=filenames, verbose=verbose))
     } else {
-      res <- tryCatch(mcmc.loop(ngen, j=j, oll=oll, pr1=pr1, startpar=oldpar, store=store, ref1 = NULL, type="mcmc", ref=NULL, files=filenames))
+      res <- tryCatch(mcmc.loop(ngen, j=j, oll=oll, pr1=pr1, startpar=oldpar, store=store, ref1 = NULL, type="mcmc", ref=NULL, files=filenames, verbose=verbose))
     }
     #if(!is.null(files)){gbg <- lapply(files, close)}
     return(res)
   }
 
-  run.steppingstone <- function(ngen, chain, Bk, burnin=0.3, plot=TRUE){
+  run.steppingstone <- function(ngen, chain, Bk, burnin=0.3, plot=TRUE, verbose=TRUE){
     postburn <- floor(max(c(1,burnin*length(chain$gen)))):length(chain$gen)
     ref <- make.refFn(chain, model=model.pars, priorFn=prior, burnin = burnin, plot)
     stores <- ollss <- prss <- refss <- startpars <- list()
@@ -592,7 +593,7 @@ bayou.makeMCMC <- function(tree, dat, pred=NULL, SE=0, model="OU", prior, samp=1
       ssfiles <- NULL
       ssfilenames <- NULL
     }
-    ssfits <- foreach(j=1:length(Bk), .export = c("mcmc.loop")) %dopar% mcmc.loop(ngen, j=1, ollss[[j]], prss[[j]], startpars[[j]], stores[[j]], ref1=refss[[x]], type="ss", ref=ref, Bk=Bk, k=j, files=ssfilenames[[j]]) #mcmc.loop <- function(ngen, j, oll, pr1, startpar, store, ref1=NULL, type="mcmc", ref=NULL){
+    ssfits <- foreach(j=1:length(Bk), .export = c("mcmc.loop")) %dopar% mcmc.loop(ngen, j=1, ollss[[j]], prss[[j]], startpars[[j]], stores[[j]], ref1=refss[[x]], type="ss", ref=ref, Bk=Bk, k=j, files=ssfilenames[[j]], verbose=verbose) #mcmc.loop <- function(ngen, j, oll, pr1, startpar, store, ref1=NULL, type="mcmc", ref=NULL){
     if(!is.null(ssfiles)){
       outs <- lapply(1:length(Bk), function(x){out$outname <- paste(outname, "_ss", x, sep=""); out})
       chains <- lapply(1:length(Bk), function(x) load.bayou(outs[[x]], saveRDS=FALSE, file=NULL, cleanup=FALSE, ref=TRUE))

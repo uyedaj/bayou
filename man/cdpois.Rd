@@ -23,7 +23,9 @@ rdpois(n, lambda, kmax, ...)
 \item{...}{additional parameters passed to \code{dpois} or \code{rpois}}
 }
 \value{
-A numeric value representing the probability (or log-probability) of observing `k` under the truncated Poisson distribution.
+A numeric value representing the probability (or log-probability) of
+observing `k` under the truncated Poisson distribution, or a vector of random
+values drawn from a truncated Poisson distribution.
 }
 \description{
 \code{cdpois} calculates the probability density of a value \code{k} from a

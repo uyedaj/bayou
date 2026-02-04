@@ -134,7 +134,7 @@ load.bayou <- function(bayouFit, saveRDS=TRUE, file=NULL, cleanup=FALSE, ref=FAL
 #' @param start The first sample to calculate the diagnostic at
 #' @param plot A logical indicating whether the results should be plotted
 #' @param ... Optional arguments passed to \code{gelman.diag(...)} from the \code{coda} package
-#' @return A data frame with two columns
+#' @return A data frame with two columns giving the R statistic and its 95 percent upper CI.
 #' @export
 gelman.R <- function(parameter,chain1,chain2,freq=20,start=1,
                      plot=TRUE, ...){
@@ -236,23 +236,6 @@ Lposterior <- function(chain,tree,burnin=0, simpar=NULL,mag=TRUE){
 #'
 #' @return A bayou formatted parameter list
 #'
-#' @examples
-#' \dontrun{
-#' tree <- sim.bdtree(n=30)
-#' tree$edge.length <- tree$edge.length/max(branching.times(tree))
-#' prior <- make.prior(tree, dists=list(dk="cdpois", dsig2="dnorm",
-#'              dtheta="dnorm"),
-#'                param=list(dk=list(lambda=15, kmax=32),
-#'                  dsig2=list(mean=1, sd=0.01),
-#'                    dtheta=list(mean=0, sd=3)),
-#'                      plot.prior=FALSE)
-#' pars <- priorSim(prior, tree, plot=FALSE, nsim=1)$pars[[1]]
-#' dat <- dataSim(pars, model="OU", phenogram=FALSE, tree)$dat
-#' fit <- bayou.mcmc(tree, dat, model="OU", prior=prior,
-#'              new.dir=TRUE, ngen=5000, plot.freq=NULL)
-#' chain <- load.bayou(fit, save.Rdata=TRUE, cleanup=TRUE)
-#' plotBayoupars(pull.pars(300, chain), tree)
-#' }
 #' @export pull.pars
 pull.pars <- function(i,chain,model="OU"){
   if(is.character(model)){
@@ -447,7 +430,7 @@ print.bayouMCMC <- function(x, ...){
 #' @param x A 'bayouFit' object produced by \code{bayou.mcmc}
 #' @param ... Additional parameters passed to \code{print}
 #'
-#'#' @return **No return value**, called for **side effects**.
+#' @return **No return value**, called for **side effects**.
 #' This function prints a summary of a **bayou model fit**, including
 #' posterior probabilities, model parameters, and key statistics.
 #'

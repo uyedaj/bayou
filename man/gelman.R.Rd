@@ -22,7 +22,7 @@ gelman.R(parameter, chain1, chain2, freq = 20, start = 1, plot = TRUE, ...)
 \item{...}{Optional arguments passed to \code{gelman.diag(...)} from the \code{coda} package}
 }
 \value{
-A data frame with two columns
+A data frame with two columns giving the R statistic and its 95 percent upper CI.
 }
 \description{
 Calculate Gelman's R statistic

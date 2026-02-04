@@ -20,7 +20,7 @@ priorSim(prior, tree, plot = TRUE, nsim = 1, shiftpars = "theta", ...)
 \item{...}{Parameters passed on to \code{plotSimmap(...)}}
 }
 \value{
-A list of bayou parameter lists
+A list of bayou parameter lists drawn from the prior.
 }
 \description{
 \code{priorSim} Simulates parameters from the prior distribution specified by \code{make.prior}

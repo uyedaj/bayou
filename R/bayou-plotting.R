@@ -278,13 +278,13 @@ plotBayoupars <- function(pars, tree,...){
 }
 
 # Experimental function for ancestral state reconstruction for a given OU model
-.OU.asr <- function(tree, dat, pars, start=NULL, SE=0, verbose=TRUE){
+.OU.asr <- function(tree, dat, pars, start=NULL, SE=0){
   phy <- reorder(tree, "postorder")
   dat <- dat[phy$tip.label]
   if(length(SE)>1){
     SE[phy$tip.label]
   }
-  if(length(phy$tip.label) > 100 && verbose) cat("This may take a while for large trees")
+  if(length(phy$tip.label) > 100) warning("This may take a while for large trees")
   EV <- .vcv.asrOU(phy, dat, pars, SE=SE)
   ntips <- length(phy$tip.label)
   ExpV <- EV$ExpV
@@ -377,7 +377,7 @@ plotBayoupars <- function(pars, tree,...){
 #'
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' tree <- sim.bdtree(n=50)
 #' tree$edge.length <- tree$edge.length/max(branching.times(tree))
 #' prior <- make.prior(tree, dists=list(dk="cdpois", dsig2="dnorm",
