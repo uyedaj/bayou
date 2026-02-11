@@ -256,7 +256,7 @@
   phy = reorder(phy, "postorder")
   zz = list(N = N, MAXNODE = N + n, ANC = as.integer(phy$edge[,
                                                               1]), DES = as.integer(phy$edge[, 2]))
-  res = .Call("cache_descendants", phy = zz, package = "geiger")
+  res = cache_descendants(zz) #.Call("cache_descendants", phy = zz, package = "geiger")
   return(res)
 }
 
