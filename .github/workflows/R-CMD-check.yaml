@@ -25,6 +25,8 @@ jobs:
           - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
           - {os: ubuntu-latest,   r: 'release'}
           - {os: ubuntu-latest,   r: 'oldrel-1'}
+          - {os: ubuntu-latest,  r: 'release', lto: true}
+          - {os: ubuntu-latest,  r: 'devel', lto: true}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -40,6 +42,14 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
+          
+      - name: Enable LTO
+        if: matrix.config.lto == true
+        run: |
+          mkdir -p ~/.R
+          echo "CFLAGS += -flto" >> ~/.R/Makevars
+          echo "CXXFLAGS += -flto" >> ~/.R/Makevars
+          echo "LDFLAGS += -flto" >> ~/.R/Makevars
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
@@ -50,3 +60,5 @@ jobs:
         with:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
+
+          
