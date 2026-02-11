@@ -87,8 +87,8 @@ We're now going to take what we have and put it into the function *bayou.makeMCM
 ```{r}
 set.seed(1)
 mcmcOU <- bayou.makeMCMC(tree, dat, SE=MEvar, prior=priorOU, 
-                         new.dir=TRUE, outname="modelOU_r001", plot.freq=NULL) # Set up the MCMC
-mcmcOU$run(10000) # Run the MCMC
+                        file.dir=NULL, outname="modelOU_r001", plot.freq=NULL) # Set up the MCMC
+chainOU <- mcmcOU$run(10000) # Run the MCMC
 
 ```
 
@@ -166,7 +166,7 @@ priorBB <- make.prior(tree,
 
 
 set.seed(1)
-mcmcBB <- bayou.makeMCMC(tree, dat, SE=MEvar, model="OUrepar", prior=priorBB, new.dir=TRUE, outname="modelBB_r001", plot.freq=NULL)
+mcmcBB <- bayou.makeMCMC(tree, dat, SE=MEvar, model="OUrepar", prior=priorBB, outname="modelBB_r001", plot.freq=NULL)
 mcmcBB$run(10000)
 
 chainBB <- mcmcBB$load()
@@ -190,7 +190,7 @@ phenogram.density(tree, dat, burnin = 0.3, chainBB, pp.cutoff = 0.3)
 Likely, we will have more shifts because we made the prior on *Vy* so narrow. Let's compare the posteriors from the two models.
 
 ```{r}
-
+quantiles <- c(0, 0.025, 0.05, 0.5, 0.95, 0.975, 1)
 quantile(chainOU$sig2/(2*chainOU$alpha), quantiles)
 quantile(chainBB$Vy, quantiles)
 
@@ -241,7 +241,7 @@ Note that this model has difficulty fitting if the starting point is a poor fit.
 ```{r}
 
 set.seed(1)
-mcmcQG <- bayou.makeMCMC(QGtree, dat, SE=MEvar, model="QG", startpar=NULL, prior=priorQG, new.dir=TRUE, outname="modelQG_r001", plot.freq=NULL)
+mcmcQG <- bayou.makeMCMC(QGtree, dat, SE=MEvar, model="QG", startpar=NULL, prior=priorQG, outname="modelQG_r001", plot.freq=NULL)
 mcmcQG$run(10000)
 
 ```
@@ -275,6 +275,12 @@ While I have the complete code to do all 3 runs here, I suggest you partner with
 
 ```{r}
 library(doParallel)
+unregister_dopar <- function() {
+  env <- foreach:::.foreachGlobals
+  rm(list=ls(name=env), pos=env)
+}
+unregister_dopar()
+
 registerDoParallel(cores=2) #Using more cores will make it go faster if you have them.
 Bk <- qbeta(seq(0,1, length.out=5), 0.3,1)
 ssOU <- mcmcOU$steppingstone(10000, chainOU, Bk, burnin=0.3, plot=FALSE)

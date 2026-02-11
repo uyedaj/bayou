@@ -35,6 +35,10 @@ plotBranchHeatMap(
 
 \item{...}{Additional options passed to plot.phylo}
 }
+\value{
+No return value, called for side effects. This function generates
+a heatmap visualization of reconstructed parameter values on a phylogenetic tree.
+}
 \description{
 A function to plot a heatmap of reconstructed parameter values on the branches of the tree
 }

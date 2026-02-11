@@ -37,7 +37,7 @@ getPreValues <- function(cache, col){
   return(list(pars=pars.new, hr=hr, decision = type))
 }
 
-.make.monitorFn <- function(model, noMonitor=c("missing.pred", "ntheta"), integers=c("gen","k")){
+.make.monitorFn <- function(model, noMonitor=c("missing.pred", "ntheta"), integers=c("gen","k"), verbose=TRUE){
   parorder <- model$parorder
   rjpars <- model$rjpars
   exclude <- which(parorder %in% noMonitor)
@@ -58,10 +58,12 @@ getPreValues <- function(cache, col){
     #string <- "%-8i%-8.2f%-8.2f%-8.2f%-8.2f%-8.2f%-8.2f%-8i"
     acceptratios <- unlist(accept/accept.type) #tapply(accept, accept.type, mean)
     names <- c(names, names(acceptratios))
-    if(j==0){
-      cat(sprintf("%-7.7s", names), "\n", sep=" ")                           
+    if (verbose){
+      if(j==0){
+        cat(sprintf("%-7.7s", names), "\n", sep=" ")
+      }
+      cat(sprintf(string, i, lik, pr, pars$alpha, pars$sig2, pars$beta1[1], pars$endo, pars$k), sprintf("%-8.2f", acceptratios),"\n", sep="")
     }
-    cat(sprintf(string, i, lik, pr, pars$alpha, pars$sig2, pars$beta1[1], pars$endo, pars$k), sprintf("%-8.2f", acceptratios),"\n", sep="")
   }
 }
 
@@ -100,8 +102,8 @@ getPreValues <- function(cache, col){
 
 
 #' This function makes a bayou model object that can be used for customized allometric regression models.
-#' 
-#' @param f A formula describing the relationship between the data and one or more predictors (use 'dat' 
+#'
+#' @param f A formula describing the relationship between the data and one or more predictors (use 'dat'
 #' for the dependent variable)
 #' @param rjpars A character vector of parameters to split at the mapped shifts on the tree
 #' @param tree A phylogenetic tree
@@ -120,17 +122,22 @@ getPreValues <- function(cache, col){
 #' @param shiftpars The names of the parameters defining the map of shifts (for now, always c("sb", "loc", "t2")).
 #' @param model The parameterization of the OU model, either "OU", "OUrepar" or "QG".
 #' @param slopechange "immediate", "alphaWeighted" or "fullPGLS"
-#' 
+#'
 #' @details This function generates a list with the '$model', which provides the specifications of the regression
 #' model and '$startpar', which provides starting values to input into bayou.makeMCMC. Note that this model assumes
 #' that predictors immediately affect trait values at a shift. In other words, regardless of the past history of the
 #' predictor, only the current value affects the current expected trait value. This is only reasonable for allometric
-#' models, although it may be appropriate for other models if phylogenetic inertia is very low (short half-lives). 
-#' 
+#' models, although it may be appropriate for other models if phylogenetic inertia is very low (short half-lives).
+#'
 #' One predictor variable may include missing data (coded as "NA"). The model will assume the maximum-likelihood
 #' best-fit BM model and simulate the missing predictor values throughout the course of the MCMC. These values will
-#' then be used to calculate the likelihood given the parameters for each MCMC step. 
-#' 
+#' then be used to calculate the likelihood given the parameters for each MCMC step.
+#' @return
+#' A list with two elements:
+#' \describe{
+#'   \item{model}{A list containing MCMC settings, likelihood functions, monitoring functions, and other parameters for the Bayesian OU model.}
+#'   \item{startpar}{A list of starting parameter values for the model. If missing data is imputed, it includes `missing.pred`.}
+#' }
 #' @export
 makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, slopechange="immediate", impute=NULL, startpar=NULL, moves=NULL, control.weights=NULL, D=NULL, shiftpars=c("sb", "loc", "t2"), model="OU"){
   cache <- .prepare.ou.univariate(tree, dat, SE=SE, pred=pred)
@@ -160,7 +167,7 @@ makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, slopechange=
       }
     } else {
       expFn <- function(pars, cache){
-        betaID <- .getTipMap(pars, cache)    
+        betaID <- .getTipMap(pars, cache)
         if(length(impute)>0){
           MF[is.na(MF[,impute]),impute] <- pars$missing.pred #$impute
           MM <- model.matrix(f, MF)
@@ -188,7 +195,7 @@ makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, slopechange=
   varnames <- switch(model, "OU"=c("alpha","sig2"), "OUrepar"=c("halflife", "Vy"), "QG"=c("h2", "P", "Ne", "w2"))
   if(model=="OU"){
     varTransform <- function(pars) return(pars)
-  } 
+  }
   if(model=="OUrepar"){
     varTransform <- function(pars){
       repar <- OU.repar(pars)
@@ -230,26 +237,28 @@ makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, slopechange=
     llh <- -0.5*(n*log(2*pi)+detV+inv.yVy)
     return(list(loglik=llh, theta=pars$theta,resid=X.c, comp=comp, transf.phy=transf.phy))
   }
-  monitorFn <- function(i, lik, pr, pars, accept, accept.type, j){
+  monitorFn <- function(i, lik, pr, pars, accept, accept.type, j, verbose=TRUE){
     names <- c("gen", "lnL", "prior", varnames, parnames, "rtheta", "k")
     format <- c("%-8i",rep("%-8.2f",4), rep("%-8.2f", length(parnames)), "%-8.2f","%-8i")
     acceptratios <- unlist(accept/accept.type) #tapply(accept, accept.type, mean)
     names <- c(names, names(acceptratios))
-    if(j==0){
-      cat(sprintf("%-7.7s", names), "\n", sep=" ")                           
+    if (verbose) {
+      if(j==0){
+        cat(sprintf("%-7.7s", names), "\n", sep=" ")
+      }
+      item <- c(i, lik, pr, pars[[varnames[1]]], pars[[varnames[2]]], sapply(pars[parnames], function(x) x[1]), pars$theta[1], pars$k)
+      cat(sapply(1:length(item), function(x) sprintf(format[x], item[x])), sprintf("%-8.2f", acceptratios),"\n", sep="")
     }
-    item <- c(i, lik, pr, pars[[varnames[1]]], pars[[varnames[2]]], sapply(pars[parnames], function(x) x[1]), pars$theta[1], pars$k)
-    cat(sapply(1:length(item), function(x) sprintf(format[x], item[x])), sprintf("%-8.2f", acceptratios),"\n", sep="")
   }
   rdists <- .getSimDists(prior)
-  ## Set default moves if not specified. 
+  ## Set default moves if not specified.
   if(length(rjpars) > 0){
     if(is.null(moves)){
-      moves =  c(switch(model, "OU" = list(alpha=".multiplierProposal", sig2=".multiplierProposal"), 
-                        "OUrepar" = list(halflife=".jointHalflifeVyProposal", Vy=".jointHalflifeVyProposal")), 
+      moves =  c(switch(model, "OU" = list(alpha=".multiplierProposal", sig2=".multiplierProposal"),
+                        "OUrepar" = list(halflife=".jointHalflifeVyProposal", Vy=".jointHalflifeVyProposal")),
                  as.list(setNames(rep(".vectorSlidingWindowSplit", length(parnames)), parnames)),
                  c(theta=".vectorSlidingWindowSplit", k=".splitmergePrior", slide=".slide2"))
-    } 
+    }
     if(is.null(control.weights)){
       control.weights <- setNames(rep(1, length(parnames)+5), c(varnames, parnames, "k", "theta", "slide"))
       control.weights[c(varnames[1], parnames)] <- 2
@@ -257,7 +266,7 @@ makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, slopechange=
       control.weights["k"] <- 5
       control.weights <- as.list(control.weights)
     }
-    
+
     if(is.null(D)){
       D <- lapply(rdists[!(names(rdists) %in% shiftpars)], function(x) sd(x(1000))/50)
       D$k <- rep(1, length(rjpars))
@@ -273,7 +282,7 @@ makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, slopechange=
       parorder <- c(parorder, fixed)
     }
     parorder <- parorder[!duplicated(parorder) & !(parorder %in% shiftpars)]
-    
+
     }
     if(is.null(startpar)){
       startpar <- priorSim(prior, cache$phy, shiftpars=rjpars2)$pars[[1]]
@@ -294,8 +303,8 @@ makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, slopechange=
   } else {
     rj <- numeric(0)
     if(is.null(moves)){
-      moves =  c(switch(model, "OU" = list(alpha=".multiplierProposal", sig2=".multiplierProposal"), 
-                        "OUrepar" = list(halflife=".jointHalflifeVyProposal", Vy=".jointHalflifeVyProposal")), 
+      moves =  c(switch(model, "OU" = list(alpha=".multiplierProposal", sig2=".multiplierProposal"),
+                        "OUrepar" = list(halflife=".jointHalflifeVyProposal", Vy=".jointHalflifeVyProposal")),
                  as.list(setNames(rep(".vectorSlidingWindowSplit", length(parnames)), parnames)),
                  c(theta=".vectorSlidingWindowSplit"))
     }
@@ -329,16 +338,16 @@ makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, slopechange=
       #if(length(attributes(prior)$fixed)>0){
       #  simdists[names(attributes(prior)$fixed)] <- lapply(1:length(attributes(prior)$fixed), function(x) function(n) attributes(prior)$fixed[[x]])
       #  fixed.pars <- attributes(prior)$fixed
-      #} 
+      #}
       #simdists <- simdists[!is.na(names(simdists))]
       #startpar <- lapply(simdists, function(x) x(1))
       #if(!("k" %in% fixed)){
       #  startpar$k <- 0
       #  startpar$ntheta <- startpar$k+1
-      #  if(startpar$k==0) startpar$t2 <- numeric(0) else startpar$t2 <- 2:(startpar$ntheta) 
+      #  if(startpar$k==0) startpar$t2 <- numeric(0) else startpar$t2 <- 2:(startpar$ntheta)
       #} else {
       #  startpar$ntheta <- startpar$k+1
-      #  if(startpar$k==0) startpar$t2 <- numeric(0) else startpar$t2 <- 2:(startpar$ntheta) 
+      #  if(startpar$k==0) startpar$t2 <- numeric(0) else startpar$t2 <- 2:(startpar$ntheta)
       #}
       #startpar <- startpar[c(parorder, shiftpars)]
     }
@@ -351,13 +360,13 @@ makeBayouModel <- function(f, rjpars, tree, dat, pred, prior, SE=0, slopechange=
     model$moves$missing.pred <- ".imputePredBM"
     model$control.weights$missing.pred <- 1
     model$D$missing.pred <- 1
-    startpar <- .imputePredBM(cache, startpar, d=1, NULL, ct=NULL, prevalues=pv)$pars#$impute 
+    startpar <- .imputePredBM(cache, startpar, d=1, NULL, ct=NULL, prevalues=pv)$pars#$impute
     bp <- which(names(startpar)=="pred.root")
     model$parorder <- c(parorder[1:bp], "missing.pred", if(length(parorder)>bp)parorder[(bp+1):length(parorder)] else NULL)
     startpar <- startpar[c(parorder, names(startpar)[!names(startpar) %in% parorder])]
     model$prevalues <- pv
   }
-  
+
   #try(prior(startpar))
   #try(likFn(startpar, cache, cache$dat))
   return(list(model=model, startpar=startpar))

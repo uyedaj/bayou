@@ -2,7 +2,7 @@
 % Please edit documentation in R/bayou-likelihood.R
 \name{OU.lik}
 \alias{OU.lik}
-\title{Function for calculating likelihood of an OU model in bayou using pruning algorithm 
+\title{Function for calculating likelihood of an OU model in bayou using pruning algorithm
 or matrix inversion}
 \usage{
 OU.lik(pars, tree, X, SE = 0, model = "OU", invert = FALSE)
@@ -18,9 +18,9 @@ OU.lik(pars, tree, X, SE = 0, model = "OU", invert = FALSE)
 
 \item{model}{Parameterization of the OU model. Either "OU", "QG" or "OUrepar".}
 
-\item{invert}{A logical indicating whether the likelihood should be solved by matrix 
+\item{invert}{A logical indicating whether the likelihood should be solved by matrix
 inversion, rather than
-the pruning algorithm. This is primarily present to test that calculation of the likelihood 
+the pruning algorithm. This is primarily present to test that calculation of the likelihood
 is correct.}
 }
 \value{
@@ -28,12 +28,12 @@ A list returning the log likelihood ("loglik"), the weight matrix ("W"), the opt
 the residuals ("resid") and the expected values ("Exp").
 }
 \description{
-Function for calculating likelihood of an OU model in bayou using pruning algorithm 
+Function for calculating likelihood of an OU model in bayou using pruning algorithm
 or matrix inversion
 }
 \details{
-This function can be used for calculating single likelihoods using previously 
-implemented methods. It is likely to become deprecated and replaced by \code{bayou.lik} 
-in the future, which is based on \code{phylolm}'s threepoint algorithm, which works on 
+This function can be used for calculating single likelihoods using previously
+implemented methods. It is likely to become deprecated and replaced by \code{bayou.lik}
+in the future, which is based on \code{phylolm}'s threepoint algorithm, which works on
 non-ultrametric trees and is substantially faster.
 }

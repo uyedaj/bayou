@@ -12,10 +12,11 @@
 }
 
 #' Make a color transparent (Taken from an answer on StackOverflow by Nick Sabbe)
-#' 
+#'
 #' @param someColor A color, either a number, string or hexidecimal code
 #' @param alpha The alpha transparency. The maxColorValue is set to 255.
-#' 
+#' @return A character vector of colors in hexadecimal format with the specified transparency applied.
+
 #' @export
 makeTransparent <- function(someColor, alpha=100)
 {
@@ -25,7 +26,7 @@ makeTransparent <- function(someColor, alpha=100)
 }
 
 #' Plot a phylogenetic tree with posterior probabilities from a bayouMCMC chain (function adapted from phytools' plotSimmap)
-#' 
+#'
 #' @param chain A bayouMCMC chain
 #' @param burnin The proportion of runs to be discarded, if NULL, then the value stored in the bayouMCMC chain's attributes is used
 #' @param lwd The width of the edges
@@ -41,18 +42,23 @@ makeTransparent <- function(someColor, alpha=100)
 #' @param circle.alpha a value between 0 and 255 that indicates the transparency of the circles (255 is completely opaque).
 #' @param pp.labels a logical indicating whether the posterior probability for each branch should be printed above the branch
 #' @param pp.col The color used for the posterior probability labels
-#' @param pp.alpha a logical or numeric value indicating transparency of posterior probability labels. If TRUE, then transparency is ramped from invisible (pp=0), to black (pp=1). If numeric, all labels are given the same transparency. If NULL, then no transparency is given. 
-#' @param pp.cex the size of the posterior probability labels 
+#' @param pp.alpha a logical or numeric value indicating transparency of posterior probability labels. If TRUE, then transparency is ramped from invisible (pp=0), to black (pp=1). If numeric, all labels are given the same transparency. If NULL, then no transparency is given.
+#' @param pp.cex the size of the posterior probability labels
 #' @param edge.color The color of edges if edge.type="none"
-#' @param parameter.sample When edge.type=="theta", the number of samples used to estimate the median "theta" value from each branch. Since this is 
+#' @param parameter.sample When edge.type=="theta", the number of samples used to estimate the median "theta" value from each branch. Since this is
 #' computationally intensive, this enables you to downsample the chain.
 #' @param ... Additional arguments passed to ape's plot.phylo
-#' 
+#'
+#' @return **No return value**, called for **side effects**.
+#' The function generates a **phylogenetic tree visualization** with branches colored
+#' based on posterior probabilities, regimes, or estimated parameters.
+
+#'
 #' @export
 
-plotSimmap.mcmc <- function(chain, burnin=NULL, lwd=1, edge.type = c("regimes", "theta", "none", "pp"), 
+plotSimmap.mcmc <- function(chain, burnin=NULL, lwd=1, edge.type = c("regimes", "theta", "none", "pp"),
                             pal=rainbow, pp.cutoff=0.3, circles=TRUE, circle.cex.max=3, circle.col="red",
-                            circle.pch=21, circle.lwd=0.75, circle.alpha=100, pp.labels=FALSE, pp.col=1, 
+                            circle.pch=21, circle.lwd=0.75, circle.alpha=100, pp.labels=FALSE, pp.col=1,
                             pp.alpha=255, pp.cex=0.75, edge.color = 1, parameter.sample=1000, ...){
   tree <- attributes(chain)$tree
   edge.type <- match.arg(edge.type, c("regimes", "theta", "none", "pp"))
@@ -120,13 +126,13 @@ plotSimmap.mcmc <- function(chain, burnin=NULL, lwd=1, edge.type = c("regimes", 
 }
 
 #' Adds visualization of regimes to a plot
-#' 
+#'
 #' @param pars A bayou formatted parameter list
 #' @param tree A tree of class 'phylo'
 #' @param cols A vector of colors to give to regimes, in the same order as pars$sb
 #' @param type Either "rect", "density" or "lines". "rect" plots a rectangle for the 95\% CI for the stationary
 #' distribution of a regime. "density" varies the transparency of the rectangles according to the probability density
-#' from the stationary distribution. "lines" plots lines for the mean and 95\% CI's without filling them. 
+#' from the stationary distribution. "lines" plots lines for the mean and 95\% CI's without filling them.
 #' @param transparency The alpha transparency value for the maximum density, max value is 255.
 regime.plot <- function(pars,tree,cols,type='rect',transparency=100){
   OA <- .optima.ages(pars,tree)
@@ -162,21 +168,25 @@ regime.plot <- function(pars,tree,cols,type='rect',transparency=100){
 }
 
 #' Plot a pheongram with the posterior density for optima values
-#' 
+#'
 #' Plots a phenogram and the posterior density for optima values
-#' 
+#'
 #' @param tree A phylogeny of class 'phylo'
 #' @param dat A named vector of tip data
 #' @param burnin The initial proportion of the MCMC to be discarded
 #' @param chain A bayouMCMC object that contains the results of an MCMC chain
 #' @param colors An optional named vector of colors to assign to regimes, \code{NULL} results in no regimes being plotted.
 #' @param pp.cutoff The posterior probability cutoff value. Branches with posterior probabilities of having a shift above this value
-#' will have the average location of the regime shift painted onto the branches. 
-#' @param K A list with the values of K to be plotted. If \code{NULL} all values of K are combined and a total posterior produced. This 
-#' allows separate lines to be plotted for different numbers of shifts so that the location of optima can be compared, for example, between 
+#' will have the average location of the regime shift painted onto the branches.
+#' @param K A list with the values of K to be plotted. If \code{NULL} all values of K are combined and a total posterior produced. This
+#' allows separate lines to be plotted for different numbers of shifts so that the location of optima can be compared, for example, between
 #' all samples that have 1 vs. 2 shifts in the posterior.
 #' @param ... Additional parameters passed to \code{phenogram(...)}
-#' 
+#'
+#' @return No return value, called for side effects. This function generates a phenogram plot
+#' with posterior density overlays for optima values, visualizing the distribution of evolutionary
+#' regimes across a phylogenetic tree.
+
 #' @export
 phenogram.density <- function(tree, dat, burnin=0, chain ,colors=NULL, pp.cutoff=NULL, K=NULL, ...){
   tree <- reorder(tree,"postorder")
@@ -222,10 +232,13 @@ phenogram.density <- function(tree, dat, burnin=0, chain ,colors=NULL, pp.cutoff
 }
 
 #' S3 method for plotting bayouMCMC objects
-#' 
+#'
 #' @param x A mcmc chain of class 'bayouMCMC' produced by the function bayou.mcmc and loaded into the environment using load.bayou
 #' @param ... Additional arguments passed to \code{plot.mcmc} from the \code{coda} package
-#' 
+#' @return No return value, called for side effects. This function generates diagnostic
+#' trace and density plots for MCMC chains of class `bayouMCMC` to assess convergence
+#' and parameter distributions.
+
 #' @export
 #' @method plot bayouMCMC
 plot.bayouMCMC <- function(x, ...){
@@ -248,11 +261,12 @@ plot.bayouMCMC <- function(x, ...){
 
 
 #' Plot parameter list as a simmap tree
-#' 
+#'
 #' @param pars A bayou formatted parameter list
 #' @param tree A tree of class 'phylo'
 #' @param ... Additional arguments passed to plotRegimes
-#' 
+#' @return No return value, called for side effects. This function generates
+#' a visualization of a phylogenetic tree with mapped regimes or other parameters.
 #' @export
 plotBayoupars <- function(pars, tree,...){
   tree <- reorder(tree, 'postorder')
@@ -270,7 +284,7 @@ plotBayoupars <- function(pars, tree,...){
   if(length(SE)>1){
     SE[phy$tip.label]
   }
-  if(length(phy$tip.label) > 100) cat("This may take a while for large trees")
+  if(length(phy$tip.label) > 100) warning("This may take a while for large trees")
   EV <- .vcv.asrOU(phy, dat, pars, SE=SE)
   ntips <- length(phy$tip.label)
   ExpV <- EV$ExpV
@@ -281,12 +295,12 @@ plotBayoupars <- function(pars, tree,...){
   }
   if(is.null(start)){
     start = ExpV[(length(dat)+1):(length(phy$edge.length)+1)]
-  } 
+  }
   result <- stats::optim(start, lik.fn, method="L-BFGS-B")
   x <- c(dat, result$par)
   names(x)[(ntips+1):length(x)] <- (ntips+1):length(x)
   return(x)
-}  
+}
 
 
 .vcv.asrOU <- function(phy, dat, pars, SE, internal=TRUE){
@@ -348,32 +362,35 @@ plotBayoupars <- function(pars, tree,...){
 }
 
 #' Experimental phenogram plotting function for set of model of model parameters
-#' 
+#'
 #' @param pars A bayou formatted parameter list
 #' @param tree A tree of class 'phylo'
 #' @param dat A named vector of tip data
 #' @param regime.col A named vector of colors equal in length to the number of regimes
 #' @param SE Standard error of the tip states
 #' @param ... Optional arguments passed to \code{phenogram()}
-#' 
+#'
 #' @details This is an experimental plotting utility that can plot a phenogram with a given regime painting from
-#' a parameter list. Note that it uses optimization of internal node states using matrix inversion, which is very 
-#' slow for large trees. However, what is returned is the maximum likelihood estimate of the internal node states 
+#' a parameter list. Note that it uses optimization of internal node states using matrix inversion, which is very
+#' slow for large trees. However, what is returned is the maximum likelihood estimate of the internal node states
 #' given the model, data and the parameter values.
-#' 
+#'
+#'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' tree <- sim.bdtree(n=50)
 #' tree$edge.length <- tree$edge.length/max(branching.times(tree))
-#' prior <- make.prior(tree, dists=list(dk="cdpois", dsig2="dnorm", 
-#'            dtheta="dnorm"), param=list(dk=list(lambda=5, kmax=10), 
-#'              dsig2=list(mean=1, sd=0.01), dtheta=list(mean=0, sd=3)), 
+#' prior <- make.prior(tree, dists=list(dk="cdpois", dsig2="dnorm",
+#'            dtheta="dnorm"), param=list(dk=list(lambda=5, kmax=10),
+#'              dsig2=list(mean=1, sd=0.01), dtheta=list(mean=0, sd=3)),
 #'                plot.prior=FALSE)
 #' pars <- priorSim(prior, tree, plot=FALSE, nsim=1)$pars[[1]]
 #' pars$alpha <- 4
 #' dat <- dataSim(pars, model="OU", phenogram=FALSE, tree)$dat
 #' OUphenogram(pars, tree, dat, ftype="off")
 #' }
+#'
+#' @return No return value. This function generates a phenogram plot as a side effect.
 #' @export
 OUphenogram <- function(pars, tree, dat, SE=0, regime.col=NULL, ...){
   datanc <- .OU.asr(tree, dat, pars, SE=SE)
@@ -402,18 +419,21 @@ OUphenogram <- function(pars, tree, dat, SE=0, regime.col=NULL, ...){
 }
 
 #' Function to plot the regimes from a simmap tree
-#' 
+#'
 #' @param tree A simmap tree of class phylo or simmap with a tree$maps list
 #' @param col A named vector of colors to assign to character states, if NULL, then colors are generated from pal
 #' @param lwd A numeric value indicating the width of the edges
 #' @param pal A color palette function to generate colors if col=NULL
 #' @param ... Optional arguments that are passed to plot.phylo
-#' 
-#' @details This function uses plot.phylo to generate coordinates and plot the tree, but plots the 
+#'
+#' @details This function uses plot.phylo to generate coordinates and plot the tree, but plots the
 #' 'maps' element of phytools' simmap format. This provides much of the functionality of plot.phylo from
 #' the ape package. Currently, only types 'phylogram', 'unrooted', 'radial', and 'cladogram' are allowed. Phylogenies must
 #' have branch lengths.
-#' 
+#'
+#' @return **No return value**, called for **side effects**.
+#' The function **generates a plot** of the phylogenetic tree with color-coded regimes.
+#'
 #' @export
 plotRegimes <- function(tree, col=NULL, lwd=1, pal=rainbow, ...){
   if(is.null(col)){
@@ -476,29 +496,29 @@ plotRegimes <- function(tree, col=NULL, lwd=1, pal=rainbow, ...){
 
 
 #' A function for summarizing the state of a model after a shift
-#' 
+#'
 #' @param chain A bayouMCMC chain
 #' @param mcmc A bayou mcmc object
-#' @param pp.cutoff The threshold posterior probability for shifts to summarize, if 'branches' 
+#' @param pp.cutoff The threshold posterior probability for shifts to summarize, if 'branches'
 #' specified than this is ignored.
 #' @param branches The specific branches with shifts to summarize, assuming postordered tree
-#' 
+#'
 #' @details shiftSummaries summarizes the immediate parameter values after a shift on a particular
 #' branch. Parameters are summarized only for the duration that the particular shift exists. Thus,
-#' even global parameters will be different for particular shifts. 
-#' 
-#' @return A list with elements: 
+#' even global parameters will be different for particular shifts.
+#'
+#' @return A list with elements:
 #' \code{pars} = a bayoupars list giving the location of shifts specified;
-#' \code{tree} = The tree; 
-#' \code{pred} = Predictor variable matrix; 
-#' \code{dat} = A vector of the data; 
+#' \code{tree} = The tree;
+#' \code{pred} = Predictor variable matrix;
+#' \code{dat} = A vector of the data;
 #' \code{SE} = A vector of standard errors;
-#' \code{PP} = Posterior probabilities of the specified shifts; 
-#' \code{model} = A list specifying the model used; 
-#' \code{variables} = The variables summarized; 
-#' \code{cladesummaries} = A list providing the medians and densities of the distributions of regression 
-#' variables for each shift; 
-#' \code{descendents} = A list providing the taxa that belong to each regime 
+#' \code{PP} = Posterior probabilities of the specified shifts;
+#' \code{model} = A list specifying the model used;
+#' \code{variables} = The variables summarized;
+#' \code{cladesummaries} = A list providing the medians and densities of the distributions of regression
+#' variables for each shift;
+#' \code{descendents} = A list providing the taxa that belong to each regime
 #' \code{regressions} = A matrix providing the regression coefficients for each regime.
 #' @export
 shiftSummaries <- function(chain, mcmc, pp.cutoff=0.3, branches=NULL){
@@ -508,7 +528,7 @@ shiftSummaries <- function(chain, mcmc, pp.cutoff=0.3, branches=NULL){
   pred <- cache$pred
   SE <- cache$SE
   model <- mcmc$model.pars
-  
+
   if(is.null(attributes(chain)$burnin)){
     L <- Lposterior(chain, tree, burnin=0)
   } else {
@@ -552,29 +572,38 @@ shiftSummaries <- function(chain, mcmc, pp.cutoff=0.3, branches=NULL){
   regressions <- do.call(rbind, lapply(cladesummaries, function(x) unlist(x$medians)))
   rownames(regressions) = c("root", sumpars$sb)
   tipregs <- .tipregime(sumpars, tree)
-  descendents <- lapply(1:(length(sumpars$sb)+1), function(x) names(tipregs[tipregs==x])) 
+  descendents <- lapply(1:(length(sumpars$sb)+1), function(x) names(tipregs[tipregs==x]))
   out <- list(pars= sumpars, tree=tree, pred=pred, dat=dat, SE=SE, PP=PP, model=model, variables=variables, cladesummaries=cladesummaries, descendents=descendents, regressions=regressions)
   return(out)
 }
 
 #' A function to plot a list produced by \code{shiftSummaries}
-#' 
+#'
 #' @param summaries A list produced by the function \code{shiftSummaries}
 #' @param pal A color palette function
 #' @param ask Whether to wait for the user between plotting each shift summary
 #' @param single.plot A logical indicating whether to summarize all shifts in a single plot.
 #' @param label.pts A logical indicating whether to label the scatter plot.
 #' @param ... Additional parameters passed to the function par(...)
-#' 
+#'
 #' @details For each shift, this function plots the taxa on the phylogeny that are (usually) in this regime (each taxon
-#' is assigned to the specified shifts, thus some descendent taxa may not always be in indicated regime if the shift if 
-#' they are sometimes in another tipward shift with low posterior probability). The function then plots the distribution 
+#' is assigned to the specified shifts, thus some descendent taxa may not always be in indicated regime if the shift if
+#' they are sometimes in another tipward shift with low posterior probability). The function then plots the distribution
 #' of phenotypic states and the predicted regression line, as well as density plots for the intercept and any regression
 #' coefficients in the model.
+#'
+#' @return **No return value**, called for **side effects**.
+#' The function **generates visualizations** of shift summaries, including:
+#' \itemize{
+#'   \item **Phylogenetic tree with shift locations**
+#'   \item **Scatter plots of phenotype data**
+#'   \item **Density plots for regression coefficients**
+#' }
+#'
 #' @export
 plotShiftSummaries <- function(summaries, pal=rainbow, ask=FALSE, single.plot=FALSE, label.pts=TRUE, ...){
   #oldpar <- graphics::par(no.readonly = TRUE)    # code line i
-  #on.exit(graphics::par(oldpar))            # code line i + 1 
+  #on.exit(graphics::par(oldpar))            # code line i + 1
   #px <- par()
   ndens <- length(summaries$cladesummaries[[1]]$densities)
   #par(mfrow=c(2,max(ndens,2)), mar=c(3,3,5,1), bg="black", ask=FALSE, col.axis="white", col.lab="white", col.main="white", ...)
@@ -587,8 +616,8 @@ plotShiftSummaries <- function(summaries, pal=rainbow, ask=FALSE, single.plot=FA
   sumpars <- summaries$pars
   descendents <- summaries$descendents
   PP <- c("Root",round(summaries$PP,2))
-  xlimits <- apply(do.call(rbind, 
-                           lapply(summaries$cladesummaries, function(x) 
+  xlimits <- apply(do.call(rbind,
+                           lapply(summaries$cladesummaries, function(x)
                              sapply(x$densities, function(y) range(y$x))
                            )), 2, range)
   xlimits[1,] <- xlimits[1,]-0.1*apply(xlimits, 2, diff)
@@ -635,47 +664,49 @@ plotShiftSummaries <- function(summaries, pal=rainbow, ask=FALSE, single.plot=FA
       plot(xrange, c(0, ymax*1.1), type="n", main=names(summaries$cladesummaries[[1]]$densities)[j])
       gbg <- lapply(1:length(dens), function(y) lines(dens[[y]], col=pal(nrow(regressions))[y]))
     }
-    
+
   }
   #px <- px[!(names(px) %in% c("cin", "cra", "cxy", "csi", "din", "page"))]
   #suppressWarnings(par(px))
 }
 
 #' A function to plot a heatmap of reconstructed parameter values on the branches of the tree
-#' 
+#'
 #' @param tree A phylogenetic tree
 #' @param chain A bayou MCMC chain
 #' @param variable The parameter to reconstruct across the tree
-#' @param burnin The initial proportion of burnin samples to discard 
+#' @param burnin The initial proportion of burnin samples to discard
 #' @param nn The number of discrete categories to divide the variable into
 #' @param pal A color palette function that produces nn colors
 #' @param legend_ticks The sequence of values to display a legend for
 #' @param legend_settings A list of legend attributes (passed to bayou:::.addColorBar)
 #' @param ... Additional options passed to plot.phylo
-#' 
+#'
 #' @details legend_settings is an optional list of any of the following:
-#' 
+#'
 #' legend - a logical indicating whether a legend should be plotted
-#' 
+#'
 #' x - the x location of the legend
-#' 
+#'
 #' y - the y location of the legend
-#' 
+#'
 #' height - the height of the legend
-#' 
+#'
 #' width - the width of the legend
-#' 
+#'
 #' n - the number of gradations in color to plot from the palette
-#' 
+#'
 #' adjx - an x adjustment for placing text next to the legend bar
-#' 
+#'
 #' cex.lab - the size of text labels next to the legend bar
-#' 
+#'
 #' text.col - The color of text labels
-#' 
+#'
 #' locator - if TRUE, then x and y coordinates are ignored and legend is placed
 #' interactively.
-#' 
+#' @return No return value, called for side effects. This function generates
+#' a heatmap visualization of reconstructed parameter values on a phylogenetic tree.
+
 #' @export
 plotBranchHeatMap <- function(tree, chain, variable, burnin=0, nn=NULL, pal=heat.colors, legend_ticks=NULL, legend_settings=list(plot=TRUE), ...){
   dum <- setNames(rep(1, length(tree$tip.label)), tree$tip.label)
@@ -691,15 +722,15 @@ plotBranchHeatMap <- function(tree, chain, variable, burnin=0, nn=NULL, pal=heat
   allbranches <- suppressWarnings(sapply(1:nrow(tree$edge), function(x) .branchRegime(x, abranches, chain, variable, seq1, summary=TRUE)))
   ape::plot.phylo(tree, edge.color=.colorRamp(allbranches, pal, 100), ...)
   lastPP<-get("last_plot.phylo",envir=.PlotPhyloEnv)
-  legend_stuff <- list(x=0.01* lastPP$x.lim[2], 
-                       y=0, 
-                       height=0.25*diff(lastPP$y.lim), 
-                       width=0.01*diff(lastPP$x.lim), 
-                       n=100, 
-                       trait=allbranches, 
-                       ticks=legend_ticks, 
-                       adjx=0.01*lastPP$x.lim[2], 
-                       cex.lab=0.5, 
+  legend_stuff <- list(x=0.01* lastPP$x.lim[2],
+                       y=0,
+                       height=0.25*diff(lastPP$y.lim),
+                       width=0.01*diff(lastPP$x.lim),
+                       n=100,
+                       trait=allbranches,
+                       ticks=legend_ticks,
+                       adjx=0.01*lastPP$x.lim[2],
+                       cex.lab=0.5,
                        text.col="black",
                        plot=TRUE,
                        locator=FALSE

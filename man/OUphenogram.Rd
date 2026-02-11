@@ -19,26 +19,30 @@ OUphenogram(pars, tree, dat, SE = 0, regime.col = NULL, ...)
 
 \item{...}{Optional arguments passed to \code{phenogram()}}
 }
+\value{
+No return value. This function generates a phenogram plot as a side effect.
+}
 \description{
 Experimental phenogram plotting function for set of model of model parameters
 }
 \details{
 This is an experimental plotting utility that can plot a phenogram with a given regime painting from
-a parameter list. Note that it uses optimization of internal node states using matrix inversion, which is very 
-slow for large trees. However, what is returned is the maximum likelihood estimate of the internal node states 
+a parameter list. Note that it uses optimization of internal node states using matrix inversion, which is very
+slow for large trees. However, what is returned is the maximum likelihood estimate of the internal node states
 given the model, data and the parameter values.
 }
 \examples{
-\dontrun{
+\donttest{
 tree <- sim.bdtree(n=50)
 tree$edge.length <- tree$edge.length/max(branching.times(tree))
-prior <- make.prior(tree, dists=list(dk="cdpois", dsig2="dnorm", 
-           dtheta="dnorm"), param=list(dk=list(lambda=5, kmax=10), 
-             dsig2=list(mean=1, sd=0.01), dtheta=list(mean=0, sd=3)), 
+prior <- make.prior(tree, dists=list(dk="cdpois", dsig2="dnorm",
+           dtheta="dnorm"), param=list(dk=list(lambda=5, kmax=10),
+             dsig2=list(mean=1, sd=0.01), dtheta=list(mean=0, sd=3)),
                plot.prior=FALSE)
 pars <- priorSim(prior, tree, plot=FALSE, nsim=1)$pars[[1]]
 pars$alpha <- 4
 dat <- dataSim(pars, model="OU", phenogram=FALSE, tree)$dat
 OUphenogram(pars, tree, dat, ftype="off")
 }
+
 }

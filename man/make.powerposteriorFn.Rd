@@ -16,7 +16,7 @@ make.powerposteriorFn(Bk, priorFn, refFn, model)
 \item{model}{A string specifying the model type ("OU", "OUrepar", "QG") or a model parameter list}
 }
 \value{
-A function of class "powerposteriorFn" that returns a list of four values: \code{result} (the log density of the power posterior), 
+A function of class "powerposteriorFn" that returns a list of four values: \code{result} (the log density of the power posterior),
 \code{lik} (the log likelihood), \code{prior} (the log prior), \code{ref} the log reference density.
 }
 \description{

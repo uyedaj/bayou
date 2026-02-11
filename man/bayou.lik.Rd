@@ -15,12 +15,22 @@ bayou.lik(pars, cache, X, model = "OU")
 
 \item{model}{Parameterization of the OU model. Either "OU", "QG" or "OUrepar".}
 }
+\value{
+A list containing:
+\describe{
+  \item{loglik}{The log-likelihood value of the fitted OU model.}
+  \item{theta}{A vector of estimated optima for each evolutionary regime.}
+  \item{resid}{The residuals, i.e., the differences between observed and expected values.}
+  \item{comp}{A list of computed values from the three-point algorithm, including necessary likelihood calculations.}
+  \item{transf.phy}{The transformed phylogenetic tree with modified branch lengths based on the model parameters.}
+}
+}
 \description{
 Function for calculating likelihood of an OU model in bayou using the threepoint algorithm
 }
 \details{
 This function implements the algorithm of Ho and Ane (2014) implemented
- in the package \code{phylolm} for the \code{OUfixedRoot} model. It is faster 
+ in the package \code{phylolm} for the \code{OUfixedRoot} model. It is faster
  than the equivalent pruning algorithm in geiger, and can be used on non-
  ultrametric trees (unlike OU.lik, which is based on the pruning algorithm in
  geiger).

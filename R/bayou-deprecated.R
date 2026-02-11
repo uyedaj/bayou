@@ -6,4 +6,6 @@
 #'   available at \code{help("-deprecated")}.
 #' @name bayou-deprecated
 #' @keywords internal
+#' @return This documentation does not return a value. It serves as a reference for deprecated functions in the \code{bayou} package.
+
 NULL

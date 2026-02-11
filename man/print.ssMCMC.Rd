@@ -11,6 +11,11 @@
 
 \item{...}{Optional arguments passed to print}
 }
+\value{
+**No return value**, called for **side effects**.
+This function prints a summary of an `ssMCMC` object, including the estimated marginal likelihood,
+the number of power posteriors run, and the log marginal likelihood contributions across steps.
+}
 \description{
 S3 method for printing ssMCMC objects
 }

@@ -4,7 +4,14 @@
 \alias{load.bayou}
 \title{Loads a bayou object}
 \usage{
-load.bayou(bayouFit, saveRDS = TRUE, file = NULL, cleanup = FALSE, ref = FALSE)
+load.bayou(
+  bayouFit,
+  saveRDS = TRUE,
+  file = NULL,
+  cleanup = FALSE,
+  ref = FALSE,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{bayouFit}{An object of class \code{bayouFit} produced by the function \code{bayou.mcmc()}}
@@ -16,6 +23,21 @@ load.bayou(bayouFit, saveRDS = TRUE, file = NULL, cleanup = FALSE, ref = FALSE)
 \item{cleanup}{A logical indicating whether the files produced by \code{bayou.mcmc()} should be removed.}
 
 \item{ref}{A logical indicating whether a reference function is also in the output}
+
+\item{verbose}{Determines whether information is outputted to the console for the user to view}
+}
+\value{
+A list of class `"bayouMCMC"` containing:
+\describe{
+  \item{gen}{A numeric vector of sampled MCMC generations.}
+  \item{lnL}{A numeric vector of log-likelihood values.}
+  \item{prior}{A numeric vector of prior probabilities.}
+  \item{sb}{A list of shift locations sampled across the MCMC chain.}
+  \item{loc}{A list of relative shift locations on branches.}
+  \item{t2}{A list of new optima values after shifts.}
+  \item{rjpars}{A list of reversible-jump parameters sampled at each step.}
+  \item{(Other parameters)}{Additional parameters specific to the model used in `bayou.mcmc()`.}
+}
 }
 \description{
 \code{load.bayou} loads a bayouFit object that was created using \code{bayou.mcmc()}
@@ -24,16 +46,4 @@ load.bayou(bayouFit, saveRDS = TRUE, file = NULL, cleanup = FALSE, ref = FALSE)
 If both \code{save.Rdata} is \code{FALSE} and \code{cleanup} is \code{TRUE}, then \code{load.bayou} will trigger a
 warning and ask for confirmation. In this case, if the results of \code{load.bayou()} are not stored in an object,
 the results of the MCMC run will be permanently deleted.
-}
-\examples{
-\dontrun{
-data(chelonia)
-tree <- chelonia$phy
-dat <- chelonia$dat
-prior <- make.prior(tree)
-fit <- bayou.mcmc(tree, dat, model="OU", prior=prior, 
-                                 new.dir=TRUE, ngen=5000)
-chain <- load.bayou(fit, save.Rdata=FALSE, cleanup=TRUE)
-plot(chain)
-}
 }

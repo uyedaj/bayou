@@ -1,7 +1,7 @@
-# bayOU internal function. 
-# 
+# bayOU internal function.
+#
 # \code{.fix.root.bm} is an internal function and not generally called by the user
-# 
+#
 # This is an internal function from geiger.
 .fix.root.bm <- function (root, cache) {
   rtidx = cache$root
@@ -11,12 +11,12 @@
 }
 #geiger:::.fix.root.bm
 
-# bayOU internal function. 
-# 
+# bayOU internal function.
+#
 # \code{.ou.cache} is an internal function and not generally called by the user
-# 
+#
 # This is an internal function that modifies the internal function \code{.ou.cache} in geiger for efficiency.
-.ou.cache.fast <- function (cache) 
+.ou.cache.fast <- function (cache)
 {
   ht = cache$ht
   N = cache$n.tip
@@ -25,14 +25,14 @@
   ht$t1 = Tmax - ht$end[cache$edge[mm, 1]]
   ht$t2 = ht$start - ht$end + ht$t1
   z = function(alpha) {
-    if (alpha < 0) 
+    if (alpha < 0)
       stop("'alpha' must be positive valued")
     if (alpha == 0){
       bl = ht$t2-ht$t1
     } else {
-      bl = (1/(2 * alpha)) * exp(-2 * alpha * (Tmax - ht$t2)) * 
-        -(expm1(-2 * alpha * ht$t2)) - (1/(2 * alpha)) * 
-        exp(-2 * alpha * (Tmax - ht$t1)) * -(expm1(-2 * 
+      bl = (1/(2 * alpha)) * exp(-2 * alpha * (Tmax - ht$t2)) *
+        -(expm1(-2 * alpha * ht$t2)) - (1/(2 * alpha)) *
+        exp(-2 * alpha * (Tmax - ht$t1)) * -(expm1(-2 *
                                                       alpha * ht$t1))
     }
     cache$len = bl
@@ -42,10 +42,10 @@
   return(z)
 }
 
-# bayOU internal function. 
-# 
+# bayOU internal function.
+#
 # \code{fastbm.lik} is an internal function and not generally called by the user
-# 
+#
 # This is an internal function that modifies the internal function \code{bm.lik} in geiger for efficiency.
 .fastbm.lik <- function (cache, dat,SE = NA, model = "OU", ...) {
   cache$dat <- dat
@@ -59,7 +59,7 @@
   cache$tiporder = as.integer(1:cache$N)
   cache$z = length(cache$len)
   FUN = switch(model, OU = .ou.cache.fast(cache))
-  ll.bm.direct = function(cache, sigsq, q = NULL, drift = NULL, 
+  ll.bm.direct = function(cache, sigsq, q = NULL, drift = NULL,
                           se = NULL) {
     n.cache = cache
     given = attr(n.cache$y, "given")
@@ -71,7 +71,7 @@
     }
     ll = llf$len
     dd = 0
-    if (!is.null(drift)) 
+    if (!is.null(drift))
       dd = drift
     adjvar = as.integer(attr(n.cache$y, "adjse"))
     adjSE = any(adjvar == 1)
@@ -90,16 +90,16 @@
     }
     modSE = .xxSE(n.cache)
     vv = as.numeric(modSE(se))
-    datC = list(len = as.numeric(ll), intorder = as.integer(n.cache$intorder), 
-                tiporder = as.integer(n.cache$tiporder), root = as.integer(n.cache$root), 
-                y = as.numeric(n.cache$y["m", ]), var = as.numeric(vv), 
-                n = as.integer(n.cache$z), given = as.integer(given), 
-                descRight = as.integer(n.cache$children[, 1]), descLeft = as.integer(n.cache$children[, 
+    datC = list(len = as.numeric(ll), intorder = as.integer(n.cache$intorder),
+                tiporder = as.integer(n.cache$tiporder), root = as.integer(n.cache$root),
+                y = as.numeric(n.cache$y["m", ]), var = as.numeric(vv),
+                n = as.integer(n.cache$z), given = as.integer(given),
+                descRight = as.integer(n.cache$children[, 1]), descLeft = as.integer(n.cache$children[,
                                                                                                       2]), drift = as.numeric(dd))
     parsC = as.numeric(rep(sigsq, n.cache$z))
     out = .Call("bm_direct2", dat = datC, pars = parsC, PACKAGE = "bayou")
     loglik <- sum(out$lq)
-    if (is.na(loglik)) 
+    if (is.na(loglik))
       loglik = -Inf
     attr(loglik, "ROOT.MAX") = out$initM[datC$root]
     class(loglik) = c("glnL", class(loglik))
@@ -124,7 +124,7 @@
     }
     cache$attb = attb
     lik <- function(pars, ...) {
-      recache = function(nodes = NULL, root = 6, 
+      recache = function(nodes = NULL, root = 6,
                          cache) {
         r.cache = cache
         if (root == 6) {
@@ -143,31 +143,31 @@
           s = r.cache$y["s", ]
           g = attr(r.cache$y, "given")
           nn = r.cache$nn
-          r.cache$y = .cache.y.nodes(m, s, g, nn, r.cache$phy, 
+          r.cache$y = .cache.y.nodes(m, s, g, nn, r.cache$phy,
                                      nodes = nodes)
         }
         r.cache
       }
       rcache = recache(..., cache = cache)
       attb = rcache$attb
-      if (missing(pars)) 
-        stop(paste("The following 'pars' are expected:\n\t", 
+      if (missing(pars))
+        stop(paste("The following 'pars' are expected:\n\t",
                    paste(attb, collapse = "\n\t", sep = ""), sep = ""))
       pars = .repars(pars, attb)
       names(pars) = attb
-      if (adjQ) 
+      if (adjQ)
         q = pars[[qq]]
       else q = NULL
       sigsq = pars[["sigsq"]]
-      if ("SE" %in% attb) 
+      if ("SE" %in% attb)
         se = pars[["SE"]]
       else se = NULL
-      if ("drift" %in% attb) 
+      if ("drift" %in% attb)
         drift = -pars[["drift"]]
       else drift = 0
-      if ("z0" %in% attb) 
+      if ("z0" %in% attb)
         rcache = .fix.root.bm(pars[["z0"]], rcache)
-      ll = ll.bm.direct(cache = rcache, sigsq = sigsq, 
+      ll = ll.bm.direct(cache = rcache, sigsq = sigsq,
                         q = q, drift = drift, se = se)
       return(ll)
     }
@@ -180,27 +180,27 @@
   return(likfx)
 }
 
-#' Function for calculating likelihood of an OU model in bayou using pruning algorithm 
+#' Function for calculating likelihood of an OU model in bayou using pruning algorithm
 #' or matrix inversion
-#' 
+#'
 #' @param pars A list of parameters to calculate the likelihood
 #' @param tree A phylogenetic tree of class 'phylo'
 #' @param X A named vector giving the tip data
 #' @param SE A named vector or single number giving the standard errors of the data
 #' @param model Parameterization of the OU model. Either "OU", "QG" or "OUrepar".
-#' @param invert A logical indicating whether the likelihood should be solved by matrix 
+#' @param invert A logical indicating whether the likelihood should be solved by matrix
 #' inversion, rather than
-#' the pruning algorithm. This is primarily present to test that calculation of the likelihood 
-#' is correct. 
-#' 
-#' @details This function can be used for calculating single likelihoods using previously 
-#' implemented methods. It is likely to become deprecated and replaced by \code{bayou.lik} 
-#' in the future, which is based on \code{phylolm}'s threepoint algorithm, which works on 
+#' the pruning algorithm. This is primarily present to test that calculation of the likelihood
+#' is correct.
+#'
+#' @details This function can be used for calculating single likelihoods using previously
+#' implemented methods. It is likely to become deprecated and replaced by \code{bayou.lik}
+#' in the future, which is based on \code{phylolm}'s threepoint algorithm, which works on
 #' non-ultrametric trees and is substantially faster.
-#' 
+#'
 #' @return A list returning the log likelihood ("loglik"), the weight matrix ("W"), the optima ("theta"),
 #' the residuals ("resid") and the expected values ("Exp").
-#' 
+#'
 #' @export
 OU.lik <- function(pars,tree,X,SE=0,model="OU", invert=FALSE){
   if(inherits(tree, "phylo")){
@@ -259,17 +259,26 @@ OU.lik <- function(pars,tree,X,SE=0,model="OU", invert=FALSE){
 
 
 #' Function for calculating likelihood of an OU model in bayou using the threepoint algorithm
-#' 
+#'
 #' @param pars A list of parameters to calculate the likelihood
 #' @param cache A bayou cache object generated using .prepare.ou.univariate
 #' @param X A named vector giving the tip data
 #' @param model Parameterization of the OU model. Either "OU", "QG" or "OUrepar".
-#' 
+#'
 #' @details This function implements the algorithm of Ho and Ane (2014) implemented
-#'  in the package \code{phylolm} for the \code{OUfixedRoot} model. It is faster 
+#'  in the package \code{phylolm} for the \code{OUfixedRoot} model. It is faster
 #'  than the equivalent pruning algorithm in geiger, and can be used on non-
 #'  ultrametric trees (unlike OU.lik, which is based on the pruning algorithm in
-#'  geiger). 
+#'  geiger).
+#'
+#' @return A list containing:
+#' \describe{
+#'   \item{loglik}{The log-likelihood value of the fitted OU model.}
+#'   \item{theta}{A vector of estimated optima for each evolutionary regime.}
+#'   \item{resid}{The residuals, i.e., the differences between observed and expected values.}
+#'   \item{comp}{A list of computed values from the three-point algorithm, including necessary likelihood calculations.}
+#'   \item{transf.phy}{The transformed phylogenetic tree with modified branch lengths based on the model parameters.}
+#' }
 #' @export
 bayou.lik <- function(pars, cache, X, model="OU"){
   if(model=="QG"){
@@ -310,13 +319,13 @@ bayou.lik <- function(pars, cache, X, model="OU"){
     inv.yVy <- comp$PP*(2*pars$alpha)/(pars$sig2)
     detV <- comp$logd+n*log(pars$sig2/(2*pars$alpha))
   }
-  #log(det(souV))  
+  #log(det(souV))
   llh <- -0.5*(n*log(2*pi)+detV+inv.yVy)
   #return(list(loglik=llh, W=W,theta=pars$theta,resid=X.c,Exp=E.th, comp=comp, transf.phy=transf.phy))
   return(list(loglik=llh, theta=pars$theta,resid=X.c, comp=comp, transf.phy=transf.phy))
 }
 
-.pruningwise.branching.times <- function(phy, n, des, anc) {     
+.pruningwise.branching.times <- function(phy, n, des, anc) {
   xx <- numeric(phy$Nnode)
   interns <- which(phy$edge[, 2] > n)
   for (j in length(interns):1) {
@@ -329,7 +338,7 @@ bayou.lik <- function(pars, cache, X, model="OU"){
   return(xx)
 }
 
-.pruningwise.distFromRoot <- function(phy, n, N) {   
+.pruningwise.distFromRoot <- function(phy, n, N) {
   xx <- numeric(phy$Nnode+n)
   for (i in N:1) xx[phy$edge[i, 2]] <- xx[phy$edge[i, 1]] + phy$edge.length[i]
   names(xx) <- if (is.null(phy$node.label)) 1:(n + phy$Nnode) else phy$node.label
@@ -349,9 +358,9 @@ bayou.lik <- function(pars, cache, X, model="OU"){
 
 
 #' Bayou Models
-#' 
+#'
 #' @description Default bayou models. New models may be specified by providing a set of moves, control weights,
-#' tuning parameters, parameter names, RJ parameters and a likelihood function. 
+#' tuning parameters, parameter names, RJ parameters and a likelihood function.
 
 model.OU <- list(moves = list(alpha=".multiplierProposal",sig2=".multiplierProposal",k=".splitmergePrior",theta=".adjustTheta",slide=".slide"),
                  control.weights = list("alpha"=4,"sig2"=2,"theta"=4,"slide"=2,"k"=10),
@@ -360,17 +369,19 @@ model.OU <- list(moves = list(alpha=".multiplierProposal",sig2=".multiplierPropo
                  fixedpars = c(),
                  rjpars = "theta",
                  shiftpars = c("sb", "loc", "t2"),
-                 monitor.fn = function(i, lik, pr, pars, accept, accept.type, j){
+                 monitor.fn = function(i, lik, pr, pars, accept, accept.type, j, verbose=TRUE){
                    names <- c("gen", "lnL", "prior", "alpha", "sig2","rtheta", "k")
                    format <- c("%-8i",rep("%-8.2f", 5),"%-8i")
                    acceptratios <- unlist(accept/accept.type) #tapply(accept, accept.type, mean)
                    names <- c(names, names(acceptratios))
-                   if(j==0){
-                     cat(sprintf("%-7.7s", names), "\n", sep=" ") 
-                     
+                   if(j==0 && verbose){
+                     cat(sprintf("%-7.7s", names), "\n", sep=" ")
+
                    }
                    item <- c(i, lik, pr, pars$alpha, pars$sig2, pars$theta[1], pars$k)
-                   cat(sapply(1:length(item), function(x) sprintf(format[x], item[x])), sprintf("%-8.2f", acceptratios),"\n", sep="")
+                   if (verbose){
+                     cat(sapply(1:length(item), function(x) sprintf(format[x], item[x])), sprintf("%-8.2f", acceptratios),"\n", sep="")
+                   }
                  },
                  lik.fn = bayou.lik)
 
@@ -381,17 +392,19 @@ model.QG <- list(moves = list(h2=".multiplierProposal",P=".multiplierProposal",w
                  fixedpars = c(),
                  rjpars = "theta",
                  shiftpars = c("sb", "loc", "t2"),
-                 monitor.fn = function(i, lik, pr, pars, accept, accept.type, j){
+                 monitor.fn = function(i, lik, pr, pars, accept, accept.type, j, verbose=TRUE){
                    names <- c("gen", "lnL", "prior", "h2", "P", "w2", "Ne","rtheta", "k")
                    format <- c("%-8i",rep("%-8.2f", 7),"%-8i")
                    acceptratios <- unlist(accept/accept.type) #tapply(accept, accept.type, mean)
                    names <- c(names, names(acceptratios))
-                   if(j==0){
-                     cat(sprintf("%-7.7s", names), "\n", sep=" ") 
-                     
+                   if(j==0 && verbose){
+                     cat(sprintf("%-7.7s", names), "\n", sep=" ")
+
                    }
                    item <- c(i, lik, pr, pars$h2, pars$P, pars$w2, pars$Ne, pars$theta[1], pars$k)
-                   cat(sapply(1:length(item), function(x) sprintf(format[x], item[x])), sprintf("%-8.2f", acceptratios),"\n", sep="")
+                   if (verbose) {
+                     cat(sapply(1:length(item), function(x) sprintf(format[x], item[x])), sprintf("%-8.2f", acceptratios),"\n", sep="")
+                   }
                  },
                  lik.fn = bayou.lik)
 
@@ -402,17 +415,19 @@ model.OUrepar <- list(moves = list(halflife=".multiplierProposal",Vy=".multiplie
                       fixedpars = c(),
                       rjpars = "theta",
                       shiftpars = c("sb", "loc", "t2"),
-                      monitor.fn = function(i, lik, pr, pars, accept, accept.type, j){
+                      monitor.fn = function(i, lik, pr, pars, accept, accept.type, j, verbose=TRUE){
                         names <- c("gen", "lnL", "prior", "halflife", "Vy","rtheta", "k")
                         format <- c("%-8i",rep("%-8.2f", 5),"%-8i")
                         acceptratios <- unlist(accept/accept.type) #tapply(accept, accept.type, mean)
                         names <- c(names, names(acceptratios))
-                        if(j==0){
-                          cat(sprintf("%-7.7s", names), "\n", sep=" ") 
-                          
+                        if(j==0 && verbose){
+                          cat(sprintf("%-7.7s", names), "\n", sep=" ")
+
                         }
                         item <- c(i, lik, pr, pars$halflife, pars$Vy, pars$theta[1], pars$k)
-                        cat(sapply(1:length(item), function(x) sprintf(format[x], item[x])), sprintf("%-8.2f", acceptratios),"\n", sep="")
+                        if(verbose) {
+                          cat(sapply(1:length(item), function(x) sprintf(format[x], item[x])), sprintf("%-8.2f", acceptratios),"\n", sep="")
+                        }
                         },
                       lik.fn = bayou.lik)
 
@@ -422,15 +437,17 @@ model.auteur <- list(moves = list(alpha="fixed", sig2=".vectorMultiplier", theta
                     parorder = c("alpha","theta","k", "ntheta", "sig2"),
                     rjpars = c("sig2"),
                     shiftpars = c("sb", "loc", "t2"),
-                    monitor.fn = function(i, lik, pr, pars, accept, accept.type, j){
+                    monitor.fn = function(i, lik, pr, pars, accept, accept.type, j, verbose=TRUE){
                       names <- c("gen", "lnL", "prior", "sig2Root", "theta", "k")
                       string <- "%-8i%-8.2f%-8.2f%-8.2f%-8.2f%-8i"
                       acceptratios <- unlist(accept/accept.type) #tapply(accept, accept.type, mean)
                       names <- c(names, names(acceptratios))
-                      if(j==0){
-                          cat(sprintf("%-7.7s", names), "\n", sep=" ")                           
+                      if(j==0 && verbose){
+                          cat(sprintf("%-7.7s", names), "\n", sep=" ")
                       }
-                      cat(sprintf(string, i, lik, pr, pars$sig2[1], pars$theta, pars$k), sprintf("%-8.2f", acceptratios),"\n", sep="")},
+                      if(verbose) {
+                        cat(sprintf(string, i, lik, pr, pars$sig2[1], pars$theta, pars$k), sprintf("%-8.2f", acceptratios),"\n", sep="")}
+                    },
                     lik.fn = function(pars, cache, X, model="Custom"){
                         phy <- cache$phy
                         map <- bayou:::.pars2map(pars, cache)
@@ -455,7 +472,7 @@ model.auteur <- list(moves = list(alpha="fixed", sig2=".vectorMultiplier", theta
 #                   acceptratios <- tapply(accept, accept.type, mean)
 ##                   names <- c(names, names(acceptratios))
 #                   if(i %% 100*ticker.freq == 0 | i == 1){
-#                     cat(sprintf("%-7s", names))                     
+#                     cat(sprintf("%-7s", names))
 #                   }
 #                    cat(sprintf(string, i, lnL, pr, pars$r, pars$eps, pars$k), sprintf("%-8.2f", acceptratios), sep="")
 ##                 },

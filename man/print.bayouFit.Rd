@@ -11,6 +11,11 @@
 
 \item{...}{Additional parameters passed to \code{print}}
 }
+\value{
+**No return value**, called for **side effects**.
+This function prints a summary of a **bayou model fit**, including
+posterior probabilities, model parameters, and key statistics.
+}
 \description{
 S3 method for printing bayouFit objects
 }

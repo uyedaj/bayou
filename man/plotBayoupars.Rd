@@ -13,6 +13,10 @@ plotBayoupars(pars, tree, ...)
 
 \item{...}{Additional arguments passed to plotRegimes}
 }
+\value{
+No return value, called for side effects. This function generates
+a visualization of a phylogenetic tree with mapped regimes or other parameters.
+}
 \description{
 Plot parameter list as a simmap tree
 }

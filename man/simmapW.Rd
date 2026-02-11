@@ -7,16 +7,21 @@
 simmapW(tree, pars)
 }
 \arguments{
-\item{tree}{either a tree of class "phylo" or a cache object produced by bayOU's internal 
+\item{tree}{either a tree of class "phylo" or a cache object produced by bayOU's internal
 functions. Must include list element 'maps' which is a simmap reconstruction of regime history.}
 
 \item{pars}{a list of the parameters used to calculate the weight matrix. Only pars$alpha is
 necessary to calculate the matrix, but others can be present.}
 }
+\value{
+A matrix where each row corresponds to a branch in the phylogenetic tree, and each column
+represents an evolutionary regime. The entries in the matrix indicate the weight of a given regime
+on a given branch.
+}
 \description{
 These functions calculate weight matrices from regimes specified in phytools' simmap format.
 \code{simmapW} calculates the weight matrix for a set of regimes from a phylogeny
-with a stored regime history. \code{.simmap.W} calculates the same matrix, but without checks and is 
+with a stored regime history. \code{.simmap.W} calculates the same matrix, but without checks and is
 generally run internally.
 }
 \details{

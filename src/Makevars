@@ -1,1 +1,1 @@
-PKG_LIBS = $(BLAS_LIBS) $(FLIBS)
+SHLIB_LDFLAGS = -fno-lto

@@ -1,16 +1,16 @@
 #' Simulates parameters from bayou models
-#' 
+#'
 #' \code{priorSim} Simulates parameters from the prior distribution specified by \code{make.prior}
-#' 
+#'
 #' @param prior A prior function created by \code{bayou::make.prior}
 #' @param tree A tree of class 'phylo'
 #' @param plot A logical indicating whether the simulated parameters should be plotted
 #' @param nsim The number of parameter sets to be simulated
 #' @param shiftpars A vector of parameters that split upon a shift, default is "theta"
 #' @param ... Parameters passed on to \code{plotSimmap(...)}
-#' 
-#' @return A list of bayou parameter lists
-#' 
+#'
+#' @return A list of bayou parameter lists drawn from the prior.
+#'
 #' @export
 priorSim <- function(prior, tree, plot=TRUE, nsim=1, shiftpars="theta", ...){
   tree <- reorder(tree,'postorder')
@@ -30,10 +30,10 @@ priorSim <- function(prior, tree, plot=TRUE, nsim=1, shiftpars="theta", ...){
   N[fixed] <- "fixed"
   N[shiftpars] <- "ntheta"
   N["loc"] <- "loc"
-  
+
   simpar <- lapply(1:nsim, function(x){ll <- lapply(1:length(allnames), function(y) numeric(0)); names(ll) <- allnames; ll})
   simpar <- lapply(simpar, function(x){names(x) <- allnames; x})
-  
+
   if(N["k"]=="fixed"){
     simpar <- lapply(1:nsim, function(x) {simpar[[x]][["k"]] <- attributes(prior)$fixed$k; simpar[[x]]})
   } else {
@@ -92,9 +92,9 @@ priorSim <- function(prior, tree, plot=TRUE, nsim=1, shiftpars="theta", ...){
 }
 
 #' Simulates data from bayou models
-#' 
+#'
 #' \code{dataSim} Simulates data for a given bayou model and parameter set
-#' 
+#'
 #' @param pars A bayou formated parameter list
 #' @param model The type of model specified by the parameter list (either "OU", "OUrepar" or "QG").
 #' @param tree A tree of class 'phylo'
@@ -102,12 +102,20 @@ priorSim <- function(prior, tree, plot=TRUE, nsim=1, shiftpars="theta", ...){
 #' @param SE A single value or vector equal to the number of tips specifying the measurement error that should be simulated at the tips
 #' @param phenogram A logical indicating whether or not the simulated data should be plotted as a phenogram
 #' @param ... Optional parameters passed to \code{phenogram(...)}.
+#' @param verbose Determines whether information is outputted to the console for the user to view
+#'
+#' @return A list with the following components:
+#' \describe{
+#'   \item{W}{Weight matrix based on the OU model and simulated shifts.}
+#'   \item{E.th}{Expected trait values for each tip given the parameter set.}
+#'   \item{dat}{A named vector of simulated continuous trait values.}
+#' }
 #'
 #' @description This function simulates data for a given set of parameter values.
-#' 
+#'
 #' @export
-dataSim <- function(pars, model, tree, map.type="pars", SE=0, 
-                    phenogram=TRUE, ...){
+dataSim <- function(pars, model, tree, map.type="pars", SE=0,
+                    phenogram=TRUE, verbose=TRUE, ...){
   if(model %in% c("QG")){
     pars$alpha <- QG.alpha(pars)
     pars$sig2 <- QG.sig2(pars)
@@ -117,11 +125,11 @@ dataSim <- function(pars, model, tree, map.type="pars", SE=0,
     pars$alpha <- p$alpha
     pars$sig2 <- p$sig2
   }
-  if(map.type=="simmap"){
+  if(map.type=="simmap" && verbose){
     print("Using mapped regimes from ape tree file")
     maps <- tree$maps
   }
-  if(map.type=="pars"){
+  if(map.type=="pars" && verbose){
     print("Using mapped regimes from parameter list")
     maps <- pars2simmap(pars, tree)$tree$maps
   }

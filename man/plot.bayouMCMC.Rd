@@ -11,6 +11,11 @@
 
 \item{...}{Additional arguments passed to \code{plot.mcmc} from the \code{coda} package}
 }
+\value{
+No return value, called for side effects. This function generates diagnostic
+trace and density plots for MCMC chains of class `bayouMCMC` to assess convergence
+and parameter distributions.
+}
 \description{
 S3 method for plotting bayouMCMC objects
 }
