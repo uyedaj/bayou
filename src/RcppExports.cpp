@@ -11,6 +11,41 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// bm_direct2
+SEXP bm_direct2(SEXP dat, SEXP pars);
+RcppExport SEXP _bayou_bm_direct2(SEXP datSEXP, SEXP parsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type dat(datSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type pars(parsSEXP);
+    rcpp_result_gen = Rcpp::wrap(bm_direct2(dat, pars));
+    return rcpp_result_gen;
+END_RCPP
+}
+// open_subtree
+SEXP open_subtree(SEXP dat, SEXP desc);
+RcppExport SEXP _bayou_open_subtree(SEXP datSEXP, SEXP descSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type dat(datSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type desc(descSEXP);
+    rcpp_result_gen = Rcpp::wrap(open_subtree(dat, desc));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cache_descendants
+SEXP cache_descendants(SEXP phy);
+RcppExport SEXP _bayou_cache_descendants(SEXP phySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type phy(phySEXP);
+    rcpp_result_gen = Rcpp::wrap(cache_descendants(phy));
+    return rcpp_result_gen;
+END_RCPP
+}
 // C_threepoint
 SEXP C_threepoint(SEXP dat);
 RcppExport SEXP _bayou_C_threepoint(SEXP datSEXP) {
@@ -53,6 +88,9 @@ RcppExport SEXP bm_direct2(SEXP, SEXP);
 RcppExport SEXP cache_descendants(SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_bayou_bm_direct2", (DL_FUNC) &_bayou_bm_direct2, 2},
+    {"_bayou_open_subtree", (DL_FUNC) &_bayou_open_subtree, 2},
+    {"_bayou_cache_descendants", (DL_FUNC) &_bayou_cache_descendants, 1},
     {"_bayou_C_threepoint", (DL_FUNC) &_bayou_C_threepoint, 1},
     {"_bayou_C_transf_branch_lengths", (DL_FUNC) &_bayou_C_transf_branch_lengths, 4},
     {"_bayou_C_weightmatrix", (DL_FUNC) &_bayou_C_weightmatrix, 2},
